@@ -4,9 +4,135 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BoxFinTech</title>
+  <meta name="description" content="BoxFinTech - informational landing of a financial-technical service model. No payments. No forms. No personal data collection." />
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
-  BoxFinTech - Landing v1.0
+  <div class="wrap">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-title">BoxFinTech</div>
+      </div>
+
+      <nav class="lang" aria-label="Language">
+        <button id="btn-en" type="button" aria-pressed="true">EN</button>
+        <button id="btn-ru" type="button" aria-pressed="false">RU</button>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div data-lang="en">
+        <h1>BoxFinTech</h1>
+        <p class="lead">Public informational landing of a financial-technical service model.</p>
+        <p class="muted">No direct sales. No payments. No forms. No personal data collection.</p>
+      </div>
+
+      <div data-lang="ru" hidden>
+        <h1>BoxFinTech</h1>
+        <p class="lead">Публичный информационный лендинг финансово-технической сервисной модели.</p>
+        <p class="muted">Без прямых продаж. Без приема платежей. Без форм. Без сбора персональных данных.</p>
+      </div>
+    </section>
+
+    <main class="grid">
+      <article class="card">
+        <div data-lang="en">
+          <h2>What is BoxFinTech</h2>
+          <p>BoxFinTech is a service operations model for structured handling of payment flows with compliance constraints in mind.</p>
+          <p class="muted">BoxFinTech is not a bank and not a payment service provider.</p>
+        </div>
+
+        <div data-lang="ru" hidden>
+          <h2>Что такое BoxFinTech</h2>
+          <p>BoxFinTech - сервисная операторская модель для структурированной обработки платежных потоков с учетом комплаенс-ограничений.</p>
+          <p class="muted">BoxFinTech не является банком и не является платежной системой или PSP.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div data-lang="en">
+          <h2>How the service works</h2>
+          <ul>
+            <li>Funds intake and internal accounting</li>
+            <li>Classification and reserving</li>
+            <li>Payouts only when a sufficient available balance exists</li>
+            <li>Timelines depend on third parties and their processing</li>
+          </ul>
+        </div>
+
+        <div data-lang="ru" hidden>
+          <h2>Как работает сервис</h2>
+          <ul>
+            <li>Прием средств и внутренний учет</li>
+            <li>Классификация и резервирование</li>
+            <li>Выплаты только при наличии доступного баланса</li>
+            <li>Сроки зависят от третьих сторон и их процедур обработки</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="card">
+        <div data-lang="en">
+          <h2>Jurisdiction and applicable law</h2>
+          <p>European Union, Republic of Poland.</p>
+        </div>
+
+        <div data-lang="ru" hidden>
+          <h2>Юрисдикция и применимое право</h2>
+          <p>Европейский союз, Республика Польша.</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div data-lang="en">
+          <h2>Contact</h2>
+          <p>Email only: <a href="mailto:contact@boxviapl.com">contact@boxviapl.com</a></p>
+          <p class="muted">No forms. Do not send sensitive personal data by email.</p>
+        </div>
+
+        <div data-lang="ru" hidden>
+          <h2>Контакт</h2>
+          <p>Только email: <a href="mailto:contact@boxviapl.com">contact@boxviapl.com</a></p>
+          <p class="muted">Без форм. Не отправляй чувствительные персональные данные по email.</p>
+        </div>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-left">
+        <div>Operator: BoxVia, Poland</div>
+        <div class="muted">BoxFinTech - service and trade name</div>
+      </div>
+
+      <div class="footer-right">
+        <a href="/terms/">Terms</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/cookies/">Cookies</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var btnEn = document.getElementById("btn-en");
+      var btnRu = document.getElementById("btn-ru");
+
+      function setLang(lang) {
+        var blocks = document.querySelectorAll("[data-lang]");
+        for (var i = 0; i < blocks.length; i++) {
+          var el = blocks[i];
+          el.hidden = el.getAttribute("data-lang") !== lang;
+        }
+        btnEn.setAttribute("aria-pressed", String(lang === "en"));
+        btnRu.setAttribute("aria-pressed", String(lang === "ru"));
+        document.documentElement.lang = lang;
+      }
+
+      btnEn.addEventListener("click", function () { setLang("en"); });
+      btnRu.addEventListener("click", function () { setLang("ru"); });
+
+      setLang("en");
+    })();
+  </script>
 </body>
 </html>
