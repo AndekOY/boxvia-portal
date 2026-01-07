@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operational Model vs Financial Service</title>
+  <meta name="description" content="Informational article describing BoxFinTech as an operational model rather than a financial service.">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="canonical" href="https://boxviapl.com/knowledge/foundation/operational-model-vs-financial-service/">
+</head>
+
+<body>
+<header>
+  <div class="brand"><a href="/">BoxFinTech</a></div>
+  <nav>
+    <a href="/knowledge/">Knowledge</a>
+    <a href="/terms/">Terms</a>
+    <a href="/privacy/">Privacy</a>
+    <a href="/cookies/">Cookies</a>
+  </nav>
+  <div class="lang">
+    <button data-lang-btn="en">EN</button>
+    <button data-lang-btn="ru">RU</button>
+  </div>
+</header>
+
+<main>
+<h1>Operational Model vs Financial Service</h1>
+
+<section data-lang="en">
+  <p>Financial systems are often perceived as services that deliver predictable outcomes.</p>
+  <p>In practice, they operate as constrained environments shaped by regulation and external dependencies.</p>
+  <p>BoxFinTech represents an operational model, not a financial service.</p>
+</section>
+
+<section data-lang="ru" hidden>
+  <p>Финансовые системы часто воспринимаются как сервисы с предсказуемым результатом.</p>
+  <p>На практике они функционируют как ограниченные среды, сформированные регулированием и внешними зависимостями.</p>
+  <p>BoxFinTech представляет собой операционную модель, а не финансовую услугу.</p>
+</section>
+</main>
+
+<footer>
+  <div>Operator: BoxVia, Republic of Poland</div>
+  <div>BoxFinTech is a service and trade name</div>
+</footer>
+
+<script>
+(function(){
+  function setLang(l){
+    document.querySelectorAll('[data-lang]').forEach(e=>{
+      e.getAttribute('data-lang')===l?e.removeAttribute('hidden'):e.setAttribute('hidden','');
+    });
+  }
+  document.querySelectorAll('[data-lang-btn]').forEach(b=>{
+    b.onclick=()=>setLang(b.getAttribute('data-lang-btn'));
+  });
+  setLang('en');
+})();
+</script>
+</body>
+</html>
