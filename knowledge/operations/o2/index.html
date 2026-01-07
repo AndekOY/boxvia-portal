@@ -2,87 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Signal Interpretation and System Response | BoxFinTech Knowledge</title>
-  <meta name="description" content="How platform systems interpret signals, aggregate patterns, and produce delayed operational responses." />
-  <link rel="canonical" href="https://boxfintech.example/knowledge/operations/o2/" />
+  <title>Classification, Reserving, Availability | BoxFinTech Knowledge</title>
+  <meta name="description" content="How systems classify value movement, separate reserving from availability, and enforce internal consistency across balance states." />
+  <link rel="canonical" href="https://boxviapl.com/knowledge/operations/o2/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="/assets/styles.css" />
 </head>
 
 <body>
 
 <header>
   <nav>
-    <a href="index.html" data-lang="en">Home</a>
-    <a href="index.html" data-lang="ru">Главная</a>
+    <a href="/" data-lang="en">Home</a>
+    <a href="/" data-lang="ru">Главная</a>
 
-    <a href="knowledge/index.html" data-lang="en">Knowledge</a>
-    <a href="knowledge/index.html" data-lang="ru">База знаний</a>
+    <a href="/knowledge/" data-lang="en">Knowledge</a>
+    <a href="/knowledge/" data-lang="ru">База знаний</a>
   </nav>
 </header>
 
 <main>
 
-<!-- O2: Signal Interpretation and System Response -->
+<!-- Operations O2: Classification, Reserving, Availability -->
 
-<h1 data-lang="en">Signal Interpretation and System Response</h1>
-<h1 data-lang="ru">Интерпретация сигналов и реакция системы</h1>
+<h1 data-lang="en">Classification, Reserving, Availability</h1>
+<h1 data-lang="ru">Классификация, резервирование, доступность</h1>
 
-<h2 data-lang="en">What systems interpret as signals</h2>
-<h2 data-lang="ru">Что системы считают сигналами</h2>
+<h2 data-lang="en">Classification precedes availability</h2>
+<h2 data-lang="ru">Классификация предшествует доступности</h2>
 
 <p data-lang="en">
-A signal is any detectable deviation from an expected operational pattern. Systems do not distinguish between intentional and unintentional deviations. Only the fact of deviation and its position within the broader context is evaluated.
+Before any value is considered usable, the system classifies the event. Classification assigns meaning to movement: origin, destination, purpose, reversibility, and related obligations. Only after classification can the system decide which balance state is affected.
 </p>
 
 <p data-lang="ru">
-Сигналом считается любое обнаруживаемое отклонение от ожидаемого операционного шаблона. Системы не различают намеренные и ненамеренные отклонения. Оценивается сам факт отклонения и его место в общем контексте.
+Прежде чем ценность будет признана доступной, система классифицирует событие. Классификация присваивает движению смысл: источник, получатель, назначение, обратимость и связанные обязательства. Только после этого система решает, какое состояние баланса затрагивается.
 </p>
 
+<h2 data-lang="en">Reserving is not the same as holding funds</h2>
+<h2 data-lang="ru">Резервирование не означает удержание средств как таковых</h2>
+
 <p data-lang="en">
-Signals may originate from actions, timing, sequence, environment, or interaction patterns rather than from isolated events.
+Reserving is an internal constraint applied to availability. It is a bookkeeping mechanism that marks part of value as non-usable while the system resolves uncertainty. The user may see a balance, but the system separates total, reserved, and available states.
 </p>
 
 <p data-lang="ru">
-Сигналы могут возникать из действий, времени, последовательности, среды или моделей взаимодействия, а не из отдельных событий.
-</p>
-
-<h2 data-lang="en">Aggregation before interpretation</h2>
-<h2 data-lang="ru">Агрегация до интерпретации</h2>
-
-<p data-lang="en">
-Single signals rarely trigger direct system responses. Instead, systems aggregate multiple low-intensity signals into composite models that describe consistency, risk, or deviation.
-</p>
-
-<p data-lang="ru">
-Отдельные сигналы редко приводят к немедленной реакции системы. Вместо этого система агрегирует множество слабых сигналов в составные модели, описывающие согласованность, риск или отклонение.
+Резервирование является внутренним ограничением доступности. Это учетный механизм, который помечает часть ценности как недоступную, пока система устраняет неопределенность. Пользователь может видеть баланс, но система разделяет состояние общего, зарезервированного и доступного.
 </p>
 
 <p data-lang="en">
-At this stage, meaning is assigned statistically rather than semantically.
+This separation allows platforms to remain consistent under disputes, reversals, and compliance checks.
 </p>
 
 <p data-lang="ru">
-На этом этапе смысл формируется статистически, а не семантически.
+Такое разделение позволяет платформам сохранять согласованность при спорах, отменах и проверках комплаенса.
 </p>
 
-<h2 data-lang="en">Latency between signal and response</h2>
-<h2 data-lang="ru">Задержка между сигналом и реакцией</h2>
+<h2 data-lang="en">Availability is a policy decision</h2>
+<h2 data-lang="ru">Доступность является политикой системы</h2>
 
 <p data-lang="en">
-System responses are often delayed in time. This latency separates the moment of signal formation from the moment of visible consequence.
+Availability is not a property of the money. It is a property of the system policy applied to an internal representation. Availability depends on model confidence, settlement recognition, counterparty risk, and the cost of error.
 </p>
 
 <p data-lang="ru">
-Реакция системы часто имеет временную задержку. Эта латентность отделяет момент формирования сигналов от момента видимого последствия.
+Доступность не является свойством денег. Это свойство политики системы, примененной к внутреннему представлению. Доступность зависит от уверенности модели, признания расчета, риска контрагента и стоимости ошибки.
 </p>
 
 <p data-lang="en">
-As a result, cause-and-effect relationships may appear disconnected, even though they remain structurally linked within the system.
+Therefore, two identical-looking inflows may produce different availability outcomes.
 </p>
 
 <p data-lang="ru">
-В результате причинно-следственные связи могут выглядеть разорванными, хотя на уровне системы они сохраняют структурную связанность.
+Поэтому два внешне похожих поступления могут приводить к разной доступности.
 </p>
 
 </main>
@@ -92,6 +84,6 @@ As a result, cause-and-effect relationships may appear disconnected, even though
   <p data-lang="ru">База знаний BoxFinTech</p>
 </footer>
 
-<script src="assets/lang-toggle.js"></script>
+<script src="/assets/lang-toggle.js"></script>
 </body>
 </html>
