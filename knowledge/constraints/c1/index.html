@@ -2,87 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>System Boundaries and Hard Limits | BoxFinTech Knowledge</title>
-  <meta name="description" content="System boundaries, hard operational limits, and non-negotiable constraints within platform architectures." />
-  <link rel="canonical" href="https://boxfintech.example/knowledge/constraints/c1/" />
+  <title>Control vs Visibility | BoxFinTech Knowledge</title>
+  <meta name="description" content="Why visibility does not imply control, and how platforms separate what users can see from what systems can do." />
+  <link rel="canonical" href="https://boxviapl.com/knowledge/constraints/c1/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="/assets/styles.css" />
 </head>
 
 <body>
 
 <header>
   <nav>
-    <a href="index.html" data-lang="en">Home</a>
-    <a href="index.html" data-lang="ru">Главная</a>
+    <a href="/" data-lang="en">Home</a>
+    <a href="/" data-lang="ru">Главная</a>
 
-    <a href="knowledge/index.html" data-lang="en">Knowledge</a>
-    <a href="knowledge/index.html" data-lang="ru">База знаний</a>
+    <a href="/knowledge/" data-lang="en">Knowledge</a>
+    <a href="/knowledge/" data-lang="ru">База знаний</a>
   </nav>
 </header>
 
 <main>
 
-<!-- C1: System Boundaries and Hard Limits -->
+<!-- Constraints C1: Control vs Visibility -->
 
-<h1 data-lang="en">System Boundaries and Hard Limits</h1>
-<h1 data-lang="ru">Границы системы и жесткие пределы</h1>
+<h1 data-lang="en">Control vs Visibility</h1>
+<h1 data-lang="ru">Контроль и видимость</h1>
 
-<h2 data-lang="en">What defines a system boundary</h2>
-<h2 data-lang="ru">Что определяет границу системы</h2>
+<h2 data-lang="en">Visibility is a user interface property</h2>
+<h2 data-lang="ru">Видимость является свойством интерфейса</h2>
 
 <p data-lang="en">
-A system boundary defines where a platform’s responsibility, visibility, and control end. Everything beyond this boundary is treated as external context rather than internal state.
+What a user can see is a curated representation of internal state. Visibility is designed for usability and clarity, not for completeness. The interface shows what the platform chooses to expose.
 </p>
 
 <p data-lang="ru">
-Граница системы определяет, где заканчиваются ответственность, наблюдаемость и контроль платформы. Все, что находится за этой границей, рассматривается как внешний контекст, а не внутреннее состояние.
+То, что видит пользователь, является отобранным представлением внутреннего состояния. Видимость создается ради удобства и ясности, а не ради полноты. Интерфейс показывает только то, что платформа считает нужным раскрыть.
 </p>
 
+<h2 data-lang="en">Control is an operational capability</h2>
+<h2 data-lang="ru">Контроль является операционной возможностью</h2>
+
 <p data-lang="en">
-Boundaries are not abstract concepts. They are implemented through data models, interfaces, legal frameworks, and operational rules.
+Control exists where the platform can change state reliably. Many states are visible but not directly controllable because they depend on external rails, third parties, and time-based processes.
 </p>
 
 <p data-lang="ru">
-Границы не являются абстрактными понятиями. Они реализуются через модели данных, интерфейсы, правовые конструкции и операционные правила.
+Контроль существует там, где платформа способна надежно менять состояние. Многие состояния могут быть видимыми, но не поддаваться прямому контролю, потому что зависят от внешних рельс, третьих сторон и процессов во времени.
 </p>
 
-<h2 data-lang="en">Hard limits versus adjustable parameters</h2>
-<h2 data-lang="ru">Жесткие пределы и настраиваемые параметры</h2>
+<h2 data-lang="en">The constraint created by mismatch</h2>
+<h2 data-lang="ru">Ограничение, возникающее из несоответствия</h2>
 
 <p data-lang="en">
-Not all constraints within a system are equal. Some parameters can be tuned or recalibrated, while others represent hard limits that the system cannot cross without breaking its own logic.
+When visibility and control diverge, users expect interventions that the system cannot provide. The system then defends consistency rather than satisfying expectations. This mismatch is a structural constraint, not a service choice.
 </p>
 
 <p data-lang="ru">
-Не все ограничения внутри системы равнозначны. Часть параметров может настраиваться или пересматриваться, тогда как другие представляют собой жесткие пределы, пересечение которых разрушает саму логику системы.
-</p>
-
-<p data-lang="en">
-Hard limits typically emerge from regulatory requirements, architectural design choices, or irreversible historical decisions.
-</p>
-
-<p data-lang="ru">
-Жесткие пределы, как правило, формируются из регуляторных требований, архитектурных решений или необратимых исторических выборов.
-</p>
-
-<h2 data-lang="en">Why systems enforce limits impersonally</h2>
-<h2 data-lang="ru">Почему системы применяют пределы безлично</h2>
-
-<p data-lang="en">
-Systems enforce boundaries and limits without reference to individual circumstances. This impersonality is not a flaw, but a condition for scalability and predictability.
-</p>
-
-<p data-lang="ru">
-Системы применяют границы и пределы без учета индивидуальных обстоятельств. Такая безличность не является недостатком, а условием масштабируемости и предсказуемости.
-</p>
-
-<p data-lang="en">
-Once a hard limit is reached, the system transitions state automatically, without negotiation or interpretation.
-</p>
-
-<p data-lang="ru">
-После достижения жесткого предела система автоматически меняет состояние, без переговоров и интерпретаций.
+Когда видимость и контроль расходятся, у пользователя возникают ожидания вмешательства, которое система не может обеспечить. Тогда система защищает согласованность, а не ожидания. Это структурное ограничение, а не вопрос сервиса.
 </p>
 
 </main>
@@ -92,6 +68,6 @@ Once a hard limit is reached, the system transitions state automatically, withou
   <p data-lang="ru">База знаний BoxFinTech</p>
 </footer>
 
-<script src="assets/lang-toggle.js"></script>
+<script src="/assets/lang-toggle.js"></script>
 </body>
 </html>
