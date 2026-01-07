@@ -2,87 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Structural Incompatibility and Lock-in Effects | BoxFinTech Knowledge</title>
-  <meta name="description" content="Structural incompatibilities, system lock-in effects, and constraints that prevent state migration within platforms." />
-  <link rel="canonical" href="https://boxfintech.example/knowledge/constraints/c3/" />
+  <title>Why Guarantees Do Not Exist in Such Systems | BoxFinTech Knowledge</title>
+  <meta name="description" content="Why operational guarantees are structurally incompatible with multi-actor, asynchronous, and reversible payment environments." />
+  <link rel="canonical" href="https://boxviapl.com/knowledge/constraints/c3/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="/assets/styles.css" />
 </head>
 
 <body>
 
 <header>
   <nav>
-    <a href="index.html" data-lang="en">Home</a>
-    <a href="index.html" data-lang="ru">Главная</a>
+    <a href="/" data-lang="en">Home</a>
+    <a href="/" data-lang="ru">Главная</a>
 
-    <a href="knowledge/index.html" data-lang="en">Knowledge</a>
-    <a href="knowledge/index.html" data-lang="ru">База знаний</a>
+    <a href="/knowledge/" data-lang="en">Knowledge</a>
+    <a href="/knowledge/" data-lang="ru">База знаний</a>
   </nav>
 </header>
 
 <main>
 
-<!-- C3: Structural Incompatibility and Lock-in Effects -->
+<!-- Constraints C3: Why Guarantees Do Not Exist in Such Systems -->
 
-<h1 data-lang="en">Structural Incompatibility and Lock-in Effects</h1>
-<h1 data-lang="ru">Структурная несовместимость и эффекты блокировки</h1>
+<h1 data-lang="en">Why Guarantees Do Not Exist in Such Systems</h1>
+<h1 data-lang="ru">Почему в таких системах не бывает гарантий</h1>
 
-<h2 data-lang="en">What structural incompatibility means</h2>
-<h2 data-lang="ru">Что означает структурная несовместимость</h2>
+<h2 data-lang="en">Guarantees require stable causality</h2>
+<h2 data-lang="ru">Гарантии требуют стабильной причинности</h2>
 
 <p data-lang="en">
-Structural incompatibility arises when two system states, models, or assumptions cannot coexist within the same operational framework.
+A guarantee presumes stable causality: a clear link between action and outcome, protected from external interference. Payment ecosystems do not provide this stability because they are multi-actor, asynchronous, and policy-driven.
 </p>
 
 <p data-lang="ru">
-Структурная несовместимость возникает тогда, когда два состояния системы, модели или базовых допущения не могут сосуществовать в рамках одной операционной логики.
+Гарантия предполагает стабильную причинность: ясную связь между действием и результатом, защищенную от внешнего вмешательства. Платежные экосистемы не дают этой стабильности, потому что они многосубъектны, асинхронны и управляются политиками.
 </p>
 
+<h2 data-lang="en">Reversibility breaks finality</h2>
+<h2 data-lang="ru">Обратимость разрушает окончательность</h2>
+
 <p data-lang="en">
-This is not a matter of error or violation, but of architectural mismatch.
+Many operations remain reversible for extended periods through disputes, compliance actions, fraud handling, or network rules. In such environments, finality is conditional, and guarantees degrade into probability statements.
 </p>
 
 <p data-lang="ru">
-Речь идет не об ошибке и не о нарушении, а об архитектурном несоответствии.
+Многие операции остаются обратимыми длительное время через споры, действия комплаенса, обработку мошенничества или правила сетей. В такой среде окончательность является условной, а гарантии превращаются в вероятностные ожидания.
 </p>
 
-<h2 data-lang="en">Lock-in as a consequence of consistency</h2>
-<h2 data-lang="ru">Блокировка как следствие согласованности</h2>
+<h2 data-lang="en">Systems choose coherence over promises</h2>
+<h2 data-lang="ru">Системы выбирают согласованность вместо обещаний</h2>
 
 <p data-lang="en">
-Lock-in effects occur when maintaining internal consistency prevents the system from transitioning back to a previous or alternative state.
+When uncertainty increases, systems defend internal coherence. They apply constraints that reduce exposure even if this contradicts user expectations. This behavior is structural, because it protects the system from cascading inconsistency.
 </p>
 
 <p data-lang="ru">
-Эффекты блокировки возникают тогда, когда поддержание внутренней согласованности не позволяет системе вернуться к предыдущему или альтернативному состоянию.
-</p>
-
-<p data-lang="en">
-Once a system commits to a specific model or interpretation, deviation becomes increasingly costly or impossible.
-</p>
-
-<p data-lang="ru">
-После того как система зафиксировалась на определенной модели или интерпретации, отклонение от нее становится все более затратным либо невозможным.
-</p>
-
-<h2 data-lang="en">Why lock-in persists even after context changes</h2>
-<h2 data-lang="ru">Почему блокировка сохраняется после изменения контекста</h2>
-
-<p data-lang="en">
-Systems are optimized to preserve coherence over time. When external context changes, internal models often remain fixed to avoid cascading inconsistencies.
-</p>
-
-<p data-lang="ru">
-Системы оптимизированы на сохранение согласованности во времени. При изменении внешнего контекста внутренние модели часто остаются зафиксированными, чтобы избежать каскадных несогласованностей.
-</p>
-
-<p data-lang="en">
-As a result, lock-in effects can persist long after the original conditions that triggered them are no longer present.
-</p>
-
-<p data-lang="ru">
-В результате эффекты блокировки могут сохраняться значительно дольше, чем исходные условия, которые привели к их возникновению.
+Когда неопределенность растет, системы защищают внутреннюю согласованность. Они вводят ограничения, снижающие уязвимость, даже если это противоречит ожиданиям пользователя. Это структурное поведение, потому что оно защищает систему от каскадных несогласованностей.
 </p>
 
 </main>
@@ -92,6 +68,6 @@ As a result, lock-in effects can persist long after the original conditions that
   <p data-lang="ru">База знаний BoxFinTech</p>
 </footer>
 
-<script src="assets/lang-toggle.js"></script>
+<script src="/assets/lang-toggle.js"></script>
 </body>
 </html>
