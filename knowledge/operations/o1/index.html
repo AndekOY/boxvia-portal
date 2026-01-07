@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Operational Decision Flow | BoxFinTech Knowledge</title>
-  <meta name="description" content="Operational decision logic, dependency chains, and irreversible state transitions within platform systems." />
-  <link rel="canonical" href="https://boxfintech.example/knowledge/operations/o1/" />
+  <title>Payment-Related Flows and Internal Accounting | BoxFinTech Knowledge</title>
+  <meta name="description" content="How payment-related flows are represented as internal accounting events, and why platform ledgers do not mirror external reality." />
+  <link rel="canonical" href="https://boxviapl.com/knowledge/operations/o1/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/assets/styles.css" />
 </head>
@@ -23,74 +23,66 @@
 
 <main>
 
-<!-- O1: Operational Decision Flow -->
+<!-- Operations O1: Payment-Related Flows and Internal Accounting -->
 
-<h1 data-lang="en">Operational Decision Flow</h1>
-<h1 data-lang="ru">Операционный контур принятия решений</h1>
+<h1 data-lang="en">Payment-Related Flows and Internal Accounting</h1>
+<h1 data-lang="ru">Платежные потоки и внутренняя бухгалтерия систем</h1>
 
-<h2 data-lang="en">What an operational decision is</h2>
-<h2 data-lang="ru">Что считается операционным решением</h2>
+<h2 data-lang="en">Why payment flows become accounting events</h2>
+<h2 data-lang="ru">Почему платежные потоки превращаются во внутренние события учета</h2>
 
 <p data-lang="en">
-An operational decision is any action or deliberate inaction that leads to a change in the observable state of an account, transaction, identity, or process within a financial or platform system.
+Platforms do not operate on money as a physical or bank-level object. They operate on accounting representations of value movement. A payment flow is processed as a sequence of internal events that update balances, liabilities, and risk states.
 </p>
 
 <p data-lang="ru">
-Операционным решением считается любое действие или осознанное бездействие, которое приводит к изменению наблюдаемого состояния аккаунта, транзакции, идентичности или процесса внутри финансовой либо платформенной системы.
+Платформы работают не с деньгами как с объектом банковского уровня, а с учетным представлением движения ценности. Платежный поток обрабатывается как последовательность внутренних событий, которые обновляют балансы, обязательства и риск-состояния.
 </p>
 
 <p data-lang="en">
-Such decisions are evaluated by systems not through declared intent, but through their effect on internal coherence and state transitions.
+This is why external confirmation of a transfer does not automatically translate into an identical internal state.
 </p>
 
 <p data-lang="ru">
-Системы оценивают такие решения не по заявленным намерениям, а по их влиянию на внутреннюю согласованность и переходы состояний.
+Поэтому внешнее подтверждение перевода не означает автоматического совпадения с внутренним состоянием системы.
 </p>
 
-<h2 data-lang="en">Decision chains and dependency layers</h2>
-<h2 data-lang="ru">Цепочки решений и уровни зависимостей</h2>
+<h2 data-lang="en">Internal ledgers are not mirrors</h2>
+<h2 data-lang="ru">Внутренние реестры не являются зеркалом внешней реальности</h2>
 
 <p data-lang="en">
-Operational decisions do not exist as isolated events. Each decision becomes part of a dependency chain linking previous states, current signals, and future evaluations.
+Internal accounting models are built for consistency, auditability, and rule enforcement. They are not designed to mirror every nuance of external settlement. The system records what it can represent and what it is permitted to recognize.
 </p>
 
 <p data-lang="ru">
-Операционные решения не существуют как отдельные события. Каждое решение встраивается в цепочку зависимостей, связывая предыдущие состояния, текущие сигналы и будущие оценки.
-</p>
-
-<ul data-lang="en">
-  <li>identity context</li>
-  <li>transaction history</li>
-  <li>communication behavior</li>
-  <li>technical environment</li>
-  <li>external references</li>
-</ul>
-
-<ul data-lang="ru">
-  <li>контекст идентичности</li>
-  <li>история транзакций</li>
-  <li>коммуникационное поведение</li>
-  <li>техническая среда</li>
-  <li>внешние связи и ссылки</li>
-</ul>
-
-<h2 data-lang="en">Irreversibility of operational states</h2>
-<h2 data-lang="ru">Необратимость операционных состояний</h2>
-
-<p data-lang="en">
-Many operational state changes are irreversible. Even if an action is later amended or compensated, the initial state transition remains part of the system record.
-</p>
-
-<p data-lang="ru">
-Многие изменения операционных состояний являются необратимыми. Даже если действие впоследствии корректируется или компенсируется, первоначальный переход состояния остается зафиксированным в системе.
+Внутренние учетные модели строятся ради согласованности, аудируемости и применения правил. Они не предназначены для отражения всех нюансов внешнего расчета. Система фиксирует то, что способна представить и то, что ей разрешено признавать.
 </p>
 
 <p data-lang="en">
-As a result, timing and sequence often outweigh intent or explanation when systems evaluate behavior.
+As a result, two worlds coexist: the external movement of funds and the internal representation of obligations and availability.
 </p>
 
 <p data-lang="ru">
-В результате для системы последовательность и момент действий часто оказываются важнее намерений или последующих объяснений.
+В результате сосуществуют два уровня: внешнее движение средств и внутреннее представление обязательств и доступности.
+</p>
+
+<h2 data-lang="en">State transitions define operational reality</h2>
+<h2 data-lang="ru">Операционную реальность определяют переходы состояний</h2>
+
+<p data-lang="en">
+For the platform, the meaningful question is not whether money moved, but which internal states changed. The operational record is defined by state transitions such as authorization, capture, settlement recognition, reserving, release, and reversal.
+</p>
+
+<p data-lang="ru">
+Для платформы ключевой вопрос не в том, переместились ли деньги, а в том, какие внутренние состояния изменились. Операционная запись определяется переходами состояний: авторизация, подтверждение, признание расчета, резервирование, высвобождение, отмена.
+</p>
+
+<p data-lang="en">
+These transitions are evaluated later by risk, compliance, and dispute layers, even if the user experience appears immediate.
+</p>
+
+<p data-lang="ru">
+Эти переходы позже оцениваются слоями риска, комплаенса и споров, даже если на уровне интерфейса все выглядит мгновенно.
 </p>
 
 </main>
