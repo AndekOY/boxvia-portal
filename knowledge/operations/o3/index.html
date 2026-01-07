@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Operational Consistency and Failure Modes | BoxFinTech Knowledge</title>
+  <meta name="description" content="Operational consistency, system thresholds, and failure modes within platform decision architectures." />
+  <link rel="canonical" href="https://boxfintech.example/knowledge/operations/o3/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" data-lang="en">Home</a>
+    <a href="index.html" data-lang="ru">Главная</a>
+
+    <a href="knowledge/index.html" data-lang="en">Knowledge</a>
+    <a href="knowledge/index.html" data-lang="ru">База знаний</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- O3: Operational Consistency and Failure Modes -->
+
+<h1 data-lang="en">Operational Consistency and Failure Modes</h1>
+<h1 data-lang="ru">Операционная согласованность и режимы сбоев</h1>
+
+<h2 data-lang="en">Consistency as a primary evaluation criterion</h2>
+<h2 data-lang="ru">Согласованность как основной критерий оценки</h2>
+
+<p data-lang="en">
+Operational systems prioritize internal consistency over localized correctness. A state that fits the system model is often preferred to a state that requires explanation or exception handling.
+</p>
+
+<p data-lang="ru">
+Операционные системы отдают приоритет внутренней согласованности над локальной корректностью. Состояние, укладывающееся в модель системы, часто предпочтительнее состояния, требующего пояснений или обработки исключений.
+</p>
+
+<p data-lang="en">
+This logic allows systems to remain scalable, even if it leads to outcomes that appear rigid or impersonal.
+</p>
+
+<p data-lang="ru">
+Такая логика позволяет системам сохранять масштабируемость, даже если результаты выглядят жесткими или обезличенными.
+</p>
+
+<h2 data-lang="en">Common operational failure modes</h2>
+<h2 data-lang="ru">Типовые операционные режимы сбоев</h2>
+
+<p data-lang="en">
+Failure modes typically emerge not from a single error, but from the accumulation of inconsistencies across multiple layers of operation.
+</p>
+
+<p data-lang="ru">
+Режимы сбоев обычно возникают не из-за одной ошибки, а вследствие накопления несогласованностей на нескольких уровнях операционной логики.
+</p>
+
+<ul data-lang="en">
+  <li>rapid or uncoordinated context changes</li>
+  <li>contradictory behavioral signals</li>
+  <li>broken dependency chains</li>
+  <li>misaligned identity representations</li>
+</ul>
+
+<ul data-lang="ru">
+  <li>быстрые или несогласованные изменения контекста</li>
+  <li>противоречивые поведенческие сигналы</li>
+  <li>разорванные цепочки зависимостей</li>
+  <li>несовпадение представлений об идентичности</li>
+</ul>
+
+<h2 data-lang="en">Why failures appear sudden</h2>
+<h2 data-lang="ru">Почему сбои выглядят внезапными</h2>
+
+<p data-lang="en">
+Operational failures rarely occur at the moment they become visible. They develop gradually as the system tolerates increasing deviation until a threshold is crossed.
+</p>
+
+<p data-lang="ru">
+Операционные сбои редко возникают в момент, когда становятся заметными. Они формируются постепенно, по мере того как система допускает нарастающие отклонения до пересечения порогового значения.
+</p>
+
+<p data-lang="en">
+Once the threshold is exceeded, the system transitions state immediately, creating the impression of a sudden or unexpected event.
+</p>
+
+<p data-lang="ru">
+После превышения порога система мгновенно меняет состояние, что создает ощущение внезапного или неожиданного события.
+</p>
+
+</main>
+
+<footer>
+  <p data-lang="en">BoxFinTech Knowledge Base</p>
+  <p data-lang="ru">База знаний BoxFinTech</p>
+</footer>
+
+<script src="assets/lang-toggle.js"></script>
+</body>
+</html>
