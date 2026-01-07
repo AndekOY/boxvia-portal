@@ -2,93 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Operational Consistency and Failure Modes | BoxFinTech Knowledge</title>
-  <meta name="description" content="Operational consistency, system thresholds, and failure modes within platform decision architectures." />
-  <link rel="canonical" href="https://boxfintech.example/knowledge/operations/o3/" />
+  <title>Timelines and External Dependencies | BoxFinTech Knowledge</title>
+  <meta name="description" content="Why platform timelines diverge from external settlement timelines, and how external dependencies reshape internal state transitions." />
+  <link rel="canonical" href="https://boxviapl.com/knowledge/operations/o3/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="/assets/styles.css" />
 </head>
 
 <body>
 
 <header>
   <nav>
-    <a href="index.html" data-lang="en">Home</a>
-    <a href="index.html" data-lang="ru">Главная</a>
+    <a href="/" data-lang="en">Home</a>
+    <a href="/" data-lang="ru">Главная</a>
 
-    <a href="knowledge/index.html" data-lang="en">Knowledge</a>
-    <a href="knowledge/index.html" data-lang="ru">База знаний</a>
+    <a href="/knowledge/" data-lang="en">Knowledge</a>
+    <a href="/knowledge/" data-lang="ru">База знаний</a>
   </nav>
 </header>
 
 <main>
 
-<!-- O3: Operational Consistency and Failure Modes -->
+<!-- Operations O3: Timelines and External Dependencies -->
 
-<h1 data-lang="en">Operational Consistency and Failure Modes</h1>
-<h1 data-lang="ru">Операционная согласованность и режимы сбоев</h1>
+<h1 data-lang="en">Timelines and External Dependencies</h1>
+<h1 data-lang="ru">Временные контуры и внешние зависимости</h1>
 
-<h2 data-lang="en">Consistency as a primary evaluation criterion</h2>
-<h2 data-lang="ru">Согласованность как основной критерий оценки</h2>
+<h2 data-lang="en">Why timelines diverge</h2>
+<h2 data-lang="ru">Почему временные линии расходятся</h2>
 
 <p data-lang="en">
-Operational systems prioritize internal consistency over localized correctness. A state that fits the system model is often preferred to a state that requires explanation or exception handling.
+Operational time inside a platform is not identical to external time in banks, card networks, or payment rails. Platforms maintain their own timelines to remain consistent under delays, reversals, and asynchronous confirmations.
 </p>
 
 <p data-lang="ru">
-Операционные системы отдают приоритет внутренней согласованности над локальной корректностью. Состояние, укладывающееся в модель системы, часто предпочтительнее состояния, требующего пояснений или обработки исключений.
+Операционное время внутри платформы не совпадает с внешним временем банков, карточных сетей или платежных рельс. Платформы поддерживают собственные временные контуры, чтобы сохранять согласованность при задержках, отменах и асинхронных подтверждениях.
 </p>
 
 <p data-lang="en">
-This logic allows systems to remain scalable, even if it leads to outcomes that appear rigid or impersonal.
+This is why visible outcomes may appear detached from the moment an action occurred.
 </p>
 
 <p data-lang="ru">
-Такая логика позволяет системам сохранять масштабируемость, даже если результаты выглядят жесткими или обезличенными.
+Поэтому видимые последствия могут казаться оторванными от момента совершения действия.
 </p>
 
-<h2 data-lang="en">Common operational failure modes</h2>
-<h2 data-lang="ru">Типовые операционные режимы сбоев</h2>
+<h2 data-lang="en">External dependencies shape internal states</h2>
+<h2 data-lang="ru">Внешние зависимости формируют внутренние состояния</h2>
 
 <p data-lang="en">
-Failure modes typically emerge not from a single error, but from the accumulation of inconsistencies across multiple layers of operation.
+Operational states depend on external entities that the platform does not control: banks, networks, merchants, counterparties, regulators, and dispute channels. The system translates external events into internal state changes when they become representable and admissible.
 </p>
 
 <p data-lang="ru">
-Режимы сбоев обычно возникают не из-за одной ошибки, а вследствие накопления несогласованностей на нескольких уровнях операционной логики.
+Операционные состояния зависят от внешних участников, которых платформа не контролирует: банки, сети, мерчанты, контрагенты, регуляторы, каналы споров. Система переводит внешние события во внутренние изменения состояния, когда они становятся представимыми и допустимыми.
 </p>
 
-<ul data-lang="en">
-  <li>rapid or uncoordinated context changes</li>
-  <li>contradictory behavioral signals</li>
-  <li>broken dependency chains</li>
-  <li>misaligned identity representations</li>
-</ul>
-
-<ul data-lang="ru">
-  <li>быстрые или несогласованные изменения контекста</li>
-  <li>противоречивые поведенческие сигналы</li>
-  <li>разорванные цепочки зависимостей</li>
-  <li>несовпадение представлений об идентичности</li>
-</ul>
-
-<h2 data-lang="en">Why failures appear sudden</h2>
-<h2 data-lang="ru">Почему сбои выглядят внезапными</h2>
+<h2 data-lang="en">Asymmetry of speed and reversibility</h2>
+<h2 data-lang="ru">Асимметрия скорости и обратимости</h2>
 
 <p data-lang="en">
-Operational failures rarely occur at the moment they become visible. They develop gradually as the system tolerates increasing deviation until a threshold is crossed.
+Initiation can be fast, while resolution can be slow. Credit can appear quickly, while finality can arrive later. Reversibility can remain open long after the user experience implies closure.
 </p>
 
 <p data-lang="ru">
-Операционные сбои редко возникают в момент, когда становятся заметными. Они формируются постепенно, по мере того как система допускает нарастающие отклонения до пересечения порогового значения.
+Запуск может быть быстрым, а завершение медленным. Зачисление может выглядеть мгновенным, а окончательность наступать позже. Возможность отката может сохраняться долго после того, как интерфейс создает ощущение завершенности.
 </p>
 
 <p data-lang="en">
-Once the threshold is exceeded, the system transitions state immediately, creating the impression of a sudden or unexpected event.
+Systems manage this asymmetry by introducing buffers: reserving, delayed availability, and conditional recognition of settlement.
 </p>
 
 <p data-lang="ru">
-После превышения порога система мгновенно меняет состояние, что создает ощущение внезапного или неожиданного события.
+Системы управляют этой асимметрией через буферы: резервирование, отложенную доступность и условное признание расчета.
 </p>
 
 </main>
@@ -98,6 +84,6 @@ Once the threshold is exceeded, the system transitions state immediately, creati
   <p data-lang="ru">База знаний BoxFinTech</p>
 </footer>
 
-<script src="assets/lang-toggle.js"></script>
+<script src="/assets/lang-toggle.js"></script>
 </body>
 </html>
