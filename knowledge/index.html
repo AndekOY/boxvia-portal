@@ -1,3 +1,4 @@
+<!-- ТЕХПАТЧ: /knowledge/index.html (полная RU версия + двуязычный H1) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -25,7 +26,8 @@
 </header>
 
 <main>
-  <h1>Knowledge</h1>
+  <h1 data-lang="en">Knowledge</h1>
+  <h1 data-lang="ru" hidden>Knowledge - база знаний</h1>
 
   <section data-lang="en">
     <p>The Knowledge section presents structured informational materials describing how constrained financial and payment-related environments operate.</p>
@@ -40,4 +42,78 @@
 
     <h2>Operations</h2>
     <ul>
-      <li><a href="/knowledge/operations/payment-related-flows-and-internal-accounting/">Payme
+      <li><a href="/knowledge/operations/payment-related-flows-and-internal-accounting/">Payment-Related Flows and Internal Accounting</a></li>
+      <li><a href="/knowledge/operations/classification-reserving-availability/">Classification, Reserving, Availability</a></li>
+      <li><a href="/knowledge/operations/timelines-and-external-dependencies/">Timelines and External Dependencies</a></li>
+    </ul>
+
+    <h2>Constraints</h2>
+    <ul>
+      <li><a href="/knowledge/constraints/control-vs-visibility/">Control vs Visibility</a></li>
+      <li><a href="/knowledge/constraints/responsibility-boundaries/">Responsibility Boundaries</a></li>
+      <li><a href="/knowledge/constraints/why-guarantees-do-not-exist/">Why Guarantees Do Not Exist in Such Systems</a></li>
+    </ul>
+
+    <h2>Meta</h2>
+    <ul>
+      <li><a href="/knowledge/meta/models-as-cognitive-infrastructure/">Models as Cognitive Infrastructure</a></li>
+      <li><a href="/knowledge/meta/why-models-outlive-services/">Why Models Outlive Services</a></li>
+      <li><a href="/knowledge/meta/limits-of-any-operational-model/">Limits of Any Operational Model</a></li>
+    </ul>
+  </section>
+
+  <section data-lang="ru" hidden>
+    <p>Раздел Knowledge содержит структурированные информационные материалы, описывающие логику работы ограниченных финансовых и платежных сред.</p>
+    <p>Фокус на операционной логике, системных ограничениях и структурах зависимостей.</p>
+
+    <h2>Базовая рамка</h2>
+    <ul>
+      <li><a href="/knowledge/foundation/operational-model-vs-financial-service/">Операционная модель и финансовая услуга</a></li>
+      <li><a href="/knowledge/foundation/why-financial-systems-are-constraint-driven/">Почему финансовые системы основаны на ограничениях</a></li>
+      <li><a href="/knowledge/foundation/compliance-as-a-system-not-a-checklist/">Комплаенс как система, а не чек-лист</a></li>
+    </ul>
+
+    <h2>Операционная логика</h2>
+    <ul>
+      <li><a href="/knowledge/operations/payment-related-flows-and-internal-accounting/">Платежные потоки и внутренний учет</a></li>
+      <li><a href="/knowledge/operations/classification-reserving-availability/">Классификация, резервирование и доступность</a></li>
+      <li><a href="/knowledge/operations/timelines-and-external-dependencies/">Сроки и внешние зависимости</a></li>
+    </ul>
+
+    <h2>Ограничения</h2>
+    <ul>
+      <li><a href="/knowledge/constraints/control-vs-visibility/">Контроль и видимость</a></li>
+      <li><a href="/knowledge/constraints/responsibility-boundaries/">Границы ответственности</a></li>
+      <li><a href="/knowledge/constraints/why-guarantees-do-not-exist/">Почему в таких системах не существует гарантий</a></li>
+    </ul>
+
+    <h2>Метa уровень</h2>
+    <ul>
+      <li><a href="/knowledge/meta/models-as-cognitive-infrastructure/">Модели как когнитивная инфраструктура</a></li>
+      <li><a href="/knowledge/meta/why-models-outlive-services/">Почему модели живут дольше сервисов</a></li>
+      <li><a href="/knowledge/meta/limits-of-any-operational-model/">Ограничения любой операционной модели</a></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div>Operator: BoxVia, Republic of Poland</div>
+  <div>BoxFinTech is a service and trade name</div>
+</footer>
+
+<script>
+(function(){
+  function setLang(l){
+    document.querySelectorAll('[data-lang]').forEach(function(e){
+      if (e.getAttribute('data-lang') === l) e.removeAttribute('hidden');
+      else e.setAttribute('hidden', '');
+    });
+  }
+  document.querySelectorAll('[data-lang-btn]').forEach(function(b){
+    b.onclick = function(){ setLang(b.getAttribute('data-lang-btn')); };
+  });
+  setLang('en');
+})();
+</script>
+</body>
+</html>
