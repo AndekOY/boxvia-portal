@@ -1,1 +1,60 @@
 *{box-sizing:border-box}body{margin:0;background:#0c1320;color:#e9edf4;font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}a{color:#91d7f7}header,footer{background:#111d2d;padding:22px max(24px,calc((100vw - 1080px)/2))}header{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.brand{font-size:1.3rem;font-weight:750;letter-spacing:.02em;text-decoration:none;color:white}nav{display:flex;gap:18px;flex-wrap:wrap}nav a{color:#d9e6f2;text-decoration:none}nav a:hover{text-decoration:underline}main{max-width:1080px;margin:0 auto;padding:60px 24px 90px}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.15;max-width:850px}h2{font-size:1.6rem;line-height:1.3}h3{margin-bottom:6px}.lead{font-size:1.22rem;color:#bfd0df;max-width:800px}.muted,small{color:#a8b8c8}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:18px;margin:32px 0}.card{border:1px solid #314257;border-radius:14px;padding:24px;background:#152235}.card h2{font-size:1.35rem}.tag{font-size:.85rem;color:#a6e6d2;letter-spacing:.08em;text-transform:uppercase}.button{display:inline-block;border-radius:9px;padding:12px 18px;background:#b7e5f9;color:#0b1726;text-decoration:none;font-weight:700}.note{border-left:3px solid #7db3d2;padding:12px 18px;background:#152235;margin:24px 0}footer{font-size:.9rem;color:#a8b8c8}footer a{margin-right:14px}ul{padding-left:22px}li{margin:8px 0}
+/* v0.3: distinct quick-check navigation */
+nav a.nav-cta{display:inline-flex;align-items:center;justify-content:center;padding:7px 14px;border:1px solid #83d4ee;border-radius:9px;color:#b7e5f9;font-weight:700;white-space:nowrap}
+nav a.nav-cta:hover,nav a.nav-cta:focus-visible{background:#193b50;text-decoration:none}
+.check-price{font-size:2rem;font-weight:750;margin:12px 0}
+.check-steps{padding-left:22px}
+@media(max-width:650px){header{align-items:flex-start}nav{gap:12px}nav a.nav-cta{width:100%;margin-top:4px}main{padding-top:36px}}
+
+/* BoxVia Portal v0.3 — persistent navigation */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+html {
+  scroll-padding-top: 90px;
+}
+
+/* BoxVia brand mark v0.3 */
+.boxvia-brand-mark { width: 36px; height: 36px; object-fit: cover; vertical-align: middle; margin-right: 10px; border-radius: 6px; }
+@media (max-width: 600px) { .boxvia-brand-mark { width: 30px; height: 30px; margin-right: 6px; } }
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* BOXVIA MOBILE MENU V1 */
+.mobile-menu-toggle { display: none; }
+@media (max-width: 760px) {
+  header { position: sticky; top: 0; z-index: 1000; }
+  header .brand { min-width: 0; }
+  header .brand-logo { max-width: 36px; max-height: 36px; }
+  header .mobile-menu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: auto; padding: 8px 12px; min-width: 44px; min-height: 44px;
+    border: 1px solid #83d4ee; border-radius: 9px; color: #e8f3ff;
+    background: transparent; font: inherit; font-size: 24px; cursor: pointer;
+  }
+  header nav[aria-label="Main navigation"] { display: none !important; width: 100%; }
+  header.boxvia-menu-open nav[aria-label="Main navigation"] {
+    display: flex !important; flex-direction: column; align-items: stretch;
+    gap: 6px; padding-top: 12px;
+  }
+  header.boxvia-menu-open nav[aria-label="Main navigation"] a {
+    display: block; padding: 10px 12px; min-height: 42px;
+  }
+  header.boxvia-menu-open nav[aria-label="Main navigation"] a.nav-cta {
+    text-align: center; margin-top: 5px;
+  }
+}

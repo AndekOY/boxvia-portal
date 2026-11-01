@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Check a Claim | BoxVia</title>
+<meta name="description" content="Independent evidence check of one precise claim against publicly available primary evidence. $20 USD.">
+<link rel="stylesheet" href="/assets/styles.css">
+<link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
+<style>
+  .brand{display:inline-flex;align-items:center;gap:12px}
+  .boxvia-brand-mark{width:36px;height:36px;object-fit:cover;border-radius:6px}
+  .menu-toggle{display:none;background:transparent;border:1px solid #7eb6d0;border-radius:9px;color:#e9edf4;font-size:26px;line-height:1;padding:9px 13px;cursor:pointer}
+  .eyebrow{color:#8ee6df;font-size:.82rem;letter-spacing:.09em;text-transform:uppercase}
+  .check-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:26px;align-items:start;margin-top:32px}
+  .check-layout .card{margin:0;min-width:0}
+  .check-layout h2{margin-top:0}
+  .price{font-size:1.65rem;font-weight:800;color:#f2f7ff}
+  .order-form{display:grid;gap:17px;margin-top:22px}
+  .field{display:grid;gap:7px}
+  .field label{font-weight:650;color:#f2f7ff}
+  .field input,.field textarea{width:100%;box-sizing:border-box;border:1px solid #7894a9;border-radius:8px;background:#f7fbff;color:#112036;font:inherit;padding:13px;min-height:48px}
+  .field textarea{min-height:120px;resize:vertical}
+  .field small{color:#b9cadb}
+  .consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5}
+  .consent input{margin-top:5px;width:18px;height:18px;flex-shrink:0}
+  .submit-btn{border:0;border-radius:9px;background:#b4e5fa;color:#071a29;padding:14px 20px;font:inherit;font-weight:750;cursor:pointer;max-width:280px}
+  .submit-btn:hover{background:#d1f0ff}
+  .status-note{font-size:.91rem;color:#b9cadb}
+  .secondary-text{font-size:.93rem;color:#b9cadb}
+  .notice{border-left:3px solid #7db3d2;padding:12px 18px;background:#152235;margin:20px 0}
+  @media(max-width:760px){
+    header{align-items:center;flex-wrap:wrap}
+    .menu-toggle{display:block;margin-left:auto}
+    header nav{display:none;width:100%;flex-direction:column;gap:0;padding:8px 0}
+    header nav.open{display:flex}
+    header nav a{display:block;padding:12px 5px;border-top:1px solid #26384b}
+    main{padding-top:44px}
+    .check-layout{grid-template-columns:minmax(0,1fr)}
+    .boxvia-brand-mark{width:30px;height:30px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><img class="boxvia-brand-mark" src="/assets/boxvia-logo.png" alt="" aria-hidden="true"><span>BoxVia <span style="color:#83d4ee">/ Portal</span></span></a>
+  <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-controls="primary-nav" aria-expanded="false">☰</button>
+  <nav id="primary-nav" aria-label="Main navigation">
+    <a href="/">Home</a><a href="/services/">Services</a><a href="/technology/">Technology</a><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/evidence-check/" aria-current="page">Check a Claim</a>
+  </nav>
+</header>
+<main>
+  <p class="eyebrow">STANDARDIZED EVIDENCE CHECK</p>
+  <h1>Check a Claim</h1>
+  <p class="lead">One clearly defined claim. One identified public primary source. A concise, bounded evidence result.</p>
+  <p class="price">$20 USD <span class="muted" style="font-size:1rem;font-weight:500">fixed price</span></p>
+  <div class="check-layout">
+    <section class="card" id="order">
+      <h2>1. Submit your claim</h2>
+      <p>Complete the short form with your email address, the exact claim and a public primary-source link. Include a version or date where relevant. Do not submit passwords, confidential records or sensitive personal information.</p>
+      <form class="order-form" name="boxvia-claim-check" method="POST" action="/evidence-check/thank-you/" data-netlify="true" netlify-honeypot="bot-field" id="claim-form">
+        <input type="hidden" name="form-name" value="boxvia-claim-check">
+        <p hidden><label>Leave this empty: <input name="bot-field" autocomplete="off"></label></p>
+        <div class="field"><label for="customer-email">Email address *</label><input id="customer-email" name="email" type="email" autocomplete="email" required maxlength="254"></div>
+        <div class="field"><label for="exact-claim">Exact claim to check *</label><textarea id="exact-claim" name="exact_claim" required minlength="15" maxlength="2000" placeholder="Paste one precise, verifiable statement."></textarea><small>One claim only, not a request to assess an entire product or organization.</small></div>
+        <div class="field"><label for="source-url">Public primary-source URL *</label><input id="source-url" name="primary_source_url" type="url" inputmode="url" required maxlength="2000" placeholder="https://example.org/source"><small>Publicly accessible official documentation or another primary source.</small></div>
+        <div class="field"><label for="source-version">Source version or date (if known)</label><input id="source-version" name="source_version_or_date" type="text" maxlength="160" placeholder="Version, publication date, or snapshot date"></div>
+        <label class="consent"><input type="checkbox" name="public_material_confirmation" value="yes" required><span>I confirm that the submitted material is public and that I have not included passwords, confidential records or sensitive personal data. *</span></label>
+        <label class="consent"><input type="checkbox" name="terms_acknowledgement" value="yes" required><span>I understand this is a $20 USD limited documentary check, not a certification, legal opinion, security audit or guarantee of a favorable result. I have reviewed the <a href="/legal/" target="_blank" rel="noopener">service boundaries</a> and <a href="/contact/" target="_blank" rel="noopener">contact details</a>. *</span></label>
+        <button class="submit-btn" type="submit">Submit claim and continue to payment</button>
+        <p class="status-note">After successful submission, you will see the PayPal $20 payment link. We start the review only after verifying payment. If clarification is needed, we will email you.</p>
+        <p class="status-note" id="local-note" hidden>Local preview: form submission is disabled on localhost to prevent loss of orders. Netlify Forms must be enabled and tested on the deployed site before accepting customers.</p>
+      </form>
+    </section>
+    <aside class="card" id="payment">
+      <h2>2. Complete payment</h2>
+      <p>Once your claim is submitted successfully, the confirmation page provides the secure PayPal link for <strong>$20 USD</strong>. PayPal or card checkout may be available.</p>
+      <p class="secondary-text">We manually match your submitted request and completed payment. Use the same email where possible and keep the payment receipt. Do not pay before submitting the form.</p>
+      <h2 style="margin-top:30px">3. Receive your result</h2>
+      <p>We review one defined claim against publicly available evidence and deliver a concise, one-page PDF report in English by email.</p>
+      <p>If more information is needed, we will send specific follow-up questions to your email address.</p>
+      <div class="notice">If the request is outside the defined service scope and cannot be fulfilled, we will contact you about narrowing the request or a refund, as applicable.</div>
+    </aside>
+  </div>
+  <section style="margin-top:34px">
+    <h2>What you receive</h2>
+    <ul>
+      <li>The exact claim and evidence examined</li>
+      <li>Up to three material findings</li>
+      <li>A bounded determination: Established, Not Established, or Not Assessable on Available Evidence</li>
+      <li>Assessment limits and one next evidence step, where appropriate</li>
+    </ul>
+    <div class="note">Documentary review only. No certification, legal advice, security audit, official ANDEKS assessment or guarantee of a favorable outcome. Review of a specific live implementation is not included.</div>
+  </section>
+</main>
+<footer>
+  <p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p>
+  <p><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p>
+</footer>
+<script>
+  const toggle=document.querySelector('.menu-toggle');
+  const nav=document.getElementById('primary-nav');
+  toggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'✕':'☰';});
+  if (['localhost','127.0.0.1'].includes(location.hostname)) { document.getElementById('local-note').hidden=false; document.getElementById('claim-form').addEventListener('submit', e=>{e.preventDefault();alert('Local preview only. Form submissions require an active Netlify deployment and a verified Netlify Forms setup.');}); }
+</script>
+</body>
+</html>

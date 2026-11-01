@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Complete Payment | BoxVia</title>
+<meta name="description" content="Independent evidence check of one precise claim against publicly available primary evidence. $20 USD.">
+<link rel="stylesheet" href="/assets/styles.css">
+<link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
+<style>
+  .brand{display:inline-flex;align-items:center;gap:12px}
+  .boxvia-brand-mark{width:36px;height:36px;object-fit:cover;border-radius:6px}
+  .menu-toggle{display:none;background:transparent;border:1px solid #7eb6d0;border-radius:9px;color:#e9edf4;font-size:26px;line-height:1;padding:9px 13px;cursor:pointer}
+  .eyebrow{color:#8ee6df;font-size:.82rem;letter-spacing:.09em;text-transform:uppercase}
+  .check-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:26px;align-items:start;margin-top:32px}
+  .check-layout .card{margin:0;min-width:0}
+  .check-layout h2{margin-top:0}
+  .price{font-size:1.65rem;font-weight:800;color:#f2f7ff}
+  .order-form{display:grid;gap:17px;margin-top:22px}
+  .field{display:grid;gap:7px}
+  .field label{font-weight:650;color:#f2f7ff}
+  .field input,.field textarea{width:100%;box-sizing:border-box;border:1px solid #7894a9;border-radius:8px;background:#f7fbff;color:#112036;font:inherit;padding:13px;min-height:48px}
+  .field textarea{min-height:120px;resize:vertical}
+  .field small{color:#b9cadb}
+  .consent{display:flex;align-items:flex-start;gap:12px;line-height:1.5}
+  .consent input{margin-top:5px;width:18px;height:18px;flex-shrink:0}
+  .submit-btn{border:0;border-radius:9px;background:#b4e5fa;color:#071a29;padding:14px 20px;font:inherit;font-weight:750;cursor:pointer;max-width:280px}
+  .submit-btn:hover{background:#d1f0ff}
+  .status-note{font-size:.91rem;color:#b9cadb}
+  .secondary-text{font-size:.93rem;color:#b9cadb}
+  .notice{border-left:3px solid #7db3d2;padding:12px 18px;background:#152235;margin:20px 0}
+  @media(max-width:760px){
+    header{align-items:center;flex-wrap:wrap}
+    .menu-toggle{display:block;margin-left:auto}
+    header nav{display:none;width:100%;flex-direction:column;gap:0;padding:8px 0}
+    header nav.open{display:flex}
+    header nav a{display:block;padding:12px 5px;border-top:1px solid #26384b}
+    main{padding-top:44px}
+    .check-layout{grid-template-columns:minmax(0,1fr)}
+    .boxvia-brand-mark{width:30px;height:30px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><img class="boxvia-brand-mark" src="/assets/boxvia-logo.png" alt="" aria-hidden="true"><span>BoxVia <span style="color:#83d4ee">/ Portal</span></span></a>
+  <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-controls="primary-nav" aria-expanded="false">☰</button>
+  <nav id="primary-nav" aria-label="Main navigation">
+    <a href="/">Home</a><a href="/services/">Services</a><a href="/technology/">Technology</a><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/evidence-check/" aria-current="page">Check a Claim</a>
+  </nav>
+</header>
+<main>
+  <p class="eyebrow">REQUEST SUBMITTED</p>
+  <h1>Complete your $20 payment</h1>
+  <p class="lead">Thank you for submitting your claim. Your request is not yet paid. Use the secure PayPal checkout below to complete your order.</p>
+  <section class="card" style="max-width:680px">
+    <h2>Pay $20 USD</h2>
+    <p>Where possible, use the same email address as in your submitted form and retain the PayPal transaction receipt so we can match your payment.</p>
+    <p><a class="button" href="https://www.paypal.com/ncp/payment/WCVD62RFAV7KY" target="_blank" rel="noopener noreferrer">Pay $20 with PayPal</a></p>
+    <p class="secondary-text">Your review starts after we verify the payment. If we need clarification, we will contact you by email. If the request is outside the defined scope and cannot be fulfilled, we will discuss narrowing it or a refund as applicable.</p>
+    <p class="secondary-text">Submitting the form does not automatically verify a PayPal payment. No payment is processed on the BoxVia website.</p>
+  </section>
+</main>
+<footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p></footer>
+<script>const toggle=document.querySelector('.menu-toggle'),nav=document.getElementById('primary-nav');toggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'✕':'☰';});</script>
+</body></html>
