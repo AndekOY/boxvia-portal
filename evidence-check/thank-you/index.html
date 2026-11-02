@@ -10,7 +10,6 @@
 <style>
   .brand{display:inline-flex;align-items:center;gap:12px}
   .boxvia-brand-mark{width:36px;height:36px;object-fit:cover;border-radius:6px}
-  .menu-toggle{display:none;background:transparent;border:1px solid #7eb6d0;border-radius:9px;color:#e9edf4;font-size:26px;line-height:1;padding:9px 13px;cursor:pointer}
   .eyebrow{color:#8ee6df;font-size:.82rem;letter-spacing:.09em;text-transform:uppercase}
   .check-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:26px;align-items:start;margin-top:32px}
   .check-layout .card{margin:0;min-width:0}
@@ -31,10 +30,6 @@
   .notice{border-left:3px solid #7db3d2;padding:12px 18px;background:#152235;margin:20px 0}
   @media(max-width:760px){
     header{align-items:center;flex-wrap:wrap}
-    .menu-toggle{display:block;margin-left:auto}
-    header nav{display:none;width:100%;flex-direction:column;gap:0;padding:8px 0}
-    header nav.open{display:flex}
-    header nav a{display:block;padding:12px 5px;border-top:1px solid #26384b}
     main{padding-top:44px}
     .check-layout{grid-template-columns:minmax(0,1fr)}
     .boxvia-brand-mark{width:30px;height:30px}
@@ -44,9 +39,9 @@
 <body>
 <header>
   <a class="brand" href="/"><img class="boxvia-brand-mark" src="/assets/boxvia-logo.png" alt="" aria-hidden="true"><span>BoxVia <span style="color:#83d4ee">/ Portal</span></span></a>
-  <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-controls="primary-nav" aria-expanded="false">☰</button>
-  <nav id="primary-nav" aria-label="Main navigation">
-    <a href="/">Home</a><a href="/services/">Services</a><a href="/technology/">Technology</a><a href="/about/">About</a><a href="/contact/">Contact</a><a href="/evidence-check/" aria-current="page">Check a Claim</a>
+  <button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button>
+  <nav id="boxvia-main-navigation" aria-label="Main navigation">
+    <a href="/">Home</a><a href="/services/">Services</a><a href="/technology/">Technology</a><a href="/about/">About</a><a href="/contact/">Contact</a><a class="nav-cta" href="/evidence-check/" aria-current="page">Check a Claim</a>
   </nav>
 </header>
 <main>
@@ -62,5 +57,5 @@
   </section>
 </main>
 <footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p></footer>
-<script>const toggle=document.querySelector('.menu-toggle'),nav=document.getElementById('primary-nav');toggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'✕':'☰';});</script>
+<script src="/assets/mobile-menu.js" defer></script>
 </body></html>
