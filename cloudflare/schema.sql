@@ -1,10 +1,16 @@
+-- Reference schema matching the EXISTING production D1 claims table.
+-- Do not execute CREATE TABLE against production to replace or migrate it.
+-- Existing production fields verified by Worker and D1 console:
 CREATE TABLE IF NOT EXISTS claims (
- id TEXT PRIMARY KEY,
- created_at TEXT NOT NULL DEFAULT (datetime('now')),
- email TEXT NOT NULL,
- exact_claim TEXT NOT NULL,
- primary_source_url TEXT NOT NULL,
- source_version_or_date TEXT NOT NULL DEFAULT '',
- status TEXT NOT NULL DEFAULT 'submitted',
- notification_sent INTEGER NOT NULL DEFAULT 0
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  customer_email TEXT NOT NULL,
+  claim_text TEXT NOT NULL,
+  source_url TEXT,
+  status TEXT NOT NULL DEFAULT 'new',
+  payment_status TEXT NOT NULL DEFAULT 'pending',
+  report_url TEXT,
+  notes TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_claims_status ON claims(status);
+-- Payment integration must use additive migrations, never recreate claims.
