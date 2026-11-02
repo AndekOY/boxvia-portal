@@ -1,4 +1,4 @@
-# BoxVia Portal — live static website
+# BoxVia Portal - live static website
 
 Production site: https://boxvia-portal.netlify.app/
 Repository: https://github.com/AndekOY/boxvia-portal
@@ -7,14 +7,14 @@ Repository: https://github.com/AndekOY/boxvia-portal
 Static HTML/CSS/JavaScript. No build step is required. The default branch is `main`; production deployment is managed by Netlify.
 
 ## Pages
-- `/` — Home
-- `/services/` — Professional services
-- `/technology/` — Technology and research
-- `/about/` — About
-- `/contact/` — Contact
-- `/legal/` — Service boundaries and data-handling information
-- `/evidence-check/` — Check a Claim ($20 USD)
-- `/evidence-check/thank-you/` — Submission acknowledgement and external PayPal payment link
+- `/` - Home
+- `/services/` - Professional services
+- `/technology/` - Technology and research
+- `/about/` - About
+- `/contact/` - Contact
+- `/legal/` - Service boundaries and data-handling information
+- `/evidence-check/` - Check a Claim ($20 USD)
+- `/evidence-check/thank-you/` - Submission acknowledgement and external PayPal payment link
 
 ## Check a Claim
 Netlify Forms collects the customer's email, precise claim and public source URL. The confirmation page links to a fixed-price PayPal checkout. Payment is verified manually; a form submission does not prove payment. Delivery is a bounded English PDF report, normally around two pages. The three illustrative reports are linked from the product page. The product is **not** a formal ANDEKS™ normative assessment or certification.
