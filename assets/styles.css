@@ -58,3 +58,29 @@ html {
     text-align: center; margin-top: 5px;
   }
 }
+
+/* Mobile navigation v2: explicit closed/open states, independent of other nav rules. */
+@media (max-width: 760px) {
+  header nav[aria-label="Main navigation"],
+  header nav#boxvia-main-navigation {
+    display: none !important;
+    visibility: hidden;
+    width: 100%;
+    flex-basis: 100%;
+  }
+  header.boxvia-menu-open nav[aria-label="Main navigation"],
+  header.boxvia-menu-open nav#boxvia-main-navigation {
+    display: flex !important;
+    visibility: visible;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 4px;
+  }
+  header.boxvia-menu-open nav[aria-label="Main navigation"] a {
+    display: block;
+    width: 100%;
+  }
+  header .brand { flex: 1 1 auto; }
+  header .mobile-menu-toggle { flex: 0 0 auto; }
+}
