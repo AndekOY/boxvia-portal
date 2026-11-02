@@ -45,6 +45,11 @@
   </nav>
 </header>
 <main>
+  <section id="payment-unavailable" class="card" style="max-width:680px">
+    <h1>Payment link unavailable</h1>
+    <p>Submit your claim through the <a href="/evidence-check/">Check a Claim form</a> first. Payment is not available without a confirmed request.</p>
+  </section>
+  <div id="payment-confirmed" hidden>
   <p class="eyebrow">REQUEST SUBMITTED</p>
   <h1>Complete your $20 payment</h1>
   <p class="lead">Thank you for submitting your claim. Your request is not yet paid. Use the secure PayPal checkout below to complete your order.</p>
@@ -55,7 +60,13 @@
     <p class="secondary-text">Your review starts after we verify the payment. If we need clarification, we will contact you by email. If the request is outside the defined scope and cannot be fulfilled, we will discuss narrowing it or a refund as applicable.</p>
     <p class="secondary-text">Submitting the form does not automatically verify a PayPal payment. No payment is processed on the BoxVia website.</p>
   </section>
+  </div>
 </main>
 <footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p></footer>
 <script src="/assets/mobile-menu.js?v=20261102-menu2" defer></script>
+<script>
+  // A numeric request ID is a navigation hint, not proof of server-side payment eligibility.
+  // Payment remains unavailable until a server-verified request lookup is implemented.
+  document.getElementById("payment-confirmed").hidden = true;
+</script>
 </body></html>
