@@ -1,20 +1,34 @@
-# BoxVia Portal — draft MVP v0.1
+# BoxVia Portal — live static website
 
-Static, English-language preview of the new commercial portal.
+Production site: https://boxvia-portal.netlify.app/
+Repository: https://github.com/AndekOY/boxvia-portal
 
 ## Deployment
-Upload the **contents** of this directory to the root of the `main` branch, or deploy this directory as the static publish directory. No build step required.
-
-## Migration
-Original BoxFinTech website preserved in branch `archive/boxfintech-before-portal-2026-10-31` (confirm before deleting old files). Remove old files from `main` before uploading new ones. Do not delete the archive branch.
-
-## Status / blockers
-- Draft content only; not approved for public publication.
-- Upwork tier deliverables and public card terms need verification.
-- PayPal and Payoneer direct URLs are not provided or validated.
-- Legal terms, privacy, operator disclosures and contact route need approval.
-- No checkout, forms or tracking installed.
-- Technology copy must pass disclosure and evidence review.
+Static HTML/CSS/JavaScript. No build step is required. The default branch is `main`; production deployment is managed by Netlify.
 
 ## Pages
-Home, Services, Technology, About, Contact, Service boundaries.
+- `/` — Home
+- `/services/` — Professional services
+- `/technology/` — Technology and research
+- `/about/` — About
+- `/contact/` — Contact
+- `/legal/` — Service boundaries and data-handling information
+- `/evidence-check/` — Check a Claim ($20 USD)
+- `/evidence-check/thank-you/` — Submission acknowledgement and external PayPal payment link
+
+## Check a Claim
+Netlify Forms collects the customer's email, precise claim and public source URL. The confirmation page links to a fixed-price PayPal checkout. Payment is verified manually; a form submission does not prove payment. Delivery is a bounded English PDF report, normally around two pages. The three illustrative reports are linked from the product page. The product is **not** a formal ANDEKS™ normative assessment or certification.
+
+## Operational checks
+- Verify Netlify Forms submissions and email notifications.
+- Verify PayPal payment and manually match it to the submitted request before starting work.
+- Confirm external sample-PDF sharing permissions.
+- Keep website, PayPal product description and report template consistent.
+- Review the legal/privacy disclosures and applicable requirements before scaling customer acquisition.
+- `robots.txt` intentionally blocks all crawling pending an explicit indexing decision; change only with approval.
+
+## Boundaries
+ANDEKS™, ARE and ERA have distinct scopes and evidence statuses. No ARE/ERA execution is implied by a BoxVia report unless independently documented.
+
+## Historical archive
+Original BoxFinTech website was preserved in `archive/boxfintech-before-portal-2026-10-31`; do not delete the archive without verification.
