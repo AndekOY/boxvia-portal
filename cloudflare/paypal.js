@@ -92,9 +92,21 @@ export async function handlePayment(request, env, url) {
       const previous = await env.DB.prepare(
         "SELECT paypal_order_id, status FROM paypal_orders WHERE claim_id = ? AND status IN ('CREATED','APPROVED') ORDER BY id DESC LIMIT 1"
       ).bind(claimId).first();
-      if (previous) return reply({ order_id: previous.paypal_order_id });
+      if (previous) {
+        const existing = await paypal(env, "/v2/checkout/orders/" + previous.paypal_order_id, "GET");
+        const approval = existing.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href;
+        if (approval && /^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(approval)) {
+          return reply({ order_id: previous.paypal_order_id, approval_url: approval });
+        }
+        return reply({ error: "Existing order requires reconciliation" }, 409);
+      }
       const order = await paypal(env, "/v2/checkout/orders", "POST", {
         intent: "CAPTURE",
+        payment_source: { paypal: { experience_context: {
+          return_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_return=1",
+          cancel_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_cancel=1",
+          user_action: "PAY_NOW"
+        } } },
         purchase_units: [{ custom_id: String(claimId), description: "BoxVia Check a Claim",
           amount: { currency_code: "USD", value: "20.00" } }]
       }, "boxvia-create-" + claimId);
@@ -104,7 +116,11 @@ export async function handlePayment(request, env, url) {
       await env.DB.prepare(
         "INSERT INTO paypal_orders (claim_id, paypal_order_id, amount, currency, status) VALUES (?, ?, '20.00', 'USD', 'CREATED')"
       ).bind(claimId, order.id).run();
-      return reply({ order_id: order.id }, 201);
+      const approval = order.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href;
+      if (!approval || !/^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(approval)) {
+        throw new Error("Missing trusted PayPal approval URL");
+      }
+      return reply({ order_id: order.id, approval_url: approval }, 201);
     }
     if (url.pathname === "/api/paypal/capture-order") {
       const orderId = body.order_id;
