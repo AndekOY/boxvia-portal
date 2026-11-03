@@ -110,7 +110,7 @@ export async function handlePayment(request, env, url) {
         purchase_units: [{ custom_id: String(claimId), description: "BoxVia Check a Claim",
           amount: { currency_code: "USD", value: "20.00" } }]
       }, "boxvia-create-" + claimId);
-      if (!idPattern.test(order.id || "") || order.status !== "CREATED") {
+      if (!idPattern.test(order.id || "") || !["CREATED", "PAYER_ACTION_REQUIRED"].includes(order.status)) {
         throw new Error("Unexpected PayPal order");
       }
       await env.DB.prepare(
