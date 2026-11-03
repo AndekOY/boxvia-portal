@@ -1,3 +1,5 @@
+import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
+
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
 // Claim intake stays disabled until notification, privacy and abuse controls are verified.
 export default {
@@ -21,6 +23,9 @@ export default {
           status: 503, headers: { "Cache-Control": "no-store" }
         });
       }
+    }
+    if (["/api/paypal/create-order", "/api/paypal/capture-order", "/api/claim-status"].includes(url.pathname) && request.method === "POST") {
+      return handlePayment(request, env, url);
     }
     if (url.pathname === "/api/claim" && request.method === "POST") {
       const json = (data, status = 200) => Response.json(data, {
@@ -79,7 +84,9 @@ export default {
           "INSERT INTO claims (customer_email, claim_text, source_url, status, payment_status, notes) VALUES (?, ?, ?, 'new', 'pending', ?)"
         ).bind(email, claim, source, version ? "Source version/date: " + version : null).run();
         if (!result.success || !result.meta?.last_row_id) throw new Error("D1 insert not confirmed");
-        return json({ ok: true, id: result.meta.last_row_id }, 201);
+        const accessToken = generateAccessToken();
+        await saveClaimAccess(env, result.meta.last_row_id, accessToken);
+        return json({ ok: true, id: result.meta.last_row_id, access_token: accessToken }, 201);
       } catch (error) {
         console.error("Claim storage failure", error);
         return json({ error: "Could not store request" }, 503);
