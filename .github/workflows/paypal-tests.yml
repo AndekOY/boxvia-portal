@@ -1,4 +1,5 @@
 name: PayPal offline tests
+# Offline regression verification for payment idempotency.
 
 on:
   push:
