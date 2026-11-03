@@ -49,24 +49,91 @@
     <h1>Payment link unavailable</h1>
     <p>Submit your claim through the <a href="/evidence-check/">Check a Claim form</a> first. Payment is not available without a confirmed request.</p>
   </section>
-  <div id="payment-confirmed" hidden>
-  <p class="eyebrow">REQUEST SUBMITTED</p>
-  <h1>Complete your $20 payment</h1>
-  <p class="lead">Thank you for submitting your claim. Your request is not yet paid. Use the secure PayPal checkout below to complete your order.</p>
-  <section class="card" style="max-width:680px">
-    <h2>Pay $20 USD</h2>
-    <p>Where possible, use the same email address as in your submitted form and retain the PayPal transaction receipt so we can match your payment.</p>
-    <p><a class="button" href="https://www.paypal.com/ncp/payment/WCVD62RFAV7KY" target="_blank" rel="noopener noreferrer">Pay $20 with PayPal</a></p>
-    <p class="secondary-text">Your review starts after we verify the payment. If we need clarification, we will contact you by email. If the request is outside the defined scope and cannot be fulfilled, we will discuss narrowing it or a refund as applicable.</p>
-    <p class="secondary-text">Submitting the form does not automatically verify a PayPal payment. No payment is processed on the BoxVia website.</p>
+  <section id="payment-confirmed" class="card" style="max-width:680px" hidden>
+    <p class="eyebrow">REQUEST RECEIVED</p>
+    <h1>Complete your $20 payment</h1>
+    <p id="claim-payment-status" role="status" aria-live="polite">Checking your request...</p>
+    <p id="claim-payment-help" class="secondary-text">Payment is available only for a request verified by this browser and the BoxVia server. Keep this tab open when returning from PayPal.</p>
+    <button id="claim-pay-button" class="submit-btn" type="button" hidden>Continue to PayPal</button>
+    <p id="claim-payment-retry" hidden><button id="claim-recheck-button" class="submit-btn" type="button">Recheck payment</button></p>
+    <p class="secondary-text">A completed PayPal payment is confirmed by the server. Do not pay twice if the checkout result is unclear.</p>
   </section>
-  </div>
 </main>
 <footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p></footer>
 <script src="/assets/mobile-menu.js?v=20261102-menu2" defer></script>
 <script>
-  // A numeric request ID is a navigation hint, not proof of server-side payment eligibility.
-  // Payment remains unavailable until a server-verified request lookup is implemented.
-  document.getElementById("payment-confirmed").hidden = true;
+(() => {
+  const unavailable = document.getElementById("payment-unavailable");
+  const panel = document.getElementById("payment-confirmed");
+  const status = document.getElementById("claim-payment-status");
+  const payButton = document.getElementById("claim-pay-button");
+  const retry = document.getElementById("claim-payment-retry");
+  const recheck = document.getElementById("claim-recheck-button");
+  const params = new URLSearchParams(location.search);
+  const id = Number(params.get("request"));
+  const token = Number.isSafeInteger(id) && id > 0 ? sessionStorage.getItem("boxvia-claim-" + id) : null;
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) return;
+  unavailable.hidden = true;
+  panel.hidden = false;
+  const endpoint = async (path, fields = {}) => {
+    const response = await fetch(path, {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ claim_id: id, access_token: token, ...fields })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Service unavailable");
+    return data;
+  };
+  const showError = message => {
+    status.textContent = message + " Please retry later or contact support. Do not submit a second payment.";
+    retry.hidden = false;
+    payButton.hidden = true;
+  };
+  const refresh = async () => {
+    payButton.hidden = true;
+    retry.hidden = true;
+    status.textContent = "Checking payment status...";
+    try {
+      const data = await endpoint("/api/claim-status");
+      if (data.payment_status === "paid") {
+        status.textContent = "Payment confirmed. We will contact you by email about your evidence check.";
+        return;
+      }
+      if (params.has("paypal_cancel")) {
+        status.textContent = "PayPal checkout was cancelled. No payment has been confirmed.";
+      } else {
+        status.textContent = "Request verified. Payment is not yet confirmed.";
+      }
+      payButton.hidden = false;
+    } catch (error) { showError("Unable to verify the request."); }
+  };
+  payButton.addEventListener("click", async () => {
+    payButton.disabled = true;
+    status.textContent = "Preparing secure PayPal checkout...";
+    try {
+      const data = await endpoint("/api/paypal/create-order");
+      if (!data.approval_url || !/^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(data.approval_url)) {
+        throw new Error("Untrusted checkout URL");
+      }
+      sessionStorage.setItem("boxvia-order-" + id, data.order_id);
+      location.assign(data.approval_url);
+    } catch (error) {
+      showError("Could not start PayPal checkout.");
+      payButton.disabled = false;
+    }
+  });
+  recheck.addEventListener("click", refresh);
+  const returnedOrder = params.get("token");
+  if (params.has("paypal_return") && returnedOrder) {
+    payButton.hidden = true;
+    status.textContent = "Verifying your PayPal payment...";
+    endpoint("/api/paypal/capture-order", { order_id: returnedOrder })
+      .then(() => { history.replaceState(null, "", "/evidence-check/thank-you/?request=" + id); return refresh(); })
+      .catch(() => showError("Payment confirmation is pending."));
+  } else {
+    refresh();
+  }
+})();
 </script>
 </body></html>
