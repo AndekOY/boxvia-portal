@@ -13,3 +13,12 @@ CREATE TABLE IF NOT EXISTS paypal_orders (
   FOREIGN KEY (claim_id) REFERENCES claims(id)
 );
 CREATE INDEX IF NOT EXISTS idx_paypal_orders_claim ON paypal_orders(claim_id);
+
+-- Bearer capability issued only after a successful, verified claim submission.
+-- Never expose token_hash in public API responses.
+CREATE TABLE IF NOT EXISTS claim_access (
+  claim_id INTEGER PRIMARY KEY,
+  token_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (claim_id) REFERENCES claims(id)
+);
