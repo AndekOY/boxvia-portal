@@ -1,2 +1,6 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
+Disallow: /evidence-check/thank-you/
+
+Sitemap: https://boxvia.andeks.workers.dev/sitemap.xml
