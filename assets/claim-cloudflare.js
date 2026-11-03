@@ -41,6 +41,10 @@
       if (!response.ok || result.ok !== true || !Number.isSafeInteger(result.id) || result.id < 1) {
         throw new Error("Submission not confirmed");
       }
+      if (typeof result.access_token !== "string" || !/^[a-f0-9]{64}$/.test(result.access_token)) {
+        throw new Error("Missing request access capability");
+      }
+      sessionStorage.setItem("boxvia-claim-" + result.id, result.access_token);
       location.assign("/evidence-check/thank-you/?request=" + encodeURIComponent(result.id));
     } catch {
       status.textContent = "Your request could not be confirmed. Please try again later. Do not pay until your request is submitted.";
