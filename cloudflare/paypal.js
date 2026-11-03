@@ -87,7 +87,7 @@ export async function handlePayment(request, env, url) {
       return reply({ claim_id: claimId, payment_status: claim.payment_status,
         order_status: latest?.status || null });
     }
-    if (claim.payment_status === "paid") return reply({ error: "Already paid" }, 409);
+    if (claim.payment_status === "paid" && url.pathname === "/api/paypal/create-order") return reply({ error: "Already paid" }, 409);
     if (url.pathname === "/api/paypal/create-order") {
       const previous = await env.DB.prepare(
         "SELECT paypal_order_id, status FROM paypal_orders WHERE claim_id = ? AND status IN ('CREATED','APPROVED') ORDER BY id DESC LIMIT 1"
@@ -130,7 +130,7 @@ export async function handlePayment(request, env, url) {
       ).bind(claimId, orderId).first();
       if (!record) return reply({ error: "Order not found" }, 404);
       // Idempotent capture request. Re-read the authoritative order from PayPal afterward.
-      if (record.status !== "COMPLETED") {
+      if (record.status !== "COMPLETED" && claim.payment_status !== "paid") {
         try {
           await paypal(env, "/v2/checkout/orders/" + orderId + "/capture",
             "POST", {}, "boxvia-capture-" + orderId);
@@ -152,7 +152,7 @@ export async function handlePayment(request, env, url) {
           "UPDATE claims SET payment_status = 'paid' WHERE id = ? AND payment_status IN ('pending', 'paid')"
         ).bind(claimId)
       ]);
-      if (!batch.every(x => x.success) || batch.some(x => x.meta?.changes === 0)) {
+      if (!batch.every(x => x.success)) {
         throw new Error("Payment reconciliation requires review");
       }
       return reply({ ok: true, claim_id: claimId, payment_status: "paid" });
