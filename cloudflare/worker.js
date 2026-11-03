@@ -1,8 +1,12 @@
 import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
+import { deliverNotifications } from "./notifications.js";
 
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
 // Claim intake stays disabled until notification, privacy and abuse controls are verified.
 export default {
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(deliverNotifications(env));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/api/health" && request.method === "GET") {
