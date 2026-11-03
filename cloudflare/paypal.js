@@ -163,6 +163,15 @@ export async function handlePayment(request, env, url) {
       if (confirmed?.payment_status !== "paid") {
         throw new Error("Payment reconciliation not confirmed");
       }
+      // Queue the notification only after the verified payment is committed.
+      // A missing outbox must not undo a captured payment.
+      try {
+        await env.DB.prepare(
+          "INSERT OR IGNORE INTO notification_outbox (claim_id, event_type, status) VALUES (?, 'claim_paid', 'pending')"
+        ).bind(claimId).run();
+      } catch (error) {
+        console.error("Paid claim notification enqueue failed", error);
+      }
       return reply({ ok: true, claim_id: claimId, payment_status: "paid" });
     }
     return reply({ error: "Unknown endpoint" }, 404);
