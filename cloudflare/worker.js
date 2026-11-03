@@ -80,12 +80,19 @@ export default {
       if (!verified) return json({ error: "Verification failed" }, 403);
       try {
         // Match the existing D1 schema created in the Cloudflare console.
+        const accessToken = generateAccessToken();
         const result = await env.DB.prepare(
           "INSERT INTO claims (customer_email, claim_text, source_url, status, payment_status, notes) VALUES (?, ?, ?, 'new', 'pending', ?)"
         ).bind(email, claim, source, version ? "Source version/date: " + version : null).run();
         if (!result.success || !result.meta?.last_row_id) throw new Error("D1 insert not confirmed");
-        const accessToken = generateAccessToken();
-        await saveClaimAccess(env, result.meta.last_row_id, accessToken);
+        try {
+          await saveClaimAccess(env, result.meta.last_row_id, accessToken);
+        } catch (error) {
+          // Do not leave an inaccessible unpaid request in the intake queue.
+          await env.DB.prepare("DELETE FROM claims WHERE id = ? AND payment_status = 'pending'")
+            .bind(result.meta.last_row_id).run();
+          throw error;
+        }
         return json({ ok: true, id: result.meta.last_row_id, access_token: accessToken }, 201);
       } catch (error) {
         console.error("Claim storage failure", error);
