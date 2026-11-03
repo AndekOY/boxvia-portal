@@ -149,11 +149,17 @@ export async function handlePayment(request, env, url) {
           "UPDATE paypal_orders SET status = 'COMPLETED', capture_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (capture_id IS NULL OR capture_id = ?)"
         ).bind(captureId, record.id, captureId),
         env.DB.prepare(
-          "UPDATE claims SET payment_status = 'paid' WHERE id = ? AND payment_status IN ('pending', 'paid')"
-        ).bind(claimId)
+          "UPDATE claims SET payment_status = 'paid' WHERE id = ? AND payment_status IN ('pending', 'paid') AND EXISTS (SELECT 1 FROM paypal_orders WHERE id = ? AND claim_id = ? AND paypal_order_id = ? AND status = 'COMPLETED' AND capture_id = ?)"
+        ).bind(claimId, record.id, claimId, orderId, captureId)
       ]);
       if (!batch.every(x => x.success)) {
         throw new Error("Payment reconciliation requires review");
+      }
+      const confirmed = await env.DB.prepare(
+        "SELECT payment_status FROM claims WHERE id = ?"
+      ).bind(claimId).first();
+      if (confirmed?.payment_status !== "paid") {
+        throw new Error("Payment reconciliation not confirmed");
       }
       return reply({ ok: true, claim_id: claimId, payment_status: "paid" });
     }
