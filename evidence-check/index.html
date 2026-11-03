@@ -72,14 +72,14 @@
         <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxAl6u_VFfcPFsd" data-theme="dark"></div>
         <p class="status-note" id="claim-submission-status" role="status" aria-live="polite" hidden></p>
         <button class="submit-btn" type="submit">Submit claim and continue to payment</button>
-        <p class="status-note">After successful submission, you will see the PayPal $20 payment link. We start the review only after verifying payment. If clarification is needed, we will email you.</p>
-        <p class="status-note" id="local-note" hidden>Local preview: form submission is disabled on localhost to prevent loss of orders. Netlify Forms must be enabled and tested on the deployed site before accepting customers.</p>
+        <p class="status-note">After successful submission, you can continue to secure PayPal checkout for $20 USD. We start the review only after confirming payment on our server. If clarification is needed, we will email you.</p>
+        <p class="status-note" id="local-note" hidden>Local preview: form submission is disabled. Submit requests only through the configured Cloudflare Worker deployment.</p>
       </form>
     </section>
     <aside class="card" id="payment">
       <h2>2. Complete payment</h2>
-      <p>Once your claim is submitted successfully, the confirmation page provides the secure PayPal link for <strong>$20 USD</strong>. PayPal or card checkout may be available.</p>
-      <p class="secondary-text">We manually match your submitted request and completed payment. Use the same email where possible and keep the payment receipt. Do not pay before submitting the form.</p>
+      <p>After submitting your claim, continue to PayPal checkout for <strong>$20 USD</strong>. Payment is verified by the BoxVia server before the request is treated as paid.</p>
+      <p class="secondary-text">Your PayPal order is linked to the submitted request. Keep the payment receipt and do not pay again if confirmation is delayed. Contact us for help.</p>
       <h2 style="margin-top:30px">3. Receive your result</h2>
       <p>We review one defined claim against publicly available evidence and deliver a structured PDF report in English, normally around two pages, by email.</p>
       <p>If more information is needed, we will send specific follow-up questions to your email address.</p>
@@ -137,7 +137,7 @@
       note.hidden=false;
       form.addEventListener('submit', e=>{
         e.preventDefault();
-        alert('Local preview only. Form submissions require an active Netlify deployment and a verified Netlify Forms setup.');
+        alert('Local preview only. Submit requests through the configured Cloudflare Worker deployment.');
       });
     }
   }
