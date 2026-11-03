@@ -1,0 +1,26 @@
+# Internal repository and deployment metadata
+.git/
+.github/
+.wrangler/
+.gitignore
+.assetsignore
+
+# Backend, tests, tooling and deployment configuration
+cloudflare/
+tests/
+node_modules/
+wrangler.jsonc
+wrangler.toml
+package.json
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+README.md
+
+# Local environment files and secrets
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
