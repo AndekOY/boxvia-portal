@@ -124,7 +124,21 @@
       payButton.disabled = false;
     }
   });
-  recheck.addEventListener("click", refresh);
+  recheck.addEventListener("click", async () => {
+    const stored = sessionStorage.getItem("boxvia-order-" + id);
+    if (!stored || !/^[A-Za-z0-9-]{8,64}$/.test(stored)) return refresh();
+    retry.hidden = true;
+    status.textContent = "Rechecking your PayPal order...";
+    try {
+      await endpoint("/api/paypal/capture-order", { order_id: stored });
+      sessionStorage.removeItem("boxvia-order-" + id);
+      await refresh();
+    } catch {
+      status.textContent = "Payment status is uncertain. Do not pay again. Contact support if charged.";
+      retry.hidden = false;
+      payButton.hidden = true;
+    }
+  });
   const returnedOrder = params.get("token");
   if (params.has("paypal_return") && returnedOrder) {
     payButton.hidden = true;
