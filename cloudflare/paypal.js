@@ -69,8 +69,10 @@ const readBody = async request => {
   } catch { return null; }
 };
 export async function handlePayment(request, env, url) {
-  if (!enabled(env)) return reply({ error: "Payment integration not enabled" }, 503);
-  if (env.PAYPAL_ENV !== "sandbox" && env.PAYPAL_ENV !== "live") {
+  const statusOnly = url.pathname === "/api/claim-status";
+  // Reading a claim status requires its capability, but never needs PayPal credentials.
+  if (!env.DB || (!statusOnly && !enabled(env))) return reply({ error: "Payment integration not enabled" }, 503);
+  if (!statusOnly && env.PAYPAL_ENV !== "sandbox" && env.PAYPAL_ENV !== "live") {
     return reply({ error: "PayPal environment not configured" }, 503);
   }
   if (request.headers.get("Origin") !== url.origin) return reply({ error: "Forbidden" }, 403);
