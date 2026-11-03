@@ -130,6 +130,12 @@
     retry.hidden = true;
     status.textContent = "Rechecking your PayPal order...";
     try {
+      const current = await endpoint("/api/claim-status");
+      if (current.payment_status === "paid") {
+        sessionStorage.removeItem("boxvia-order-" + id);
+        await refresh();
+        return;
+      }
       await endpoint("/api/paypal/capture-order", { order_id: stored });
       sessionStorage.removeItem("boxvia-order-" + id);
       await refresh();
@@ -143,7 +149,8 @@
   if (params.has("paypal_return") && returnedOrder) {
     payButton.hidden = true;
     status.textContent = "Verifying your PayPal payment...";
-    endpoint("/api/paypal/capture-order", { order_id: returnedOrder })
+    endpoint("/api/claim-status")
+      .then(current => current.payment_status === "paid" ? current : endpoint("/api/paypal/capture-order", { order_id: returnedOrder }))
       .then(() => { history.replaceState(null, "", "/evidence-check/thank-you/?request=" + id); return refresh(); })
       .catch(() => showError("Payment confirmation is pending."));
   } else {
