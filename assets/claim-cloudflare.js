@@ -7,9 +7,10 @@
   const submit = form.querySelector('button[type="submit"]');
   if (!status || !submit) return;
 
+  let inFlight = false;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!form.reportValidity()) return;
+    if (inFlight || !form.reportValidity()) return;
     const data = new FormData(form);
     const token = String(data.get("cf-turnstile-response") || "");
     if (!token) {
@@ -27,6 +28,7 @@
       terms_acknowledgement: data.has("terms_acknowledgement"),
       turnstile_token: token
     };
+    inFlight = true;
     submit.disabled = true;
     status.hidden = false;
     status.textContent = "Submitting your claim...";
@@ -37,20 +39,29 @@
         credentials: "same-origin",
         body: JSON.stringify(payload)
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (!response.ok || result.ok !== true || !Number.isSafeInteger(result.id) || result.id < 1) {
-        throw new Error("Submission not confirmed");
+        const reason = typeof result.error === "string" ? result.error : "Submission not confirmed";
+        throw new Error(reason);
       }
       if (typeof result.access_token !== "string" || !/^[a-f0-9]{64}$/.test(result.access_token)) {
         throw new Error("Missing request access capability");
       }
       sessionStorage.setItem("boxvia-claim-" + result.id, result.access_token);
       location.assign("/evidence-check/thank-you/?request=" + encodeURIComponent(result.id));
-    } catch {
-      status.textContent = "Your request could not be confirmed. Please try again later. Do not pay until your request is submitted.";
+    } catch (error) {
+      const reason = error.message === "Verification failed"
+        ? "Security verification expired or was rejected. Complete the refreshed check and try again."
+        : error.message === "Invalid submission" || error.message === "Invalid source URL"
+          ? "Please check your claim and public source URL, then try again."
+          : error.message === "Forbidden"
+            ? "Please open the form directly on boxvia.andeks.workers.dev and retry."
+            : "Request could not be confirmed (" + String(error.message || "network error").slice(0, 100) + "). Please try again. Do not pay until the request is confirmed.";
+      status.textContent = reason;
+      inFlight = false;
       submit.disabled = false;
       if (window.turnstile && typeof window.turnstile.reset === "function") {
-        window.turnstile.reset();
+        try { window.turnstile.reset(); } catch { /* keep the error visible */ }
       }
     }
   });
