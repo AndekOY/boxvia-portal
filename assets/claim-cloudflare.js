@@ -8,6 +8,15 @@
   if (!status || !submit) return;
 
   let inFlight = false;
+  let paymentUrl;
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted || !paymentUrl) return;
+
+    const resume = document.createElement("a");
+    resume.href = paymentUrl;
+    resume.textContent = "Continue to payment for your submitted claim";
+    status.replaceChildren(resume);
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (inFlight || !form.reportValidity()) return;
@@ -48,7 +57,8 @@
         throw new Error("Missing request access capability");
       }
       sessionStorage.setItem("boxvia-claim-" + result.id, result.access_token);
-      location.assign("/evidence-check/thank-you/?request=" + encodeURIComponent(result.id));
+      paymentUrl = "/evidence-check/thank-you/?request=" + encodeURIComponent(result.id);
+      location.assign(paymentUrl);
     } catch (error) {
       const reason = error.message === "Verification failed"
         ? "Security verification expired or was rejected. Complete the refreshed check and try again."
