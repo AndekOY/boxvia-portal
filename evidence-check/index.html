@@ -62,7 +62,15 @@
         <input type="hidden" name="form-name" value="boxvia-claim-check">
         <p hidden><label>Leave this empty: <input name="bot-field" autocomplete="off"></label></p>
         <div class="field"><label for="customer-email">Email address *</label><input id="customer-email" name="email" type="email" autocomplete="email" required maxlength="254"></div>
-        <div class="field"><label for="exact-claim">Exact claim to check *</label><textarea id="exact-claim" name="exact_claim" required minlength="15" maxlength="2000" placeholder="Paste one precise, verifiable statement."></textarea><small>One claim only, not a request to assess an entire product or organization.</small></div>
+        <div class="field"><label for="exact-claim">Exact claim to check *</label><textarea id="exact-claim" name="exact_claim" required minlength="15" maxlength="2000" placeholder="Paste one precise, verifiable statement."></textarea><small>Submit one claim and a link to its public primary source.</small>
+<details>
+  <summary>See examples of claims</summary>
+  <ul>
+    <li>&ldquo;The Pro plan includes SSO.&rdquo; - Link to the vendor's official plan page.</li>
+    <li>&ldquo;Version 2.4 adds CSV export.&rdquo; - Link to the official release notes.</li>
+    <li>&ldquo;The company reported EUR 2 million in revenue for 2025.&rdquo; - Link to its annual report.</li>
+  </ul>
+</details></div>
         <div class="field"><label for="source-url">Public primary-source URL *</label><input id="source-url" name="primary_source_url" type="url" inputmode="url" required maxlength="2000" placeholder="https://example.org/source"><small>Publicly accessible official documentation or another primary source.</small></div>
         <div class="field"><label for="source-version">Source version or date (if known)</label><input id="source-version" name="source_version_or_date" type="text" maxlength="160" placeholder="Version, publication date, or snapshot date"></div>
         <label class="consent"><input type="checkbox" name="public_material_confirmation" value="yes" required><span>I confirm that the submitted material is public and that I have not included passwords, confidential records or sensitive personal data. *</span></label>
