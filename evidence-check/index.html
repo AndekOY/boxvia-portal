@@ -40,6 +40,22 @@
     .check-layout{grid-template-columns:minmax(0,1fr)}
     .boxvia-brand-mark{width:30px;height:30px}
   }
+  .claim-examples > summary {
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #75b9db;
+    border-radius: 8px;
+    background: #192f45;
+    color: #b4e5fa;
+    font-weight: 750;
+    cursor: pointer;
+  }
+  .claim-examples > summary:hover { background: #203b54; }
+  .claim-examples > summary:focus-visible {
+    outline: 2px solid #b4e5fa;
+    outline-offset: 3px;
+  }
 </style>
 </head>
 <body>
@@ -63,7 +79,7 @@
         <p hidden><label>Leave this empty: <input name="bot-field" autocomplete="off"></label></p>
         <div class="field"><label for="customer-email">Email address *</label><input id="customer-email" name="email" type="email" autocomplete="email" required maxlength="254"></div>
         <div class="field"><label for="exact-claim">Exact claim to check *</label><textarea id="exact-claim" name="exact_claim" required minlength="15" maxlength="2000" placeholder="Paste one precise, verifiable statement."></textarea><small>Submit one claim and a link to its public primary source.</small>
-<details>
+<details class="claim-examples">
   <summary>See examples of claims</summary>
   <ul>
     <li>&ldquo;The Pro plan includes SSO.&rdquo; - Link to the vendor's official plan page.</li>
