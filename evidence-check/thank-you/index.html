@@ -93,6 +93,7 @@
   };
   const refresh = async () => {
     payButton.hidden = true;
+    payButton.disabled = false;
     retry.hidden = true;
     status.textContent = "Checking payment status...";
     try {
@@ -144,6 +145,9 @@
       retry.hidden = false;
       payButton.hidden = true;
     }
+  });
+  window.addEventListener("pageshow", event => {
+    if (event.persisted && payButton.disabled) refresh();
   });
   const returnedOrder = params.get("token");
   if (params.has("paypal_return") && returnedOrder) {
