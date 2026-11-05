@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARE - ANDEKS Runtime Engine | BoxVia</title>
+<meta name="description" content="Explore ARE, the technical engine behind ERA, through public documentation and a synthetic evidence demonstrator.">
+<link rel="stylesheet" href="/assets/styles.css?v=20261102-menu2">
+<link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
+<style>
+  .andeks-intro {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    align-items: center;
+    gap: 28px;
+  }
+  .andeks-intro-logo { display: block; width: 100%; max-width: 200px; height: auto; }
+  .andeks-intro h1 { margin-top: 0; font-size: clamp(1.7rem, 4vw, 2.5rem); }
+  @media (max-width: 600px) {
+    .andeks-intro { grid-template-columns: 1fr; gap: 16px; }
+    .andeks-intro-logo { max-width: 160px; }
+  }
+</style>
+</head>
+<body>
+<header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header>
+<main>
+<section class="card andeks-intro" aria-labelledby="are-title">
+<img src="/assets/are-logo.webp" alt="ARE canonical logo" width="400" height="400" class="andeks-intro-logo" style="background:#ffffff">
+<div><h1 id="are-title">ARE - ANDEKS Runtime Engine</h1>
+<p class="lead">ARE is the technical engine behind ERA, our system for assessing evidence. Explore the public documentation to see how the projects fit together.</p>
+<p><a class="button" href="https://github.com/AndekOY/ARE-ERA-Public">Open public repository</a></p></div>
+</section>
+<section><h2>How the projects connect</h2>
+<p>ARE provides the underlying engine. ERA - Evidence Readiness Assessment - is built on ARE and examines the evidence available for a specific claim.</p>
+<p><a href="/andeks/">ANDEKS™</a> supplies a separate normative system for independent assessment. Each result has its own scope and conditions.</p></section>
+<section><h2>What you can explore</h2>
+<ul>
+<li><a href="https://github.com/AndekOY/ARE-ERA-Public/blob/main/docs/ARE-overview.md">ARE overview</a> - an introduction to the engine.</li>
+<li><a href="https://github.com/AndekOY/ARE-ERA-Public/blob/main/ARCHITECTURE.md">Architecture</a> - how ARE and ERA relate.</li>
+<li><a href="https://github.com/AndekOY/ARE-ERA-Public/tree/main/demonstrators/public-evidence-01">Evidence demonstrator</a> - a worked example using synthetic material.</li>
+</ul>
+<p>The repository publishes selected documentation and an illustrative example. Engine source code and deployment instructions remain private. The example illustrates the method through documents, with software execution and production readiness outside its scope.</p></section>
+<section><h2>Published version</h2>
+<p><a href="https://github.com/AndekOY/ARE-ERA-Public/releases/tag/v1.0.0">Release v1.0.0</a> is the archived documentation snapshot. See the <a href="https://zenodo.org/records/23535122">Zenodo publication</a> for the associated record and citation details.</p>
+<p>Reuse follows the <a href="https://github.com/AndekOY/ARE-ERA-Public/blob/main/RIGHTS.md">publication's rights notice</a>.</p></section>
+</main>
+<footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/about/">About</a><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p><p>Information only. No certification, legal opinion or guaranteed compliance outcome.</p></footer>
+<script src="/assets/mobile-menu.js?v=20261102-menu2" defer></script>
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"0131e00a46e6417d8462c6bb3e535b5e"}'></script>
+<!-- End Cloudflare Web Analytics -->
+
+</body>
+</html>
