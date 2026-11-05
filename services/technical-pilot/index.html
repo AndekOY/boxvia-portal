@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Technical Pilot | BoxVia</title>
-<meta name="description" content="Paid technical pilot for independent AI builders.">
+<title>Technical Pilot | Independent AI Runtime Behavior Review | BoxVia</title>
+<meta name="description" content="Paid, bounded technical pilots for AI agents and multi-agent systems. Independently examine authority delegation, state changes, tool execution and supporting evidence.">
 <link rel="stylesheet" href="/assets/styles.css?v=20261102-menu2">
 <link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
 </head>
@@ -13,19 +13,52 @@
 <main>
 <section>
 <h1>Technical Pilot</h1>
-<p class="lead">Get one behavior of your AI agent, framework or tool independently tested. One version, one scenario, one written report.</p>
+<p class="lead">Independent examination of one defined behavior in an AI agent, multi-agent workflow, framework or connected tool. One version, one scenario, one written report.</p>
+<p>A technical pilot asks a narrow, testable question: did the system behave within its stated execution and authority boundaries, and is there sufficient evidence to establish that conclusion?</p>
 <p><a class="button" href="mailto:andrzej.ekhmenin@gmail.com?subject=BoxVia%20-%20Technical%20Pilot">Request a paid pilot</a></p>
 </section>
-<section><h2>What can we test?</h2><p>For example: Can your agent send a payment without human approval? We agree on the exact action and expected behavior before testing.</p></section>
-<section><h2>What you receive</h2><p>A short report showing what we tested, what happened, which records support the finding and what remains unverified.</p></section>
-<section><h2>How to start</h2><ol><li>Email your question, system version and a link to available materials. Share public or non-sensitive information at this stage.</li><li>We confirm whether the scenario can be tested and agree on the scope, price and delivery date.</li><li>Testing starts after payment.</li></ol></section>
-<section><h2>Have records but no test setup?</h2><p>Ask about a paid Evidence Review. We check what your existing materials support and identify what would be needed for a stronger conclusion.</p></section>
-<p class="muted">Findings apply to the agreed version and scenario. The pilot provides no certification or audit assurance.</p>
+<section>
+<h2>Example runtime scenarios</h2>
+<div class="grid">
+<article class="card"><h3>Delegation after a state change</h3><p>An agent receives delegated authority. The relevant state or policy changes before execution. Does the execution boundary re-evaluate authority against the current state, or rely on the earlier delegation?</p></article>
+<article class="card"><h3>Multi-agent handoff</h3><p>One agent proposes an action and another executes it. Can the evidence establish who proposed, evaluated, authorized and executed the action, including any scope changes?</p></article>
+<article class="card"><h3>Retries and duplicate actions</h3><p>A timeout or retry triggers a second tool call. Does the system prevent unintended duplicate execution, and can the observed result be independently established?</p></article>
+<article class="card"><h3>Insufficient or conflicting evidence</h3><p>Execution records are missing, inconsistent or incomplete. Can the assessment distinguish an established result from one that must remain UNESTABLISHED?</p></article>
+</div>
+<p>These are illustrative questions, not claims that any particular system has been tested or that BoxVia operates its enforcement mechanism.</p>
+</section>
+<section>
+<h2>How independent verification works</h2>
+<p>The pilot does not simply reproduce the enforcement implementation or assume its output is correct. We distinguish three elements:</p>
+<ol>
+<li><strong>Authorized boundary:</strong> the applicable policy, scope, delegation and state, as documented by the system owner.</li>
+<li><strong>Observed execution:</strong> the proposed action, policy decision, tool invocation, outcome and relevant state transitions.</li>
+<li><strong>Independent evidence review:</strong> whether available records and agreed tests support a bounded finding about the observed behavior.</li>
+</ol>
+<p>The system owner remains responsible for defining policy, granting authority and operating enforcement. BoxVia does not become the enterprise decision authority or an inline execution gate.</p>
+</section>
+<section>
+<h2>What you receive</h2>
+<p>A concise written report identifying the exact system version and scenario, agreed expected behavior, test method or evidence reviewed, observed outcome, evidence references, limitations and any unresolved points.</p>
+<p>Possible findings include an established observation, a demonstrated deviation, or <strong>UNESTABLISHED</strong> when the available evidence is insufficient. A successful tool response alone does not establish valid authority or effective enforcement.</p>
+</section>
+<section>
+<h2>How to start</h2>
+<ol>
+<li>Send one precise technical question, system/version information and links to public or non-sensitive materials.</li>
+<li>We determine whether a bounded test or evidence-only review is feasible, then agree on scope, evidence requirements, price and delivery date.</li>
+<li>Work begins after payment and any required access and permissions are agreed.</li>
+</ol>
+<p><a class="button" href="mailto:andrzej.ekhmenin@gmail.com?subject=BoxVia%20-%20Technical%20Pilot">Discuss a technical pilot</a></p>
+</section>
+<section>
+<h2>Have records but no test environment?</h2>
+<p>Ask about a paid Evidence Review. We examine what existing logs, policies, traces or reports actually support, and identify the evidence gaps. No production-system access is assumed.</p>
+</section>
+<div class="note"><strong>Scope and independence:</strong> A pilot is a paid, scenario-specific technical examination, not a certification, formal audit assurance, legal opinion, guarantee of compliance or production approval. Findings apply only to the agreed version, scenario and evidence. No claim of deployed ARE/ERA enforcement or formal ANDEKS normative assessment is implied.</div>
 </main>
 <footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/about/">About</a><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p><p>Information only. No certification, legal opinion or guaranteed compliance outcome.</p></footer>
 <script src="/assets/mobile-menu.js?v=20261102-menu2" defer></script>
-<!-- Cloudflare Web Analytics -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"0131e00a46e6417d8462c6bb3e535b5e"}'></script>
-<!-- End Cloudflare Web Analytics -->
 </body>
 </html>
