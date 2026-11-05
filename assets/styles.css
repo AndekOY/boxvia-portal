@@ -84,3 +84,14 @@ html {
   header .brand { flex: 1 1 auto; }
   header .mobile-menu-toggle { flex: 0 0 auto; }
 }
+
+/* Compact shared footer */
+footer.site-footer{padding-top:18px;padding-bottom:18px;line-height:1.4}
+footer.site-footer p{margin:0}
+footer.site-footer p+p{margin-top:5px}
+footer.site-footer .footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+footer.site-footer a{margin-right:0}
+footer.site-footer .footer-linkedin{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;border-radius:4px}
+footer.site-footer .footer-linkedin:hover{background:#193b50}
+footer.site-footer .footer-linkedin:focus-visible{outline:2px solid #91d7f7;outline-offset:2px}
+footer.site-footer .footer-copyright{font-size:.85rem}
