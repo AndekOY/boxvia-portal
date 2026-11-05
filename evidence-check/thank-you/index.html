@@ -46,16 +46,19 @@
 <main>
   <section id="payment-unavailable" class="card" style="max-width:680px">
     <h1>Payment link unavailable</h1>
-    <p>Submit your claim through the <a href="/evidence-check/">Check a Claim form</a> first. Payment is not available without a confirmed request.</p>
+    <p>Submit your claim through the <a href="/evidence-check/">Check a Claim form</a> first.</p>
+<p>Payment is not available without a confirmed request.</p>
   </section>
   <section id="payment-confirmed" class="card" style="max-width:680px" hidden>
     <p class="eyebrow">REQUEST RECEIVED</p>
     <h1>Complete your $20 payment</h1>
     <p id="claim-payment-status" role="status" aria-live="polite">Checking your request...</p>
-    <p id="claim-payment-help" class="secondary-text">Payment is available only for a request verified by this browser and the BoxVia server. Keep this tab open when returning from PayPal.</p>
+    <p id="claim-payment-help" class="secondary-text">Payment is available only for a request verified by this browser and the BoxVia server.</p>
+<p class="secondary-text">Keep this tab open when returning from PayPal.</p>
     <button id="claim-pay-button" class="submit-btn" type="button" hidden>Continue to PayPal</button>
     <p id="claim-payment-retry" hidden><button id="claim-recheck-button" class="submit-btn" type="button">Recheck payment</button></p>
-    <p class="secondary-text">A completed PayPal payment is confirmed by the server. Do not pay twice if the checkout result is unclear.</p>
+    <p class="secondary-text">A completed PayPal payment is confirmed by the server.</p>
+<p class="secondary-text">Do not pay twice if the checkout result is unclear.</p>
   </section>
 </main>
 <footer><p>BoxVia · Independent Analysis, Research &amp; Technology · Poland</p><p><a href="/about/">About</a><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a></p></footer>
@@ -65,6 +68,7 @@
   const unavailable = document.getElementById("payment-unavailable");
   const panel = document.getElementById("payment-confirmed");
   const status = document.getElementById("claim-payment-status");
+  status.style.whiteSpace = "pre-line";
   const payButton = document.getElementById("claim-pay-button");
   const retry = document.getElementById("claim-payment-retry");
   const recheck = document.getElementById("claim-recheck-button");
@@ -85,7 +89,7 @@
     return data;
   };
   const showError = message => {
-    status.textContent = message + " Please retry later or contact support. Do not submit a second payment.";
+    status.textContent = message + "\n\nPlease retry later or contact support.\n\nDo not submit a second payment.";
     retry.hidden = false;
     payButton.hidden = true;
   };
@@ -97,13 +101,13 @@
     try {
       const data = await endpoint("/api/claim-status");
       if (data.payment_status === "paid") {
-        status.textContent = "Payment confirmed. We will contact you by email about your evidence check.";
+        status.textContent = "Payment confirmed.\n\nWe will contact you by email about your evidence check.";
         return;
       }
       if (params.has("paypal_cancel")) {
-        status.textContent = "PayPal checkout was cancelled. No payment has been confirmed.";
+        status.textContent = "PayPal checkout was cancelled.\n\nNo payment has been confirmed.";
       } else {
-        status.textContent = "Request verified. Payment is not yet confirmed.";
+        status.textContent = "Request verified.\n\nPayment is not yet confirmed.";
       }
       payButton.hidden = false;
     } catch (error) { showError("Unable to verify the request."); }
@@ -139,7 +143,7 @@
       sessionStorage.removeItem("boxvia-order-" + id);
       await refresh();
     } catch {
-      status.textContent = "Payment status is uncertain. Do not pay again. Contact support if charged.";
+      status.textContent = "Payment status is uncertain.\n\nDo not pay again.\n\nContact support if charged.";
       retry.hidden = false;
       payButton.hidden = true;
     }

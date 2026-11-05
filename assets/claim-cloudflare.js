@@ -7,6 +7,7 @@
   const submit = form.querySelector('button[type="submit"]');
   if (!status || !submit) return;
 
+  status.style.whiteSpace = "pre-line";
   let inFlight = false;
   let paymentUrl;
   window.addEventListener("pageshow", (event) => {
@@ -61,12 +62,12 @@
       location.assign(paymentUrl);
     } catch (error) {
       const reason = error.message === "Verification failed"
-        ? "Security verification expired or was rejected. Complete the refreshed check and try again."
+        ? "Security verification expired or was rejected.\n\nComplete the refreshed check and try again."
         : error.message === "Invalid submission" || error.message === "Invalid source URL"
           ? "Please check your claim and public source URL, then try again."
           : error.message === "Forbidden"
             ? "Please open the form directly on boxvia.andeks.workers.dev and retry."
-            : "Request could not be confirmed (" + String(error.message || "network error").slice(0, 100) + "). Please try again. Do not pay until the request is confirmed.";
+            : "Request could not be confirmed (" + String(error.message || "network error").slice(0, 100) + ").\n\nPlease try again.\n\nDo not pay until the request is confirmed.";
       status.textContent = reason;
       inFlight = false;
       submit.disabled = false;
