@@ -18,3 +18,21 @@
 #service-request-form button { justify-self: start; font: inherit; }
 #service-request-form button:disabled { opacity: .6; }
 #service-request-status { margin: 0; }
+
+.claim-examples > summary {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid #75b9db;
+  border-radius: 8px;
+  background: #192f45;
+  color: #b4e5fa;
+  font-weight: 750;
+  cursor: pointer;
+}
+.claim-examples > summary:hover { background: #203b54; }
+.claim-examples > summary:focus-visible {
+  outline: 2px solid #b4e5fa;
+  outline-offset: 3px;
+}
+.service-request .claim-examples { margin: -.35rem 0 .65rem; }

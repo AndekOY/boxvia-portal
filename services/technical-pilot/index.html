@@ -7,7 +7,7 @@
 <meta name="description" content="Paid, bounded technical pilots for AI agents and multi-agent systems. Independently examine authority delegation, state changes, tool execution and supporting evidence.">
 <link rel="stylesheet" href="/assets/styles.css?v=20261105-footer">
 <link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
-<link rel="stylesheet" href="/assets/service-request.css">
+<link rel="stylesheet" href="/assets/service-request.css?v=20261106-examples">
 </head>
 <body>
 <header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header>
@@ -98,10 +98,26 @@
     <input id="request-version" name="version" type="text" maxlength="160">
     <label for="request-scenario">What single scenario should we run? *</label>
     <textarea id="request-scenario" name="scenario" rows="3" maxlength="1200" required></textarea>
+    <details class="claim-examples">
+      <summary>See example pilot scenarios</summary>
+      <ul>
+        <li>Can a delegated agent use a tool outside its assigned permissions?</li>
+        <li>Does the system preserve an approval requirement when a task is handed to another agent?</li>
+        <li>Can the system show which agent changed a record and which rule allowed it?</li>
+      </ul>
+    </details>
     <label for="request-expected">What behavior do you expect to observe? *</label>
     <textarea id="request-expected" name="expected" rows="3" maxlength="1200" required></textarea>
     <label for="request-materials">What materials are available?</label>
     <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-privacy"></textarea>
+    <details class="claim-examples">
+      <summary>See examples of documents and materials</summary>
+      <ul>
+        <li>A public repository, release notes or setup documentation</li>
+        <li>A short test script, reproduction steps or synthetic test data</li>
+        <li>A description of available logs, event traces or expected outputs</li>
+      </ul>
+    </details>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxAl6u_VFfcPFsd" data-theme="dark" data-action="service-request"></div>
     <button class="button" type="submit" disabled>Send request</button>
     <p role="status" id="service-request-status"></p>

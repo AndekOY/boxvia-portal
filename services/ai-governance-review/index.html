@@ -1,6 +1,6 @@
 <!-- BOXVIA MOBILE MENU V1 -->
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Focused AI Governance Review | BoxVia</title><meta name="description" content="Get an independent review of one question about an AI policy, approval role or control."><link rel="stylesheet" href="/assets/styles.css?v=20261105-footer">  <link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
-<link rel="stylesheet" href="/assets/service-request.css">
+<link rel="stylesheet" href="/assets/service-request.css?v=20261106-examples">
 </head><body><header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header><main>
   <p><a href="/services/">All services</a></p>
   <h1>Focused AI Governance Review</h1>
@@ -34,10 +34,26 @@
     <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required>
     <label for="request-question">What question should we review? *</label>
     <textarea id="request-question" name="question" rows="3" maxlength="1200" required></textarea>
+    <details class="claim-examples">
+      <summary>See example AI governance questions</summary>
+      <ul>
+        <li>Who can approve the use of a new AI tool?</li>
+        <li>Does the policy require human review before AI-generated decisions are sent to customers?</li>
+        <li>What record would show that an exception was approved?</li>
+      </ul>
+    </details>
     <label for="request-control">Which AI policy, approval role or control does it concern? *</label>
     <textarea id="request-control" name="control" rows="3" maxlength="1200" required></textarea>
     <label for="request-materials">What materials are available?</label>
     <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-privacy"></textarea>
+    <details class="claim-examples">
+      <summary>See examples of documents and materials</summary>
+      <ul>
+        <li>An AI use policy or a description of the relevant clause</li>
+        <li>An approval workflow or a role and responsibility matrix</li>
+        <li>A control checklist, an exception record or a description of available audit evidence</li>
+      </ul>
+    </details>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxAl6u_VFfcPFsd" data-theme="dark" data-action="service-request"></div>
     <button class="button" type="submit" disabled>Send request</button>
     <p role="status" id="service-request-status"></p>
