@@ -24,3 +24,6 @@ README.md
 .dev.vars.*
 *.pem
 *.key
+
+# Working protocol kept in GitHub
+/docs/technical-pilot-protocol.ru.md
