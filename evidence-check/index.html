@@ -19,7 +19,7 @@
   .sample-jump-link{display:inline-flex;align-items:center;gap:12px;padding:12px 19px;border:1px solid #83d4ee;border-radius:9px;color:#b4e5fa;font-weight:750;text-decoration:none;min-height:46px;box-sizing:border-box}
   .sample-jump-link:hover,.sample-jump-link:focus-visible{background:#183248;color:#fff}
   #sample-reports{scroll-margin-top:32px}
-  #order{scroll-margin-top:24px}
+  #order{scroll-margin-top:7rem}
   .return-to-form{margin:32px 0 12px;text-align:center}
   .order-form{display:grid;gap:17px;margin-top:22px}
   .field{display:grid;gap:7px}
@@ -91,6 +91,7 @@
   <p>Check a Claim is a small, practical demonstration of selected ANDEKS™ v0.3 principles.</p>
 <p>We show which evidence supports the finding and how far the finding applies.</p>
   <p class="price">$20 USD <span class="muted" style="font-size:1rem;font-weight:500">report within 24 hours after payment confirmation</span></p>
+  <p><a class="button" href="#order">Start request</a></p>
   <p class="sample-jump"><a class="sample-jump-link" href="#sample-reports">View sample reports <span aria-hidden="true">↓</span></a></p>
     </div>
   </section>
@@ -99,7 +100,7 @@
       <h2>1. Submit your claim</h2>
       <p>Complete the short form with your email address, the exact claim and a public primary-source link.</p>
 <p>Include a version or date where relevant.</p>
-<p>Do not submit passwords, confidential records or sensitive personal information.</p>
+<p>Use a public primary-source link and leave out confidential materials, private links, access credentials and sensitive personal data.</p>
       <form class="order-form" name="boxvia-claim-check" method="POST" action="/evidence-check/thank-you/" data-netlify="true" netlify-honeypot="bot-field" id="claim-form">
         <input type="hidden" name="form-name" value="boxvia-claim-check">
         <p hidden><label>Leave this empty: <input name="bot-field" autocomplete="off"></label></p>

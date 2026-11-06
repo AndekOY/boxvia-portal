@@ -1,4 +1,5 @@
 import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
+import { handleServiceRequest } from "./service-request.js";
 import { deliverNotifications } from "./notifications.js";
 
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
@@ -9,6 +10,9 @@ export default {
   },
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/service-request" && request.method === "POST") {
+      return handleServiceRequest(request, env, url);
+    }
     if (url.pathname === "/api/health" && request.method === "GET") {
       return Response.json({ service: "boxvia", status: "ok" }, {
         headers: { "Cache-Control": "no-store" }

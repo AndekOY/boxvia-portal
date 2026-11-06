@@ -1,0 +1,106 @@
+const services = new Map([
+  ["one-question-review", ["One Question Review", [
+    ["question","What business question should we review?",1200,true],
+    ["context","What is the context for this question?",1200,false],
+    ["materials","What materials are available?",1200,false]
+  ]]],
+  ["ai-governance-review", ["Focused AI Governance Review", [
+    ["question","What question should we review?",1200,true],
+    ["control","Which AI policy, approval role or control does it concern?",1200,true],
+    ["materials","What materials are available?",1200,false]
+  ]]],
+  ["technical-pilot", ["Technical Pilot", [
+    ["system","System or framework name",200,true],
+    ["version","Version or commit, if known",160,false],
+    ["scenario","What single scenario should we run?",1200,true],
+    ["expected","What behavior do you expect to observe?",1200,true],
+    ["materials","What materials are available?",1200,false]
+  ]]]
+]);
+
+const json = (data, status = 200) => Response.json(data, {
+  status,
+  headers: { "Cache-Control": "no-store" }
+});
+
+async function readSubmission(request) {
+  if (!request.body) return null;
+  const reader = request.body.getReader();
+  const buffer = new Uint8Array(24576);
+  let length = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (length + value.length > buffer.length) {
+      await reader.cancel();
+      return null;
+    }
+    buffer.set(value, length);
+    length += value.length;
+  }
+  return JSON.parse(new TextDecoder().decode(buffer.subarray(0, length)));
+}
+
+export async function handleServiceRequest(request, env, url) {
+  if (request.headers.get("Origin") !== url.origin) return json({ error: "Request origin rejected." }, 403);
+  if (request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+    return json({ error: "Please submit from the service form." }, 415);
+  }
+
+  let data;
+  try {
+    data = await readSubmission(request);
+  } catch {
+    return json({ error: "Please check your request and try again." }, 400);
+  }
+
+  const service = services.get(data?.service);
+  const email = typeof data?.email === "string" ? data.email.trim() : "";
+  const token = data?.["cf-turnstile-response"];
+  if (!service || email.length > 254 || !/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(email) ||
+      typeof token !== "string" || !token || token.length > 2048) {
+    return json({ error: "Please check your email address and complete the security check." }, 400);
+  }
+
+  const [title, fields] = service;
+  const lines = ["Service: " + title, "Customer email: " + email];
+  for (const [name, label, max, required] of fields) {
+    const value = typeof data[name] === "string" ? data[name].trim() : "";
+    if ((required && !value) || value.length > max) {
+      return json({ error: "Please check the required fields and text lengths." }, 400);
+    }
+    if (value) lines.push(label + "\n" + value);
+  }
+
+  const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
+  if (!env.TURNSTILE_SECRET_KEY || !env.RESEND_API_KEY || !env.NOTIFICATION_FROM || !env.NOTIFICATION_TO) {
+    return unavailable();
+  }
+
+  try {
+    const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token })
+    });
+    if (!verify.ok) return unavailable();
+    const result = await verify.json();
+    if (result.success !== true || result.hostname !== url.hostname || result.action !== "service-request") {
+      return json({ error: "Please complete the security check again." }, 400);
+    }
+
+    const delivery = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + env.RESEND_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: env.NOTIFICATION_FROM,
+        to: [env.NOTIFICATION_TO],
+        subject: "BoxVia service request - " + title,
+        text: lines.join("\n\n")
+      })
+    });
+    if (!delivery.ok || !(await delivery.json())?.id) return unavailable();
+    return json({ received: true });
+  } catch {
+    return unavailable();
+  }
+}

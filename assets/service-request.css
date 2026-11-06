@@ -1,0 +1,20 @@
+.service-request { margin-top: 2rem; scroll-margin-top: 7rem; }
+#service-request-form { display: grid; gap: .65rem; margin-top: 1.25rem; }
+#service-request-form label { font-weight: 650; }
+#service-request-form input:not([type=hidden]),
+#service-request-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem;
+  margin-bottom: .5rem;
+  padding: .75rem;
+  border: 1px solid #7894a9;
+  border-radius: 8px;
+  background: #f7fbff;
+  color: #112036;
+  font: inherit;
+}
+#service-request-form textarea { resize: vertical; }
+#service-request-form button { justify-self: start; font: inherit; }
+#service-request-form button:disabled { opacity: .6; }
+#service-request-status { margin: 0; }
