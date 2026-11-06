@@ -15,6 +15,22 @@ const services = new Map([
     ["scenario","What single scenario should we run?",1200,true],
     ["expected","What behavior do you expect to observe?",1200,true],
     ["materials","What materials are available?",1200,false]
+  ]]],
+  ["pre-decision-review", ["Independent Pre-Decision Review", [
+    ["decision","What decision are you about to make?",1200,true],
+    ["options","Which options or assumptions should we examine?",1200,false],
+    ["materials","What evidence is available?",1200,false]
+  ]]],
+  ["ai-governance-gap-assessment", ["AI Governance & Compliance Gap Assessment", [
+    ["system","Which AI system or process should we assess?",1200,true],
+    ["requirements","Which requirements should we compare the controls against?",1200,true],
+    ["materials","What controls and evidence can you describe?",1200,false]
+  ]]],
+  ["faar-stage-1", ["FAAR Stage 1", [
+    ["project","What project are you planning?",1200,true],
+    ["workstreams","Which activities or services are you considering?",1200,false],
+    ["uncertainties","What remains unclear about the project?",1200,false],
+    ["materials","What project materials are available?",1200,false]
   ]]]
 ]);
 

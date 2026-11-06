@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FAAR Stage 1 | Define the Scope Before Execution | BoxVia</title><meta name="description" content="Define project structure, workstreams and dependencies before agreeing the main engagement.">
 <link rel="stylesheet" href="/assets/styles.css?v=20261105-footer"><link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
+<link rel="stylesheet" href="/assets/service-request.css?v=20261106-examples">
 </head><body><header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/" aria-current="page">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header><main>
 <p><a href="/services/">All services</a></p><h1>FAAR Stage 1</h1>
 <p class="lead">Define the scope before execution.</p>
@@ -9,7 +10,7 @@
 <p>FAAR Stage 1 maps the project, identifies critical gaps and establishes the basis for agreeing the next stage of work.</p>
 <p><strong>From 250 USD</strong></p>
 <p>Scope, price and delivery date are agreed before work starts.</p>
-<p><a class="button" href="/contact/">Discuss Stage 1</a></p>
+<p><a class="button" href="#request">Start request</a></p>
 <section><h2>See a real anonymized example</h2>
 <article class="card"><h3>Pre-Engagement Regulatory Architecture Review</h3>
 <p>A cross-border UAE project combined imported components, local assembly or repair and several possible regulatory workstreams.</p>
@@ -60,11 +61,74 @@
 <p>We can agree on an NDA where needed.</p>
   <p>For direct business engagements, BoxVia proposes Polish law and the competent courts in Szczecin, subject to written agreement.</p>
 <p>Mandatory consumer protections apply where relevant.</p>
-  <p><a href="/legal/#review-terms">Read the confidentiality, GDPR and review terms</a></p></section></main><footer class="site-footer"><p>BoxVia · Independent analytical services · Poland</p><p class="footer-links"><a href="/reports/">Report Library</a><a href="/about/">About</a><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a><a class="footer-linkedin" href="https://www.linkedin.com/company/boxvia/" aria-label="BoxVia on LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96C2 21.32 2.69 22 3.55 22h16.9c.86 0 1.55-.68 1.55-1.52V3.52C22 2.68 21.31 2 20.45 2ZM7.93 18.75H4.98V9.2h2.95v9.55ZM6.45 7.9a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42Zm12.3 10.85H15.8V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.51V9.2h2.83v1.3h.04c.39-.74 1.36-1.52 2.79-1.52 2.98 0 3.58 1.96 3.58 4.51v5.26Z"/></svg></a></p><p>Information only.</p>
+  <p><a href="/legal/#review-terms">Read the confidentiality, GDPR and review terms</a></p></section>
+<section class="card service-request" id="request" aria-labelledby="request-heading">
+  <h2 id="request-heading">Request FAAR Stage 1</h2>
+  <div class="note" id="request-privacy">
+    <p><strong>Before you submit</strong></p>
+    <p>For this initial request, briefly describe the materials you have or share public links.</p>
+    <p>Do not include confidential documents, internal logs, passwords, API keys, private access links or sensitive personal data.</p>
+    <p>If we need additional materials or access, we will agree on the scope of work and how to share them before asking you to send anything.</p>
+    <p><a href="/legal/#review-terms">Read our confidentiality and data-handling terms</a></p>
+  </div>
+  <form id="service-request-form" action="/api/service-request" method="post">
+    <input type="hidden" name="service" value="faar-stage-1">
+    <label for="request-email">Email address *</label>
+    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required aria-describedby="request-email-hint">
+    <small id="request-email-hint">Use an email address where you can receive replies about this request.</small>
+    <label for="request-project">What project are you planning? *</label>
+    <textarea id="request-project" name="project" rows="3" maxlength="1200" required aria-describedby="request-project-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-project-hint">See examples of project descriptions</summary>
+      <ul>
+        <li>Import components and assemble them locally before distribution</li>
+        <li>Set up a repair operation involving partners in two countries</li>
+        <li>Transfer an operating process from a supplier to a local entity</li>
+      </ul>
+    </details>
+    <label for="request-workstreams">Which activities or services are you considering?</label>
+    <textarea id="request-workstreams" name="workstreams" rows="3" maxlength="1200" aria-describedby="request-workstreams-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-workstreams-hint">See examples of possible workstreams</summary>
+      <ul>
+        <li>Licensing and facility setup</li>
+        <li>Import, storage and onward distribution</li>
+        <li>Allocation of operating roles between participating entities</li>
+      </ul>
+    </details>
+    <label for="request-uncertainties">What remains unclear about the project?</label>
+    <textarea id="request-uncertainties" name="uncertainties" rows="3" maxlength="1200" aria-describedby="request-uncertainties-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-uncertainties-hint">See examples of open questions</summary>
+      <ul>
+        <li>Which entity will import the goods and take ownership</li>
+        <li>Which operations will happen at each site</li>
+        <li>Which activities must be defined before a licensing review can start</li>
+      </ul>
+    </details>
+    <label for="request-materials">What project materials are available?</label>
+    <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-materials-hint request-privacy"></textarea>
+    <details class="claim-examples">
+      <summary id="request-materials-hint">See examples of project materials</summary>
+      <ul>
+        <li>A project brief or an outline of planned operations</li>
+        <li>A description of entities, roles and locations</li>
+        <li>A draft process map or a list of proposed services</li>
+      </ul>
+    </details>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxAl6u_VFfcPFsd" data-theme="dark" data-action="service-request"></div>
+    <button class="button" type="submit" disabled>Send request</button>
+    <p role="status" id="service-request-status"></p>
+    <noscript><p>Enable JavaScript to submit this form or <a href="/contact/">contact BoxVia</a> with a non-sensitive summary.</p></noscript>
+  </form>
+</section>
+</main><footer class="site-footer"><p>BoxVia · Independent analytical services · Poland</p><p class="footer-links"><a href="/reports/">Report Library</a><a href="/about/">About</a><a href="/legal/">Service boundaries</a><a href="/contact/">Contact</a><a class="footer-linkedin" href="https://www.linkedin.com/company/boxvia/" aria-label="BoxVia on LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96C2 21.32 2.69 22 3.55 22h16.9c.86 0 1.55-.68 1.55-1.52V3.52C22 2.68 21.31 2 20.45 2ZM7.93 18.75H4.98V9.2h2.95v9.55ZM6.45 7.9a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42Zm12.3 10.85H15.8V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.51V9.2h2.83v1.3h.04c.39-.74 1.36-1.52 2.79-1.52 2.98 0 3.58 1.96 3.58 4.51v5.26Z"/></svg></a></p><p>Information only.</p>
 <p>No certification, legal opinion or guaranteed compliance outcome.</p><p class="footer-copyright">© 2026 Andrey Ekhmenin · BoxVia.</p></footer><script src="/assets/mobile-menu.js?v=20261102-menu2" defer></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"0131e00a46e6417d8462c6bb3e535b5e"}'></script>
 <!-- End Cloudflare Web Analytics -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="/assets/service-request.js" defer></script>
 </body></html>
 
 
