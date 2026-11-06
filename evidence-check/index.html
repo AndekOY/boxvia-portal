@@ -104,7 +104,8 @@
       <form class="order-form" name="boxvia-claim-check" method="POST" action="/evidence-check/thank-you/" data-netlify="true" netlify-honeypot="bot-field" id="claim-form">
         <input type="hidden" name="form-name" value="boxvia-claim-check">
         <p hidden><label>Leave this empty: <input name="bot-field" autocomplete="off"></label></p>
-        <div class="field"><label for="customer-email">Email address *</label><input id="customer-email" name="email" type="email" autocomplete="email" required maxlength="254"></div>
+        <div class="field"><label for="customer-email">Email address *</label><input id="customer-email" name="email" type="email" autocomplete="email" required maxlength="254" aria-describedby="customer-email-hint">
+<small id="customer-email-hint">Use an email address where you can receive the result and answer any follow-up questions.</small></div>
         <div class="field"><label for="exact-claim">Exact claim to check *</label><textarea id="exact-claim" name="exact_claim" required minlength="15" maxlength="2000" placeholder="Paste one precise, verifiable statement."></textarea><small>Submit one claim and a link to its public primary source.</small>
 <details class="claim-examples">
   <summary>See examples of claims</summary>
@@ -123,7 +124,15 @@
     <li>An annual report or official filing for a claim about reported revenue</li>
   </ul>
 </details></div>
-        <div class="field"><label for="source-version">Source version or date (if known)</label><input id="source-version" name="source_version_or_date" type="text" maxlength="160" placeholder="Version, publication date, or snapshot date"></div>
+        <div class="field"><label for="source-version">Source version or date (if known)</label><input id="source-version" name="source_version_or_date" type="text" maxlength="160" placeholder="Version, publication date, or snapshot date" aria-describedby="source-version-hint">
+<details class="claim-examples">
+  <summary id="source-version-hint">See examples of source versions and dates</summary>
+  <ul>
+    <li>Version 2.4 of the release notes</li>
+    <li>Annual report published on 2026-03-15</li>
+    <li>Pricing page as seen on 2026-10-28, if it has no publication date</li>
+  </ul>
+</details></div>
         <label class="consent"><input type="checkbox" name="public_material_confirmation" value="yes" required><span>I confirm that the submitted material is public and that I have not included passwords, confidential records or sensitive personal data. *</span></label>
         <label class="consent"><input type="checkbox" name="terms_acknowledgement" value="yes" required><span>I understand this is a $20 USD limited documentary check, not a certification, legal opinion, security audit or guarantee of a favorable result. I have reviewed the <a href="/legal/" target="_blank" rel="noopener">service boundaries</a> and <a href="/contact/" target="_blank" rel="noopener">contact details</a>. *</span></label>
         <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxAl6u_VFfcPFsd" data-theme="dark"></div>

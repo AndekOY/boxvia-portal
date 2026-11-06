@@ -31,7 +31,8 @@
   <form id="service-request-form" action="/api/service-request" method="post">
     <input type="hidden" name="service" value="one-question-review">
     <label for="request-email">Email address *</label>
-    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required aria-describedby="request-email-hint">
+    <small id="request-email-hint">Use an email address where you can receive replies about this request.</small>
     <label for="request-question">What business question should we review? *</label>
     <textarea id="request-question" name="question" rows="3" maxlength="1200" required></textarea>
     <details class="claim-examples">
@@ -43,7 +44,15 @@
       </ul>
     </details>
     <label for="request-context">What is the context for this question?</label>
-    <textarea id="request-context" name="context" rows="3" maxlength="1200"></textarea>
+    <textarea id="request-context" name="context" rows="3" maxlength="1200" aria-describedby="request-context-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-context-hint">See examples of useful business context</summary>
+      <ul>
+        <li>We need to choose between two subscription plans for a 12-person team.</li>
+        <li>The savings estimate compares monthly costs before and after a proposed change.</li>
+        <li>We have two options and need to decide before the renewal date.</li>
+      </ul>
+    </details>
     <label for="request-materials">What materials are available?</label>
     <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-privacy"></textarea>
     <details class="claim-examples">

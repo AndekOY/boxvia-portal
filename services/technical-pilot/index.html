@@ -91,11 +91,28 @@
   <form id="service-request-form" action="/api/service-request" method="post">
     <input type="hidden" name="service" value="technical-pilot">
     <label for="request-email">Email address *</label>
-    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required aria-describedby="request-email-hint">
+    <small id="request-email-hint">Use an email address where you can receive replies about this request.</small>
     <label for="request-system">System or framework name *</label>
-    <input id="request-system" name="system" type="text" maxlength="200" required>
+    <input id="request-system" name="system" type="text" maxlength="200" required aria-describedby="request-system-hint">
+    <details class="claim-examples">
+      <summary id="request-system-hint">See examples of system names</summary>
+      <ul>
+        <li>A named agent framework, such as LangGraph</li>
+        <li>A custom support agent that uses a ticketing tool</li>
+        <li>A multi-agent workflow with a coordinator and worker agents</li>
+      </ul>
+    </details>
     <label for="request-version">Version or commit, if known</label>
-    <input id="request-version" name="version" type="text" maxlength="160">
+    <input id="request-version" name="version" type="text" maxlength="160" aria-describedby="request-version-hint">
+    <details class="claim-examples">
+      <summary id="request-version-hint">See examples of versions and commits</summary>
+      <ul>
+        <li>A release number, such as 2.4.1</li>
+        <li>A Git tag, such as v2.4.1, or a commit ID</li>
+        <li>A build ID for the test environment</li>
+      </ul>
+    </details>
     <label for="request-scenario">What single scenario should we run? *</label>
     <textarea id="request-scenario" name="scenario" rows="3" maxlength="1200" required></textarea>
     <details class="claim-examples">
@@ -107,7 +124,15 @@
       </ul>
     </details>
     <label for="request-expected">What behavior do you expect to observe? *</label>
-    <textarea id="request-expected" name="expected" rows="3" maxlength="1200" required></textarea>
+    <textarea id="request-expected" name="expected" rows="3" maxlength="1200" required aria-describedby="request-expected-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-expected-hint">See examples of expected behavior</summary>
+      <ul>
+        <li>The delegated agent is blocked from using a tool outside its permissions.</li>
+        <li>The receiving agent waits for approval before continuing.</li>
+        <li>The event record identifies the agent, the changed record and the rule that allowed the change.</li>
+      </ul>
+    </details>
     <label for="request-materials">What materials are available?</label>
     <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-privacy"></textarea>
     <details class="claim-examples">

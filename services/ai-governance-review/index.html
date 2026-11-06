@@ -31,7 +31,8 @@
   <form id="service-request-form" action="/api/service-request" method="post">
     <input type="hidden" name="service" value="ai-governance-review">
     <label for="request-email">Email address *</label>
-    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+    <input id="request-email" name="email" type="email" autocomplete="email" maxlength="254" required aria-describedby="request-email-hint">
+    <small id="request-email-hint">Use an email address where you can receive replies about this request.</small>
     <label for="request-question">What question should we review? *</label>
     <textarea id="request-question" name="question" rows="3" maxlength="1200" required></textarea>
     <details class="claim-examples">
@@ -43,7 +44,15 @@
       </ul>
     </details>
     <label for="request-control">Which AI policy, approval role or control does it concern? *</label>
-    <textarea id="request-control" name="control" rows="3" maxlength="1200" required></textarea>
+    <textarea id="request-control" name="control" rows="3" maxlength="1200" required aria-describedby="request-control-hint"></textarea>
+    <details class="claim-examples">
+      <summary id="request-control-hint">See examples of policies, roles and controls</summary>
+      <ul>
+        <li>Policy: The AI use policy section on adopting new tools</li>
+        <li>Role: The product owner responsible for approving an exception</li>
+        <li>Control: Required human review before an AI-generated decision is sent to a customer</li>
+      </ul>
+    </details>
     <label for="request-materials">What materials are available?</label>
     <textarea id="request-materials" name="materials" rows="3" maxlength="1200" aria-describedby="request-privacy"></textarea>
     <details class="claim-examples">
