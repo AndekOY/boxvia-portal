@@ -1,10 +1,10 @@
 # BoxVia Portal - live static website
 
-Production site: https://boxvia-portal.netlify.app/
+Public site: https://boxvia.andeks.workers.dev/
 Repository: https://github.com/AndekOY/boxvia-portal
 
 ## Deployment
-Static HTML/CSS/JavaScript. No build step is required. The default branch is `main`; production deployment is managed by Netlify.
+Static HTML/CSS/JavaScript. The default branch is `main`. The public website is served at the Cloudflare Workers domain above. The current deployment pipeline and its linkage to `main` should be verified separately; this README does not assert that a GitHub commit automatically deploys to Cloudflare.
 
 ## Pages
 - `/` - Home
