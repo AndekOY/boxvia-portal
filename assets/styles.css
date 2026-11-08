@@ -152,3 +152,51 @@ main .service-request .note p > a:only-child:not(.button):hover {
     overflow-wrap: anywhere;
   }
 }
+
+
+/* APPROVED 2026-11-08: uniform branded two-column cards, visual left / copy right.
+   Applies to all existing matching site components, not generic card grids. */
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) {
+  display: grid;
+  grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr) !important;
+  gap: 28px !important;
+  align-items: center;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) > :first-child {
+  min-width: 0;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) > :last-child {
+  min-width: 0;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro) > img,
+main :is(.andeks-intro,.eas-intro,.claim-intro) > .andeks-intro-logo {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 280px !important;
+  height: auto;
+  margin-inline: auto;
+  object-fit: contain;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) h1 {
+  font-size: clamp(2rem,3.6vw,3.25rem);
+  line-height: 1.16;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) .lead {
+  font-size: 1.08rem;
+  line-height: 1.5;
+  margin-block: 12px;
+}
+main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) .price {
+  line-height: 1.5;
+}
+@media(max-width:760px) {
+  main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) {
+    grid-template-columns: minmax(0,1fr) !important;
+    gap: 16px !important;
+  }
+  main :is(.andeks-intro,.eas-intro,.claim-intro) > img,
+  main :is(.andeks-intro,.eas-intro,.claim-intro) > .andeks-intro-logo {
+    max-width: 180px !important;
+  }
+}
