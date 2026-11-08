@@ -272,3 +272,33 @@ main p.contact-address > a:only-child {
 }
 #service-request-form .request-consent span { min-width: 0; }
 #service-request-form .request-consent a { text-decoration: underline; }
+
+
+/* Service-page closing navigation: approved light buttons. */
+main .service-bottom-actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin:28px 0 16px;
+}
+main .service-bottom-actions a.button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  padding:12px 20px;
+  border:1px solid #b4e5fa;
+  border-radius:9px;
+  background:#b4e5fa;
+  color:#071a29;
+  font-weight:750;
+  text-decoration:none;
+  text-align:center;
+}
+main .service-bottom-actions a.button:hover,
+main .service-bottom-actions a.button:focus-visible {
+  background:#d1f0ff;
+  color:#071a29;
+}
