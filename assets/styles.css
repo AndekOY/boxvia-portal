@@ -302,3 +302,10 @@ main .service-bottom-actions a.button:focus-visible {
   background:#d1f0ff;
   color:#071a29;
 }
+
+/* Keep translated inline text links visually separated from adjacent words. */
+main p a:not(.button):not(.oqr-action):not(.sample-report-button):not(.sample-jump-link),
+main li a:not(.button),
+.site-footer .footer-links > a:not(.footer-linkedin) {
+  margin-inline: .16em;
+}
