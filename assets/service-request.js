@@ -5,6 +5,13 @@ const message = document.querySelector("#service-request-status");
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (submit.disabled) return;
+  if (!form.reportValidity()) return;
+  const publicMaterial = form.querySelector('input[name="public_material_confirmation"]');
+  const terms = form.querySelector('input[name="terms_acknowledgement"]');
+  if (!publicMaterial?.checked || !terms?.checked) {
+    message.textContent = "Please confirm both required statements before sending.";
+    return;
+  }
   const data = new FormData(form);
   if (!data.get("cf-turnstile-response")) {
     message.textContent = "Please complete the security check before sending.";
