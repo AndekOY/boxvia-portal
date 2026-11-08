@@ -241,3 +241,34 @@ main p.contact-address > a:only-child {
   color: #91d7f7;
   text-decoration: underline;
 }
+
+
+/* Required service request confirmations, matching Check a Claim consent layout. */
+#service-request-form .request-consents {
+  border: 0;
+  padding: 0;
+  margin: 20px 0 16px;
+  min-width: 0;
+}
+#service-request-form .request-consents legend {
+  color: #e8f2fc;
+  font-weight: 700;
+  padding: 0 0 10px;
+}
+#service-request-form .request-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 16px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+#service-request-form .request-consent input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  margin: 4px 0 0;
+  accent-color: #91d7f7;
+}
+#service-request-form .request-consent span { min-width: 0; }
+#service-request-form .request-consent a { text-decoration: underline; }
