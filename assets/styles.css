@@ -95,3 +95,60 @@ footer.site-footer .footer-linkedin{display:inline-flex;align-items:center;justi
 footer.site-footer .footer-linkedin:hover{background:#193b50}
 footer.site-footer .footer-linkedin:focus-visible{outline:2px solid #91d7f7;outline-offset:2px}
 footer.site-footer .footer-copyright{font-size:.85rem}
+
+
+/* BoxVia site-wide action links: same visual language as Check a Claim.
+   Only standalone paragraph links are promoted to button-like actions.
+   Inline references, form privacy links, breadcrumbs and footers stay textual. */
+main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button):not(.nav-cta):not(.brand):not(.footer-linkedin):not([href="/services/"]):not([href="../"]):not([href="/"]):not([href^="#fn"]):not([href^="#ref"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #83d4ee;
+  border-radius: 9px;
+  background: transparent;
+  color: #b7e5f9;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  transition: background-color .15s ease, color .15s ease;
+}
+main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button):hover,
+main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button):focus-visible {
+  background: #193b50;
+  color: #fff;
+  text-decoration: none;
+}
+main .note p > a:only-child:not(.button),
+main .service-request .note p > a:only-child:not(.button),
+main .service-request small a,
+main .muted a,
+main p > a[href^="mailto:"]:only-child,
+main p > a[href^="tel:"]:only-child {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #91d7f7;
+  font-weight: inherit;
+  text-align: left;
+  text-decoration: underline;
+}
+main .note p > a:only-child:not(.button):hover,
+main .service-request .note p > a:only-child:not(.button):hover {
+  background: none;
+  color: #b7e5f9;
+}
+@media(max-width:560px) {
+  main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button) {
+    overflow-wrap: anywhere;
+  }
+}
