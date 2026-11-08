@@ -100,7 +100,7 @@ footer.site-footer .footer-copyright{font-size:.85rem}
 /* BoxVia site-wide action links: same visual language as Check a Claim.
    Only standalone paragraph links are promoted to button-like actions.
    Inline references, form privacy links, breadcrumbs and footers stay textual. */
-main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button):not(.nav-cta):not(.brand):not(.footer-linkedin):not([href="/services/"]):not([href="../"]):not([href="/"]):not([href^="#fn"]):not([href^="#ref"]) {
+main p > a:only-child:not(.button):not(.oqr-action):not(.sample-report-button):not(.nav-cta):not(.brand):not(.footer-linkedin):not([href="../"]):not([href="/"]):not([href^="#fn"]):not([href^="#ref"]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -199,4 +199,45 @@ main :is(.andeks-intro,.eas-intro,.claim-intro,.oqr-intro) .price {
   main :is(.andeks-intro,.eas-intro,.claim-intro) > .andeks-intro-logo {
     max-width: 180px !important;
   }
+}
+
+
+/* Global mandatory action-button rule v20261108b.
+   Standalone calls to action in page content, including card-direct links,
+   receive the Check a Claim outlined-button appearance. */
+main :is(p > a:only-child, article.card > a, section.card > a):not(.button):not(.oqr-action):not(.sample-report-button):not([href^="mailto:"]):not([href^="tel:"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #83d4ee;
+  border-radius: 9px;
+  background: transparent;
+  color: #b7e5f9;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+main :is(p > a:only-child, article.card > a, section.card > a):not(.button):not(.oqr-action):not(.sample-report-button):is(:hover,:focus-visible) {
+  background: #193b50;
+  color: #fff;
+  text-decoration: none;
+}
+/* Preserve inline legal references, footnotes and in-form guidance. */
+main :is(.service-request,.order-form,.note) p > a:only-child:not(.button),
+main p.muted > a:only-child:not(.button),
+main p.contact-address > a:only-child {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: inherit;
+  color: #91d7f7;
+  text-decoration: underline;
 }
