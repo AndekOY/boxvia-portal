@@ -1,28 +1,78 @@
 <!-- BOXVIA MOBILE MENU V1 -->
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>One Question Review | BoxVia</title><link rel="canonical" href="https://boxvia.andeks.workers.dev/services/one-question-review/"><meta name="description" content="Get an independent second look at one specific business question."><link rel="stylesheet" href="/assets/styles.css?v=20261105-footer">  <link rel="icon" type="image/png" href="/assets/boxvia-favicon.png">
 <link rel="stylesheet" href="/assets/service-request.css?v=20261106-examples">
-</head><body><header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header><main>
+<style>
+  .oqr-intro{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(240px,.75fr);gap:24px;align-items:center;margin-top:24px}
+  .oqr-intro h1{margin-top:6px}.oqr-intro .price{font-size:1.6rem;font-weight:800;color:#f2f7ff}
+  .oqr-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  .oqr-action{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;min-height:46px;box-sizing:border-box;border:1px solid #83d4ee;border-radius:9px;color:#b4e5fa;text-decoration:none;font-weight:750}
+  .oqr-action:hover,.oqr-action:focus-visible{background:#183248;color:#fff}
+  .oqr-action-primary{background:#b4e5fa;color:#071a29}
+  .oqr-action-primary:hover,.oqr-action-primary:focus-visible{background:#d1f0ff;color:#071a29}
+  .oqr-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:24px}
+  .oqr-steps .card{margin:0}.oqr-steps h2{margin-top:0}
+  .oqr-sample{margin-top:30px}.oqr-sample h2{margin-top:0}
+  .oqr-sample .result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+  .oqr-sample .result-grid>div{border:1px solid #476276;border-radius:10px;padding:15px;background:#142538}
+  .oqr-sample .result-grid strong{display:block;margin-bottom:8px;color:#f2f7ff}
+  #example-report,#request{scroll-margin-top:28px}
+  @media(max-width:760px){.oqr-intro,.oqr-steps,.oqr-sample .result-grid{grid-template-columns:minmax(0,1fr)}}
+</style></head><body><header><a class="brand" href="/"><img src="/assets/boxvia-logo.png" alt="" class="brand-logo"> BoxVia</a><button class="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="boxvia-main-navigation" aria-expanded="false">☰</button><nav aria-label="Main navigation" id="boxvia-main-navigation"><a href="/services/">Services</a><a href="/products/">Products</a><a href="/technology/">Technology</a><a href="/research/">Research</a><a class="nav-cta" href="/evidence-check/"><img src="/assets/claim-icon.svg" width="22" height="22" alt="" style="vertical-align:middle;margin-right:7px">Check a Claim</a></nav></header><main>
   <p><a href="/services/">All services</a></p>
-  <h1>One Question Review</h1>
-  <p class="lead">Get an independent second look at one specific business question.</p>
-  <p><strong>50 USD - 2 days</strong></p>
-  <p>Delivery time starts when BoxVia receives the agreed inputs.</p>
-  <p><a class="button" href="#request">Start request</a></p>
-  <section><h2>What to send</h2><p>Send your question, the decision it relates to and the available evidence.</p><p>For example, ask whether the documents you received support a supplier’s claim.</p></section>
-  <section><h2>What you receive</h2><p>You receive a short written review of what the evidence supports, what remains uncertain and which gaps matter.</p></section>
-  <p class="muted">Findings apply to the agreed question and evidence.</p>
-<p class="muted">The review provides no legal opinion, audit assurance or certification.</p>
-  <section><h2>Confidentiality and terms</h2>
-  <p>Start with a non-sensitive summary.</p>
-<p>Before sending confidential documents or personal data, agree with BoxVia on what to share and how to send it.</p>
-<p>We can agree on an NDA where needed.</p>
-  <p>For direct business engagements, BoxVia proposes Polish law and the competent courts in Szczecin, subject to written agreement.</p>
-<p>Mandatory consumer protections apply where relevant.</p>
-  <p><a href="/legal/#review-terms">Read the confidentiality, GDPR and review terms</a></p></section>
-<section id="example-report"><h2>See a sample report</h2>
-<p>Does the lower monthly price mean lower annual cost?</p>
-<p>This example uses a fictional scenario and evidence.</p>
-</section>
+  <section class="card oqr-intro">
+    <div>
+      <p class="eyebrow">INDEPENDENT BUSINESS QUESTION REVIEW</p>
+      <h1>One Question Review</h1>
+      <p class="lead">One defined business question.</p>
+      <p class="lead">Agreed evidence and decision context.</p>
+      <p class="lead">A traceable answer with material gaps and next steps.</p>
+      <p>Get an independent second look at one specific business question.</p>
+      <p class="price">50 USD <span class="muted" style="font-size:1rem;font-weight:500">report within 2 days after receipt of agreed inputs</span></p>
+      <div class="oqr-actions"><a class="oqr-action oqr-action-primary" href="#example-report">View sample PDF report</a></div>
+    </div>
+    <div style="border:1px solid #476276;border-radius:12px;background:#102b43;padding:24px;text-align:center">
+      <img src="/assets/boxvia-logo.png" width="100" height="100" alt="BoxVia" style="display:block;margin:0 auto 15px;max-width:100%;height:auto">
+      <strong style="font-size:1.25rem;color:#f2f7ff">ONE QUESTION</strong>
+      <p style="margin:10px 0 0;color:#b9cadb">Evidence • Reasoning • Decision boundary</p>
+    </div>
+  </section>
+  <div class="oqr-steps">
+    <section class="card"><h2>1. What to send</h2>
+      <p>Send one precise question, the decision it relates to and a description of available evidence.</p>
+      <p>For example: do a vendor's cost figures substantiate a promised 30% reduction in operating expenses?</p>
+      <p>Begin with a non-sensitive summary and public links. Agree on secure handling before sharing confidential material.</p>
+      <p><a class="oqr-action" href="#request">Go to request form</a></p>
+    </section>
+    <section class="card"><h2>2. What you receive</h2>
+      <p>A short written assessment that separates supported calculations, unsupported conclusions and unresolved evidence gaps.</p>
+      <p>The report identifies the assessment boundary, assumptions and practical next steps.</p>
+      <p class="muted">No legal opinion, financial audit, assurance or certification.</p>
+      <p><a class="oqr-action" href="#example-report">See a sample report</a></p>
+    </section>
+  </div>
+  <section class="card oqr-sample" id="example-report">
+    <p class="eyebrow">METHODOLOGY IN PRACTICE</p>
+    <h2>Sample report: is the promised 30% saving supported?</h2>
+    <p>A fictional client asks whether a vendor's automation proposal substantiates a 30% annual reduction in operating costs, taking first-year implementation and support charges into account.</p>
+    <div class="result-grid">
+      <div><strong>SUPPORTED</strong><p>The vendor's narrow comparison of USD 120,000 and USD 84,000 produces a 30% arithmetic difference.</p></div>
+      <div><strong>NOT SUPPORTED</strong><p>The full first-year model yields an 8.3% net saving, not 30%.</p></div>
+      <div><strong>UNESTABLISHED</strong><p>Realized savings remain unverified without pilot results and reconciled operating records.</p></div>
+    </div>
+    <p>This illustrative example uses fictional evidence and does not represent a client engagement.</p>
+    <p><a class="oqr-action oqr-action-primary" href="https://drive.google.com/file/d/17MA60DeJG9i_qdgyBAiDfZIG_GPzqC-i/view" target="_blank" rel="noopener noreferrer" aria-label="Open One Question Review sample PDF in a new tab">VIEW SAMPLE REPORT (PDF)</a></p>
+    <p class="muted">PDF opens in a new tab.</p>
+    <div class="oqr-actions"><a class="oqr-action" href="#request">Request a review</a></div>
+  </section>
+  <section class="card" style="margin-top:26px"><h2>Confidentiality and terms</h2>
+    <p>Start with a non-sensitive summary.</p>
+    <p>Before sending confidential documents or personal data, agree with BoxVia on what to share and how to send it.</p>
+    <p>We can agree on an NDA where needed.</p>
+    <p>For direct business engagements, BoxVia proposes Polish law and the competent courts in Szczecin, subject to written agreement.</p>
+    <p>Mandatory consumer protections apply where relevant.</p>
+    <p><a href="/legal/#review-terms">Read the confidentiality, GDPR and review terms</a></p>
+  </section>
+  <div class="oqr-actions" style="justify-content:center;margin:26px 0 8px"><a class="oqr-action oqr-action-primary" href="#request">Continue to request form</a></div>
 <section class="card service-request" id="request" aria-labelledby="request-heading">
   <h2 id="request-heading">Request a review</h2>
   <div class="note" id="request-privacy">
