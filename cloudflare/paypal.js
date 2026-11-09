@@ -107,6 +107,8 @@ export async function handlePayment(request, env, url) {
         payment_source: { paypal: { experience_context: {
           return_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_return=1",
           cancel_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_cancel=1",
+          // Checkout presentation preference only; PayPal decides actual guest eligibility.
+          landing_page: "GUEST_CHECKOUT",
           user_action: "PAY_NOW"
         } } },
         purchase_units: [{ custom_id: String(claimId), description: "BoxVia Check a Claim",
