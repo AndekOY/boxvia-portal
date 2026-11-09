@@ -16,3 +16,26 @@ BXC-LGL-COOKIES v0.1 | FACT-FINDING DRAFT — NOT PUBLISHED
 **Браузер:** настройки браузера не всегда заменяют обязательный механизм согласия на сайте.
 **Данные:** связанные операции с персональными данными раскрываются в Privacy Notice.
 **До выпуска:** аудит сайта, PayPal, Turnstile, аналитики, классификация технологий, механизм согласий, проверка польского и европейского права, дата действия.
+
+## v0.2 — Verified-from-code inventory seed (2026-11-09) / Подтвержденные элементы по коду
+### EN
+**Cloudflare Web Analytics:** the `static.cloudflareinsights.com/beacon.min.js` script is included in inspected site HTML. Whether the deployed analytics setup writes cookies, reads device storage or needs prior consent in the actual jurisdiction/configuration is **NOT VERIFIED**.
+
+**Cloudflare Turnstile:** `challenges.cloudflare.com/turnstile/v0/api.js` is included on the Check a Claim form; the server submits its token to siteverify and explicitly includes `remoteip` for the claim flow. Exact cookies, technical storage, domains, lifetime and exemptions are **NOT VERIFIED**.
+
+**Browser sessionStorage (confirmed in scripts):** `boxvia-claim-{requestId}` holds the claim capability token; `boxvia-order-{requestId}` holds the PayPal order ID on the thank-you page. These are **not HTTP cookies**, but their use is relevant to terminal-equipment storage rules and data security. Their practical lifetime is browser-session-dependent; do not assert a guaranteed deletion time.
+
+**PayPal:** users are redirected to PayPal for payment. The BoxVia source cannot establish the full cookie/storage inventory on PayPal's own domain. Verify actual checkout/return traffic before allocating controller responsibilities.
+
+**Audit worksheet (OPEN):** for each storage/network item capture URL, stage, domain, name, type, purpose, initiator, lifetime, necessity, legal basis, consent requirement, proof screenshot/HAR (redacted), and vendor reference. Stages: fresh browser before interaction; first page load; Turnstile challenge; claim submission; PayPal redirect; cancel; payment return; analytics beacon; mobile; private mode. Never run a real payment solely for audit without separate approval.
+
+### RU — технический перевод
+**Cloudflare Web Analytics:** на проверенных страницах подключен скрипт `static.cloudflareinsights.com/beacon.min.js`. Фактическая запись cookies или другого хранилища и требования к согласию **НЕ ПРОВЕРЕНЫ**.
+
+**Cloudflare Turnstile:** на форме Check a Claim подключен `challenges.cloudflare.com/turnstile/v0/api.js`. Сервер проверяет токен; в потоке Check a Claim явно передает IP-адрес. Названия, сроки и необходимость конкретных cookies/записей хранилища **НЕ ПРОВЕРЕНЫ**.
+
+**Браузерное sessionStorage:** скрипты используют `boxvia-claim-{requestId}` для токена доступа и `boxvia-order-{requestId}` для номера заказа PayPal. Это **не HTTP cookies**, но эти записи необходимо оценить с точки зрения правил хранения данных на устройстве и безопасности. Не обещать точный срок автоматического удаления.
+
+**PayPal:** клиент перенаправляется на платежную страницу PayPal. Код BoxVia не раскрывает полный перечень cookies на домене PayPal; необходима проверка реального перехода и возврата.
+
+**Протокол проверки (ОТКРЫТО):** для каждого элемента фиксировать этап, домен, имя, тип, назначение, инициатор, срок, необходимость, правовое основание, требование согласия и обезличенное доказательство. Этапы: чистый браузер, первая загрузка, Turnstile, отправка формы, переход PayPal, отмена, возврат, аналитика, мобильный и приватный режим. Реальный платеж без отдельного разрешения не выполнять.
