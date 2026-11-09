@@ -1,0 +1,22 @@
+# Service-Specific Terms / Специальные условия услуг
+BXC-LGL-SERVICES v0.1 | INTERNAL DRAFT — NOT PUBLISHED
+## EN
+**General rule:** The accepted Order specifies exact scope, price, output, delivery trigger, source permissions, applicable tax treatment and special confidentiality arrangements. These schedules supplement the General Service Terms and do not override mandatory rights.
+### Check a Claim
+One bounded claim against an identified publicly available primary source, with source version/date. **Final price charged by BoxVia: USD 20.** Deliverable: structured English PDF, normally approximately two pages. **Commercial promise: within 24 hours after server-confirmed payment**, subject to an accepted in-scope order and lawful commencement; for covered consumers, express early-performance request and legally required acknowledgment must be obtained separately before early work. Where that request is absent, do not charge under an undisclosed incompatible 24-hour arrangement. The result may be supported, unsupported, qualified or unestablished. It is not certification, a legal opinion, security audit or guarantee of a favorable result. If the request is out of scope, seek narrowing or apply the legally appropriate cancellation/refund procedure.
+### Technical Pilot
+Paid, scoped technical assessment based on an accepted pilot protocol/Order. Price, test object, version, allowed operations, evidence requirements, schedule, delivery and acceptance criteria must be agreed individually; do not invent a universal fixed price. No live testing of client systems or restricted materials without documented authorization and relevant BCAF controls. A submitted intake form is not permission to execute.
+### Independent Assessment
+Individually scoped, evidence-based assessment; specify assessed object, method boundary, data rights, deliverables, limitations, fees and schedule. No automatic certification, regulator approval or transfer of ANDEKS intellectual property.
+**Priority:** Mandatory law, agreed Order, expressly incorporated specialist terms, General Service Terms. Internal BCAF/BQS/COS are not binding on the client unless exact text/version is expressly incorporated.
+**Open gates:** product-specific VAT classification; legal characterization of human service vs electronic supply; consumer withdrawal workflow; precise price and delivery disclosures; BCAF authority; versioned contract confirmation.
+## RU — Технический перевод
+**Общее правило:** принятый заказ определяет объем, цену, результат, начало срока, права на источники, налоги и конфиденциальность. Специальные условия дополняют общие и не отменяют обязательных прав.
+### Check a Claim
+Проверка одного ограниченного утверждения по определенному общедоступному первичному источнику с версией/датой. **Окончательная цена BoxVia: 20 USD.** Результат: структурированный PDF на английском языке, обычно около двух страниц. **Коммерческое обещание: в течение 24 часов после серверного подтверждения оплаты**, при принятом задании в границах услуги и законном начале исполнения; для защищенных потребителей отдельный прямой запрос раннего исполнения и необходимые подтверждения оформляются до начала работы. Без такого запроса нельзя взимать оплату на основании несогласованного противоречащего обещанию порядка. Вывод может быть подтвержденным, неподтвержденным, ограниченным или неустановленным. Это не сертификация, юридическое заключение, аудит безопасности или гарантия благоприятного результата. При выходе за границы предлагается сужение либо законная отмена/возврат.
+### Technical Pilot
+Оплачиваемая техническая оценка по согласованному протоколу/заказу. Цена, объект, версия, разрешенные действия, свидетельства, сроки и критерии приемки согласуются индивидуально; универсальную цену не предполагаем. Тестирование систем и закрытых материалов требует документированного разрешения и применимых контролей BCAF. Заявка сама по себе не разрешает тест.
+### Independent Assessment
+Индивидуальная независимая оценка на основе свидетельств. Фиксируются объект, границы метода, права на данные, результат, исключения, стоимость и срок. Нет автоматической сертификации, одобрения регулятора или передачи прав на ANDEKS.
+**Приоритет:** обязательное право, согласованный заказ, прямо включенные специальные условия, общие условия. Внутренние BCAF/BQS/COS не связывают клиента без прямого включения точной версии.
+**Открытые проверки:** VAT по услуге, классификация услуги, потребительский отказ, сроки и цена, разрешения BCAF, подтверждение версии договора.
