@@ -53,3 +53,7 @@ All three have id=0, seq=0 within their own table. No FK rows for claims. This c
 **Design decision:** no CASCADE; paid claims must retain the parent key while legally required payment evidence exists. For unpaid claims, an eventual reviewed executor may remove eligible access and outbox child records before removing the parent, but only after verifying that no PayPal order exists and there is no active outbox delivery, legal hold, dispute, unresolved payment or tax record. Execute rechecks and mutations atomically with D1-supported transaction semantics. Do not issue a deletion query based solely on these FK rows.
 
 **Outstanding:** production index and trigger metadata, enforcement status, legal retention approval, operational hold/reconciliation controls, staging integration tests. No production mutation authorized.
+
+
+## Verified production index and trigger inventory — 2026-11-09
+Owner-exported D1 Studio sqlite_master metadata lists six indexes: claims(status); notification_outbox(status, created_at); paypal_orders(claim_id); plus one notification_outbox and two paypal_orders SQLite autoindexes with NULL/empty SQL definitions. No triggers were returned for the four application tables. The autoindex columns and corresponding UNIQUE constraints are not yet established. No claims(created_at) index was returned; evaluate a staging index only after profiling. See BXC-D1-INDEX-TRIGGER-VERIFICATION-001.md. This does not authorize deletion, migrations or production changes.
