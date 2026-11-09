@@ -10,8 +10,8 @@ const iso = x => {
   return canonical.slice(0,19) === x.slice(0,19);
 };
 export function classifyUnpaid(row, {now, days = UNPAID_DAYS_PROPOSED} = {}) {
-  if (!Number.isSafeInteger(row?.id) || row.id <= 0) return 'invalid_id';
   if (!iso(now) || !Number.isInteger(days) || days < 1) throw new TypeError('Invalid clock or days');
+  if (!Number.isSafeInteger(row?.id) || row.id <= 0) return 'invalid_id';
   if (row.payment_status !== 'pending') return 'not_unpaid';
   if (row.legal_hold !== 0 || row.dispute_open !== 0) return 'hold_or_dispute_unknown';
   if (row.payment_reconciled !== 1) return 'payment_unreconciled';
@@ -29,10 +29,11 @@ export async function dryRun(db, {now, days = UNPAID_DAYS_PROPOSED} = {}) {
   const query = `SELECT COUNT(*) AS total FROM claims AS c
     JOIN bxc_retention_control AS r ON r.claim_id = c.id
     WHERE c.payment_status = 'pending' AND c.created_at <= ?
+      AND strftime('%Y-%m-%dT%H:%M:%SZ', c.created_at) = c.created_at
       AND r.legal_hold = 0 AND r.dispute_open = 0 AND r.payment_reconciled = 1
       AND NOT EXISTS (SELECT 1 FROM paypal_orders AS p WHERE p.claim_id = c.id)
       AND NOT EXISTS (SELECT 1 FROM notification_outbox AS o WHERE o.claim_id = c.id)`;
-  const cutoff = new Date(Date.parse(now) - days*86400000).toISOString();
+  const cutoff = new Date(Date.parse(now) - days*86400000).toISOString().replace('.000Z','Z');
   const result = await db.prepare(query).bind(cutoff).first();
   const count = Number(result?.total);
   if (!Number.isSafeInteger(count) || count < 0) throw new TypeError('Invalid D1 count');
