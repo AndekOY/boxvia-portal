@@ -1,7 +1,7 @@
 // Run with: node --test cloudflare/retention-draft/planner.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planUnpaidRetention } from "./planner.js";
+import { planUnpaidRetention } from "./planner.mjs";
 const now = "2026-11-09T12:00:00Z";
 const old = "2026-09-01T12:00:00Z";
 const recent = "2026-11-08T12:00:00Z";
