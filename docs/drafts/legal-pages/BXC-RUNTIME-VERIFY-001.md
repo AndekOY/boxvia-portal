@@ -46,3 +46,16 @@ Owner validates actual business address/contact, GDPR controller and provider ro
 | Item | Account/page | Observation | Evidence date | Source type (code/dashboard/browser/vendor) | Redacted attachment | Verified by | Remaining gap |
 |---|---|---|---|---|---|---|---|
 | Example: Cron active? | Cloudflare Worker Triggers | OPEN | — | dashboard | — | — | runtime unknown |
+
+
+## Evidence update — owner dashboard screenshots, 2026-11-09
+Source: screenshots shared by owner in conversation, not independent administrator access. Do not publish screenshot URLs, account identifiers, customer emails, payment tokens or secrets.
+- Production Worker name `boxvia`. Runtime: `CLAIM_INTAKE_ENABLED=true`, `PAYPAL_CHECKOUT_ENABLED=true`, `PAYPAL_ENV=live`; configured secrets `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`. Values were not inspected.
+- Production D1 binding: `DB -> boxvia-claims`. Dashboard screenshot also showed Logs, Traces, Issues toggled off and no telemetry export destinations available. This is not proof of no other provider or infrastructure logs.
+- Cron trigger: every five minutes. No queue consumer and no inbound email routing rule shown.
+- Cloudflare Builds previously had `PAYPAL_ENV=sandbox`; owner reports changing it to `live` and replacing Build credentials with Live credentials. This is OWNER-REPORTED, not independently re-read from Builds after the change.
+- Cloudflare Deployments showed dashboard secret updates and a ready deployment after updating credentials. A separate successful GitHub build used `npx wrangler deploy` from main. Production behavior at the exact screenshot time may differ from earlier code-based inspection.
+- PayPal Developer Live shows app `BoxVia Check a Claim`; Business Website Preferences show `PayPal account optional=On`, `Auto return=On`, `Payment data transfer=Off`, `Block non-encrypted website payments=Off`. These are account settings, not evidence of customer data retention.
+- A live paypal.com checkout screen was reached; a second buyer/account context displayed a debit/credit-card option. No card charge or capture was verified. Guest eligibility is session-dependent; no payment success inferred.
+- Remaining: D1 table definitions and retention/backups, Cloudflare provider log retention, Turnstile settings, Resend processing/log retention, live browser cookie/storage inventory, approved legal contact, controller/processor roles and international transfers, customer durable confirmation.
+- Outcome: runtime configuration PARTIALLY VERIFIED BY OWNER SCREENSHOTS; PRIVACY/COOKIE RELEASE HOLD remains.
