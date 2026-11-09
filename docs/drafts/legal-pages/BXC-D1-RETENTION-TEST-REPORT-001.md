@@ -13,3 +13,6 @@ This verifies only pure function classification. No SQL integration, concurrency
 None is wired to Worker, scheduled, or executed against production. These files are review artifacts, not migration approval.
 ## Release status
 LOCAL CLASSIFICATION TEST PASS. D1 MIGRATION UNTESTED. NO DELETION EXECUTOR. OWNER/LEGAL/COS GATES OPEN. RELEASE HOLD.
+
+## Additional local SQLite validation
+Reconstructed the 30-column application schema in an in-memory SQLite database and executed an equivalent additive control schema and aggregate candidate query. Three synthetic checks passed: default controls exclude the record; explicitly reviewed safe flags allow an old unpaid record; inserting any PayPal order excludes that record. This was **not** a Cloudflare D1 execution and does not validate migrations against production constraints, indexes, triggers or foreign keys.
