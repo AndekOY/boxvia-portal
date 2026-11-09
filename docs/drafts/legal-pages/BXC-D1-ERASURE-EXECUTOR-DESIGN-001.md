@@ -57,3 +57,7 @@ All three have id=0, seq=0 within their own table. No FK rows for claims. This c
 
 ## Verified production index and trigger inventory — 2026-11-09
 Owner-exported D1 Studio sqlite_master metadata lists six indexes: claims(status); notification_outbox(status, created_at); paypal_orders(claim_id); plus one notification_outbox and two paypal_orders SQLite autoindexes with NULL/empty SQL definitions. No triggers were returned for the four application tables. The autoindex columns and corresponding UNIQUE constraints are not yet established. No claims(created_at) index was returned; evaluate a staging index only after profiling. See BXC-D1-INDEX-TRIGGER-VERIFICATION-001.md. This does not authorize deletion, migrations or production changes.
+
+
+## Verified UNIQUE columns — 2026-11-09
+Read-only owner D1 export confirms UNIQUE(notification_outbox.claim_id, notification_outbox.event_type), UNIQUE(paypal_orders.paypal_order_id), and UNIQUE(paypal_orders.capture_id). The capture_id column is nullable, so multiple NULLs are permitted by SQLite. Do not rely on a unique index as evidence of a completed payment. Keep outbox event deduplication and PayPal reconciliation evidence intact. See BXC-D1-UNIQUE-COLUMNS-VERIFICATION-001.md.
