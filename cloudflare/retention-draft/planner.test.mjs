@@ -1,0 +1,23 @@
+// Run with: node --test cloudflare/retention-draft/planner.test.mjs
+import test from "node:test";
+import assert from "node:assert/strict";
+import { planUnpaidRetention } from "./planner.js";
+const now = "2026-11-09T12:00:00Z";
+const old = "2026-09-01T12:00:00Z";
+const recent = "2026-11-08T12:00:00Z";
+const safe = (id, extra={}) => ({id,created_at:old,payment_status:"pending",legal_hold:false,dispute_open:false,payment_reconciled:true,paypal_order_count:0,outbox_pending:false,...extra});
+test("old unpaid fully reconciled is a dry-run candidate",()=>{const p=planUnpaidRetention([safe(1)],{now});assert.deepEqual(p.candidates,[{id:1,reason:"unpaid_age_threshold"}]);assert.equal(p.mode,"DRY_RUN_ONLY");});
+test("recent unpaid not due",()=>assert.equal(planUnpaidRetention([safe(2,{created_at:recent})],{now}).candidates.length,0));
+test("paid never candidate",()=>assert.equal(planUnpaidRetention([safe(3,{payment_status:"paid"})],{now}).candidates.length,0));
+test("existing PayPal order blocks",()=>assert.equal(planUnpaidRetention([safe(4,{paypal_order_count:1})],{now}).candidates.length,0));
+test("unknown PayPal order count blocks",()=>assert.equal(planUnpaidRetention([safe(5,{paypal_order_count:undefined})],{now}).candidates.length,0));
+test("unreconciled payment blocks",()=>assert.equal(planUnpaidRetention([safe(6,{payment_reconciled:false})],{now}).candidates.length,0));
+test("legal hold blocks",()=>assert.equal(planUnpaidRetention([safe(7,{legal_hold:true})],{now}).held.length,1));
+test("unknown hold blocks",()=>assert.equal(planUnpaidRetention([safe(8,{legal_hold:undefined})],{now}).candidates.length,0));
+test("dispute blocks",()=>assert.equal(planUnpaidRetention([safe(9,{dispute_open:true})],{now}).held.length,1));
+test("pending notification blocks",()=>assert.equal(planUnpaidRetention([safe(10,{outbox_pending:true})],{now}).candidates.length,0));
+test("invalid date excluded",()=>assert.equal(planUnpaidRetention([safe(11,{created_at:"not-a-date"})],{now}).candidates.length,0));
+test("invalid claim id rejected",()=>assert.throws(()=>planUnpaidRetention([safe(0)],{now}),TypeError));
+test("invalid time rejected",()=>assert.throws(()=>planUnpaidRetention([],{now:"invalid"}),TypeError));
+test("boundary inclusive",()=>assert.equal(planUnpaidRetention([safe(12,{created_at:"2026-10-10T12:00:00Z"})],{now}).candidates.length,1));
+test("no mutation of input",()=>{const x=safe(13);planUnpaidRetention([x],{now});assert.equal(x.customer_email,undefined);});
