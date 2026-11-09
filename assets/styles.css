@@ -303,9 +303,53 @@ main .service-bottom-actions a.button:focus-visible {
   color:#071a29;
 }
 
-/* Keep translated inline text links visually separated from adjacent words. */
-main p a:not(.button):not(.oqr-action):not(.sample-report-button):not(.sample-jump-link),
-main li a:not(.button),
-.site-footer .footer-links > a:not(.footer-linkedin) {
-  margin-inline: .16em;
+/* BoxVia unified link buttons: prose, lists and footer.
+   Keep navigation, brand and existing primary action buttons unchanged. */
+main :is(p,li) a:not(.button):not(.oqr-action):not(.sample-report-button):not(.sample-jump-link):not(.sample-report-button):not(.nav-cta),
+main :is(article.card,section.card) > a:not(.button):not(.oqr-action):not(.sample-report-button),
+.site-footer .footer-links > a,
+.site-footer a:not(.footer-linkedin) {
+  display: inline-flex;
+  vertical-align: middle;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 5px 11px;
+  margin: 4px 5px;
+  border: 1px solid #83d4ee;
+  border-radius: 9px;
+  background: transparent;
+  color: #b7e5f9;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+main :is(p,li) a:not(.button):not(.oqr-action):not(.sample-report-button):not(.sample-jump-link):is(:hover,:focus-visible),
+.site-footer a:is(:hover,:focus-visible) {
+  background: #193b50;
+  color: #fff;
+  text-decoration: none;
+}
+.site-footer .footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.site-footer .footer-links > a {
+  margin: 0;
+}
+.site-footer .footer-linkedin {
+  width: 40px;
+  min-width: 40px;
+  padding: 7px;
+}
+@media (max-width: 600px) {
+  main :is(p,li) a:not(.button):not(.oqr-action):not(.sample-report-button):not(.sample-jump-link) {
+    white-space: normal;
+  }
 }
