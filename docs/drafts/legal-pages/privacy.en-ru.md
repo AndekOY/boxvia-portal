@@ -60,3 +60,15 @@ When you submit a Check a Claim request, BoxVia records your email address, the 
 **Сроки хранения не подтверждены:** на основании одной структуры базы нельзя указывать конкретную продолжительность хранения. До публикации требуется подтвердить график хранения и удаления, срок доступности резервных данных D1/Time Travel и роли обработчиков.
 
 Source / Источник: docs/drafts/legal-pages/BXC-D1-SCHEMA-001.md. Four tables, 30 columns. Metadata only, no customer records inspected.
+
+
+## v0.5 — Source-code retention and processor audit, 2026-11-09
+### EN — internal draft; do not publish as a complete retention policy
+Review of the current Worker source did not identify a scheduled data-retention cleanup for Check a Claim requests, access-token hashes, PayPal transaction metadata or notification history. The one identified claim deletion is a rollback of an unpaid claim when access-token storage fails. Scheduled execution processes notification delivery, not deletion. Access-token verification does not check token age in the inspected code. Resend receives the customer's email address in the paid-claim notification sent to BoxVia's configured operator mailbox; the separate service-request flow also sends customer-provided information through Resend. Cloudflare Turnstile verification transmits the challenge response and connecting IP to its verification service. Notification errors may be retained in a bounded error-text field. These observations do not establish provider-side retention, backups, manual deletion procedures or lawful periods for accounting records.
+
+**Do not publish a fixed deletion promise until a lawful category-specific retention schedule and operational deletion process are approved and verified.** See BXC-RETENTION-AUDIT-001.md.
+
+### RU — технический перевод; внутренний черновик
+В проверенном исходном коде Worker не обнаружена плановая очистка заявок Check a Claim, хешей токенов доступа, платежных метаданных PayPal или истории уведомлений. Единственная выявленная операция удаления заявки применяется при ошибке сохранения токена доступа для неоплаченной заявки. Планировщик обрабатывает доставку уведомлений, а не удаление данных. В проверенной реализации токен доступа не ограничен по возрасту при проверке. Resend получает email клиента в уведомлении об оплаченной заявке, направляемом на настроенный адрес оператора BoxVia; отдельный поток сервисных запросов также передает данные через Resend. Проверка Cloudflare Turnstile передает ответ на проверку и IP подключения в сервис верификации. Диагностические сообщения об ошибках уведомлений могут сохраняться в отдельном текстовом поле с ограничением длины. Эти факты не устанавливают сроки хранения у провайдеров, наличие резервных копий, ручных процедур удаления или законные сроки хранения бухгалтерских документов.
+
+**Нельзя публиковать обещание удаления через фиксированный срок до утверждения законного графика хранения по категориям и проверки работающей процедуры удаления.** См. BXC-RETENTION-AUDIT-001.md.
