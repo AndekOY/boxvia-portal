@@ -1,0 +1,2 @@
+SELECT COUNT(*) AS preliminary_count FROM claims c JOIN bxc_retention_control r ON r.claim_id=c.id WHERE c.payment_status='pending' AND c.created_at<='2026-10-10T12:00:00Z' AND strftime('%Y-%m-%dT%H:%M:%SZ',c.created_at)=c.created_at AND r.legal_hold=0 AND r.dispute_open=0 AND r.payment_reconciled=1 AND NOT EXISTS(SELECT 1 FROM paypal_orders p WHERE p.claim_id=c.id) AND NOT EXISTS(SELECT 1 FROM notification_outbox o WHERE o.claim_id=c.id);
+PRAGMA foreign_key_check;
