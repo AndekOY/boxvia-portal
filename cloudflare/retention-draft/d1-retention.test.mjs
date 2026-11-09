@@ -16,5 +16,9 @@ test('recent blocked',()=>assert.equal(classifyUnpaid({...safe,created_at:'2026-
 test('bad date blocked',()=>assert.equal(classifyUnpaid({...safe,created_at:'2026-02-30T12:00:00Z'},{now}),'invalid_date'));
 test('bad id blocked',()=>assert.equal(classifyUnpaid({...safe,id:0},{now}),'invalid_id'));
 test('bad clock rejected',()=>assert.throws(()=>classifyUnpaid(safe,{now:'bad'}),TypeError));
-test('read-only SQL and aggregate result',async()=>{let sql,cutoff;const db={prepare:q=>{sql=q;return {bind:x=>{cutoff=x;return {first:async()=>({total:2})}}}}};const r=await dryRun(db,{now});assert.equal(r.preliminaryCount,2);assert.equal(r.deletionAuthorized,false);assert.equal(r.releaseHold,true);assert.match(sql,/SELECT COUNT\(\*\)/);assert.doesNotMatch(sql,/\b(?:DELETE|UPDATE|INSERT|DROP)\b/i);assert.equal(cutoff,'2026-10-10T12:00:00.000Z')});
+test('read-only SQL and aggregate result',async()=>{let sql,cutoff;const db={prepare:q=>{sql=q;return {bind:x=>{cutoff=x;return {first:async()=>({total:2})}}}}};const r=await dryRun(db,{now});assert.equal(r.preliminaryCount,2);assert.equal(r.deletionAuthorized,false);assert.equal(r.releaseHold,true);assert.match(sql,/SELECT COUNT\(\*\)/);assert.doesNotMatch(sql,/\b(?:DELETE|UPDATE|INSERT|DROP)\b/i);assert.equal(cutoff,'2026-10-10T12:00:00Z');assert.match(sql,/strftime\('/)});
 test('no executable erasure',()=>assert.throws(()=>executeErasure(),/RELEASE_HOLD/));
+
+test('invalid clock is rejected even with invalid ID',()=>assert.throws(()=>classifyUnpaid({...safe,id:0},{now:'bad'}),TypeError));
+test('missing D1 adapter rejected',async()=>assert.rejects(()=>dryRun(null,{now}),TypeError));
+test('invalid aggregate result rejected',async()=>assert.rejects(()=>dryRun({prepare:()=>({bind:()=>({first:async()=>({total:'not-a-number'})})})},{now}),TypeError));
