@@ -41,3 +41,15 @@ Production D1 FK/index/trigger metadata has NOT yet been provided. The 30-day un
 - No SQL DELETE or live cleanup authorized by this document.
 
 STATUS: DESIGN COMPLETE AS A DRAFT; FK METADATA UNVERIFIED; EXECUTOR NOT IMPLEMENTED; RELEASE HOLD.
+
+
+## Verified production foreign-key evidence — 2026-11-09
+Owner-exported D1 Studio read-only pragma result (3 rows) establishes:
+- claim_access.claim_id -> claims.id; ON DELETE NO ACTION
+- notification_outbox.claim_id -> claims.id; ON DELETE NO ACTION
+- paypal_orders.claim_id -> claims.id; ON DELETE NO ACTION
+All three have id=0, seq=0 within their own table. No FK rows for claims. This confirms the declared FK actions, but not whether PRAGMA foreign_keys enforcement is enabled on every relevant connection, nor index definitions or triggers.
+
+**Design decision:** no CASCADE; paid claims must retain the parent key while legally required payment evidence exists. For unpaid claims, an eventual reviewed executor may remove eligible access and outbox child records before removing the parent, but only after verifying that no PayPal order exists and there is no active outbox delivery, legal hold, dispute, unresolved payment or tax record. Execute rechecks and mutations atomically with D1-supported transaction semantics. Do not issue a deletion query based solely on these FK rows.
+
+**Outstanding:** production index and trigger metadata, enforcement status, legal retention approval, operational hold/reconciliation controls, staging integration tests. No production mutation authorized.
