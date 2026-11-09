@@ -1,25 +1,41 @@
-# Focused AI Governance Review — Service Passport v0.1
-**Status:** INTERNAL DRAFT / RELEASE HOLD. Classification candidate only, NOT approved for public-offer checkout.
-**Evidence:** BoxVia Technical Pilot Protocol v0.1 RU (2026-11-06), BXC Standardized Services Classification & Admission Protocol v0.1, BXC Two-Track Contracting Model v0.1, draft Terms. Site live text/checkout not independently verified in this review.
-**Normative rule:** any failed or unknown S01–S12 criterion blocks automatic Track A admission; route to manual scoping, Track B or refusal.
+# Focused AI Governance Review — Service Passport v0.2 (Pizza-Test)
+**Status:** INTERNAL DRAFT / RELEASE HOLD — NOT admitted to public-offer checkout.
+**Controlling internal product method:** BXC-PIZZA-TEST-MICROSERVICE-TEMPLATE-001 v0.1.
+**Source distinction:** product unit is grounded in Technical Pilot Protocol v0.1 RU routing table; prices and delivery targets reflect the current project working decision, not independent checkout verification. Report length, source caps and method detail are working proposals.
+**Technical Pilot excluded from this standardization program.**
 
-## EN — working passport
-- **Product:** Focused AI Governance Review.
-- **Documented object:** whether documents support a statement about one AI policy, role or control (Technical Pilot Protocol routing table).
-- **Price:** USD 50 project commercial model; actual checkout not verified.
-- **Candidate track:** A only for preapproved publicly available or authorized nonsensitive documents, with strict size and source limits.
-- **Input:** policy/role/control claim and supporting documents; document count, maximum size, provenance rules and permitted confidentiality UNKNOWN.
-- **Method:** document-based evidence assessment, not organizational certification or regulatory compliance attestation. Specific ANDEKS method and decision criteria UNKNOWN.
-- **Deliverable:** bounded written support/non-support/UNESTABLISHED assessment proposed; template, language and evidence traceability must be approved.
-- **Time/delivery:** microservice 24-hour target in project context; applicability, start, delivery and access UNKNOWN.
-- **Escalation:** internal policies, nonpublic records, personal data, regulated decision reliance or bespoke control testing require Track B/manual review or refusal.
-- **Contract, IP, GDPR:** not approved.
-- **Decision:** CONDITIONAL CANDIDATE; NOT ADMITTED.
+## EN — working service passport
+**Service:** Focused AI Governance Review.
+**Price:** 50 USD; live site/checkout not verified.
+**Delivery target:** 2 days; exact start event, timezone, whether days are calendar/business (where applicable), pauses and remedies pending approval.
+**Candidate contracting track:** A / Public Offer + Standard Order, conditional, NOT approved.
+**Assessment unit:** one proposition about an AI policy, role or control.
+**Permitted evidence:** bounded authorized documents with versions; limits pending.
+**Deliverable:** focused documentary evidence report (page limit pending).
+**Explicit exclusions:** Certification, organization-wide audit, operational control testing, EU AI Act legal opinion; private records, credentials, special-category personal data and unauthorized third-party secrets are not accepted via public intake.
+
+### Mandatory Pizza-Test report sequence
+1. **OBJECT:** verbatim assessed proposition/question and version/context.
+2. **SOURCE & EVIDENCE:** traceable source(s), date, version and provenance.
+3. **ASSESSMENT BOUNDARY:** scope, assumptions, exclusions and missing evidence.
+4. **EVIDENCE STANDING:** SUPPORTED / NOT SUPPORTED / UNESTABLISHED; evidence-relative status, not a universal truth claim.
+5. **TRACEABLE FINDING:** bounded reasoned result, citations, limitations and any justified next step.
+
+### Admission and contract gates
+Product ID/version; allowed source types and input limits; final report template; method and canonical ANDEKS vocabulary; exact delivery clock; acceptance/contract formation and durable-medium confirmation; consumer withdrawal and statutory remedies; privacy lawful basis/retention; VAT; complaint channel; approved website/checkout parity; owner sign-off. Any NO or UNKNOWN blocks automatic acceptance. Nonpublic/confidential/custom scope -> Track B manual scoping or refusal.
+
 ## RU — технический перевод
-**Предмет:** проверка, подтверждают ли документы утверждение об одной политике ИИ, роли или контроле.
-**Цена:** 50 USD по рабочей модели, без повторной проверки checkout.
-**Поток:** A возможен только при строго ограниченном наборе разрешенных документов и объеме.
-**Метод:** доказательная проверка документов, не сертификация и не подтверждение полного соответствия требованиям.
-**Не установлены:** лимиты документов, критерии доказательств, точный результат, сроки, акцепт, хранение и доступ.
-**Эскалация:** внутренние документы, персональные данные и индивидуальное тестирование — в B или на отказ.
-**Итог:** пока НЕ ДОПУЩЕН.
+**Услуга:** Focused AI Governance Review.
+**Цена:** 50 USD; сайт и checkout не перепроверены.
+**Целевой срок:** 2 days; начало отсчета, характер дней, приостановление и последствия задержки требуют утверждения.
+**Договорный поток:** A, кандидат без окончательного допуска.
+**Единица оценки:** Одно утверждение о политике ИИ, роли или контроле.
+**Допустимые свидетельства:** ограниченные разрешенные документы с версиями.
+**Результат:** сфокусированный документальный отчет, объем уточняется.
+**Исключения:** индивидуальные регулируемые консультации, сертификация и работы за пределами установленного предмета; закрытые материалы и секреты не принимаются публичной формой.
+
+**Пять частей отчета:** OBJECT (объект); SOURCE & EVIDENCE (источник и свидетельства); ASSESSMENT BOUNDARY (граница оценки); EVIDENCE STANDING (SUPPORTED / NOT SUPPORTED / UNESTABLISHED); TRACEABLE FINDING (прослеживаемый вывод).
+
+**Блокеры:** лимиты входа, метод и терминология ANDEKS, утвержденный шаблон отчета, срок и доставка, акцепт, права потребителя, GDPR, VAT, жалобы, соответствие сайта/checkout, утверждение владельца.
+
+**Статус: INTERNAL DRAFT / RELEASE HOLD.**
