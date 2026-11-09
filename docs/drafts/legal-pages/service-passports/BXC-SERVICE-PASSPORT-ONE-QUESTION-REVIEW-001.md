@@ -1,24 +1,41 @@
-# One Question Review — Service Passport v0.1
-**Status:** INTERNAL DRAFT / RELEASE HOLD. Classification candidate only, NOT approved for public-offer checkout.
-**Evidence:** BoxVia Technical Pilot Protocol v0.1 RU (2026-11-06), BXC Standardized Services Classification & Admission Protocol v0.1, BXC Two-Track Contracting Model v0.1, draft Terms. Site live text/checkout not independently verified in this review.
-**Normative rule:** any failed or unknown S01–S12 criterion blocks automatic Track A admission; route to manual scoping, Track B or refusal.
+# One Question Review — Service Passport v0.2 (Pizza-Test)
+**Status:** INTERNAL DRAFT / RELEASE HOLD — NOT admitted to public-offer checkout.
+**Controlling internal product method:** BXC-PIZZA-TEST-MICROSERVICE-TEMPLATE-001 v0.1.
+**Source distinction:** product unit is grounded in Technical Pilot Protocol v0.1 RU routing table; prices and delivery targets reflect the current project working decision, not independent checkout verification. Report length, source caps and method detail are working proposals.
+**Technical Pilot excluded from this standardization program.**
 
-## EN — working passport
-- **Product:** One Question Review.
-- **Documented object:** a reasoned answer to one business question (Technical Pilot Protocol routing table).
-- **Price:** USD 50 in project commercial model; actual site/checkout not verified.
-- **Candidate track:** A only if a bounded question type, evidence inputs and report limits are approved.
-- **Input:** one business question; permitted sectors, source types, word count and exclusions UNKNOWN.
-- **Method:** evidence-based bounded review proposed; exact procedure, search/research depth and evidence thresholds UNKNOWN.
-- **Deliverable:** reasoned answer proposed; template, word/page limit, language and possible UNESTABLISHED outcome need definition.
-- **Time/delivery:** 24-hour microservice target in project context, but exact applicability, start, pause, channel and access period UNKNOWN.
-- **Risk:** a 'business question' may seek regulated legal, tax, financial or high-stakes advice; escalate or refuse, not auto-accept.
-- **Contract, IP, GDPR:** all standard admission gates require verification.
-- **Decision:** NOT ADMITTED; product scope insufficiently bounded for Track A.
+## EN — working service passport
+**Service:** One Question Review.
+**Price:** 50 USD; live site/checkout not verified.
+**Delivery target:** 2 days; exact start event, timezone, whether days are calendar/business (where applicable), pauses and remedies pending approval.
+**Candidate contracting track:** A / Public Offer + Standard Order, conditional, NOT approved.
+**Assessment unit:** one bounded business question.
+**Permitted evidence:** bounded public/authorized evidence; exact limits pending.
+**Deliverable:** two A4 pages (working proposal).
+**Explicit exclusions:** Individual legal/tax/financial advice, unlimited research, bespoke strategy; private records, credentials, special-category personal data and unauthorized third-party secrets are not accepted via public intake.
+
+### Mandatory Pizza-Test report sequence
+1. **OBJECT:** verbatim assessed proposition/question and version/context.
+2. **SOURCE & EVIDENCE:** traceable source(s), date, version and provenance.
+3. **ASSESSMENT BOUNDARY:** scope, assumptions, exclusions and missing evidence.
+4. **EVIDENCE STANDING:** SUPPORTED / NOT SUPPORTED / UNESTABLISHED; evidence-relative status, not a universal truth claim.
+5. **TRACEABLE FINDING:** bounded reasoned result, citations, limitations and any justified next step.
+
+### Admission and contract gates
+Product ID/version; allowed source types and input limits; final report template; method and canonical ANDEKS vocabulary; exact delivery clock; acceptance/contract formation and durable-medium confirmation; consumer withdrawal and statutory remedies; privacy lawful basis/retention; VAT; complaint channel; approved website/checkout parity; owner sign-off. Any NO or UNKNOWN blocks automatic acceptance. Nonpublic/confidential/custom scope -> Track B manual scoping or refusal.
+
 ## RU — технический перевод
-**Предмет:** обоснованный ответ на один бизнес-вопрос (протокол Technical Pilot v0.1).
-**Цена:** 50 USD по рабочей модели; сайт и checkout не перепроверены.
-**Поток:** A только после ограничения класса вопросов, объема исследования, источников и результата.
-**Особый риск:** запрос может подразумевать юридическую, налоговую, финансовую или иную регулируемую консультацию.
-**Не установлены:** допустимые входные данные, метод, шаблон ответа, предел объема, срок, доставка, акцепт, GDPR.
-**Итог:** пока НЕ ДОПУЩЕН к автоматической продаже по публичной оферте.
+**Услуга:** One Question Review.
+**Цена:** 50 USD; сайт и checkout не перепроверены.
+**Целевой срок:** 2 days; начало отсчета, характер дней, приостановление и последствия задержки требуют утверждения.
+**Договорный поток:** A, кандидат без окончательного допуска.
+**Единица оценки:** Один ограниченный бизнес-вопрос.
+**Допустимые свидетельства:** ограниченные публичные/разрешенные свидетельства.
+**Результат:** рабочий формат две страницы A4.
+**Исключения:** индивидуальные регулируемые консультации, сертификация и работы за пределами установленного предмета; закрытые материалы и секреты не принимаются публичной формой.
+
+**Пять частей отчета:** OBJECT (объект); SOURCE & EVIDENCE (источник и свидетельства); ASSESSMENT BOUNDARY (граница оценки); EVIDENCE STANDING (SUPPORTED / NOT SUPPORTED / UNESTABLISHED); TRACEABLE FINDING (прослеживаемый вывод).
+
+**Блокеры:** лимиты входа, метод и терминология ANDEKS, утвержденный шаблон отчета, срок и доставка, акцепт, права потребителя, GDPR, VAT, жалобы, соответствие сайта/checkout, утверждение владельца.
+
+**Статус: INTERNAL DRAFT / RELEASE HOLD.**
