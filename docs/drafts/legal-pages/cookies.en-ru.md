@@ -39,3 +39,13 @@ BXC-LGL-COOKIES v0.1 | FACT-FINDING DRAFT — NOT PUBLISHED
 **PayPal:** клиент перенаправляется на платежную страницу PayPal. Код BoxVia не раскрывает полный перечень cookies на домене PayPal; необходима проверка реального перехода и возврата.
 
 **Протокол проверки (ОТКРЫТО):** для каждого элемента фиксировать этап, домен, имя, тип, назначение, инициатор, срок, необходимость, правовое основание, требование согласия и обезличенное доказательство. Этапы: чистый браузер, первая загрузка, Turnstile, отправка формы, переход PayPal, отмена, возврат, аналитика, мобильный и приватный режим. Реальный платеж без отдельного разрешения не выполнять.
+
+
+## v0.3 — Live checkout observations (2026-11-09) / Наблюдения платежной страницы
+### EN
+Owner screenshots show a redirect to `paypal.com/pay` in Live mode. One browser/buyer context showed account login/creation only; another showed a debit/credit-card option. This establishes **checkout presentation variability**, not a verified inventory of cookies or device storage. The screenshots do not show browser DevTools Storage/Network and cannot prove whether consent is needed for any particular technology. PayPal Account Optional was already On. Do not imply that turning it on changed the outcome.
+
+### RU — технический перевод
+Скриншоты владельца подтверждают переход на `paypal.com/pay` в Live. В одном пользовательском контексте отображались вход и создание аккаунта, в другом — оплата дебетовой или кредитной картой. Это подтверждает **различие платежного интерфейса**, но не состав cookies и браузерного хранилища. На скриншотах нет данных DevTools Storage/Network, поэтому необходимость согласия на конкретные технологии не установлена. PayPal Account Optional уже был включен; нельзя утверждать, что его переключение изменило поведение.
+
+**Open / Открыто:** провести безопасную инвентаризацию cookies, sessionStorage, localStorage, IndexedDB, сетевых запросов Cloudflare Web Analytics и Turnstile без реальной оплаты и без раскрытия платежных токенов.
