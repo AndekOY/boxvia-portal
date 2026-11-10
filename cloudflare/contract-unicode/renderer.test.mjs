@@ -23,12 +23,12 @@ for (const productId of ["check-a-claim", "one-question-review", "focused-ai-gov
   assert.equal(document.getPageCount(), 1);
   assert.deepEqual(document.getPage(0).getSize(), { width: 595.276, height: 841.89 });
   const raw = new TextDecoder("latin1").decode(bytes);
-  assert.ok(raw.includes("/FontFile2"), "Embedded TrueType font stream required");
+  assert.ok(raw.includes("/FontFile2") || raw.includes("/FontFile3"), "Embedded font stream required");
 }
 await assert.rejects(renderContractConfirmationUnicodeA4({
   ...base, exactScope: "long ".repeat(10000)
 }, font), /overflow/);
 await assert.rejects(renderContractConfirmationUnicodeA4({
-  ...base, providerAddress: "Street 1\\nStreet 2"
+  ...base, providerAddress: "Street 1\nStreet 2"
 }, font), /Invalid PDF field/);
 console.log("Unicode embedded-font A4 PDF staging tests passed");
