@@ -33,10 +33,16 @@ export function validateContractSnapshot(input) {
   if (!Array.isArray(input.acceptedDocuments) || !input.acceptedDocuments.length) {
     throw new TypeError("Missing immutable accepted documents");
   }
+  const documentIds = new Set();
   for (const doc of input.acceptedDocuments) {
-    if (!plain(doc?.id) || !plain(doc?.version) || !plain(doc?.sha256) || !/^[a-f0-9]{64}$/.test(doc.sha256)) {
-      throw new TypeError("Invalid accepted document reference");
+    if (!plain(doc?.id) || !plain(doc?.version) || !plain(doc?.sha256) ||
+        !/^[a-f0-9]{64}$/.test(doc.sha256) ||
+        !/^[A-Za-z0-9_.-]{1,100}$/.test(doc.id) ||
+        !/^[A-Za-z0-9_.-]{1,100}$/.test(doc.version) ||
+        documentIds.has(doc.id)) {
+      throw new TypeError("Invalid or duplicate accepted document reference");
     }
+    documentIds.add(doc.id);
   }
   if (input.earlyPerformanceRequest != null) {
     if (!plain(input.earlyPerformanceRequest.textVersion) ||
