@@ -95,7 +95,7 @@
   "openGates": [
     "Legal release and exact approved document bytes",
     "Withdrawal notice and statutory model form",
-    "SKU-specific VAT routing and disclosure",
+    "Mandatory transaction-specific tax disclosures, if required by applicable law (general jurisdictional reference approved)",
     "Contract confirmation on durable medium",
     "Actual service scope, delivery trigger and channel",
     "EN/RU technical equivalence"
@@ -123,7 +123,14 @@
     "polishVatRate": null,
     "eligibleJurisdictionsForAutomaticPaidCheckout": [],
     "reason": "SKU tax routing and buyer status require case-specific review",
-    "serviceModelConfirmed": "human-performed individualized analytical service with AI assistance; no fully automated result"
+    "serviceModelConfirmed": "human-performed individualized analytical service with AI assistance; no fully automated result",
+    "policy": "GENERAL_APPLICABLE_JURISDICTION_REFERENCE",
+    "customerWording": {
+      "ru": "Налоги, включая VAT, определяются и применяются в соответствии с действующим законодательством соответствующей юрисдикции. Окончательная стоимость услуги Check a Claim составляет 20 USD. Налоги, которые BoxVia обязана начислить, включены в указанную стоимость и не добавляются сверх нее. Налоговые обязательства клиента, если они предусмотрены применимым законодательством, исполняются клиентом самостоятельно.",
+      "en": "Taxes, including VAT, are determined and applied in accordance with the applicable laws of the relevant jurisdiction. The final price of Check a Claim is USD 20.00. Any taxes that BoxVia is legally required to charge are included in this price and are not added on top. The customer remains responsible for any tax obligations imposed directly on the customer under applicable law."
+    },
+    "mandatoryDisclosureCaveat": "Jurisdiction-specific mandatory pre-contract tax disclosures and invoice requirements prevail; generic reference alone is insufficient where the law requires specific information.",
+    "policySource": "OWNER_DIRECTION_2026-11-10"
   },
   "serviceDeliveryModel": {
     "classification": "HUMAN_PERFORMED_INDIVIDUAL_ANALYTICAL_SERVICE",
