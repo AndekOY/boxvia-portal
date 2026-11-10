@@ -9,5 +9,11 @@
     "PAYPAL_ENV": "sandbox",
     "PAYPAL_CHECKOUT_ENABLED": "false"
   },
-  "d1_databases": []
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boxvia-bxc-sandbox",
+      "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+    }
+  ]
 }
