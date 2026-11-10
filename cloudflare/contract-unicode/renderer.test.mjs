@@ -85,7 +85,7 @@ for (const address of [
       "Long field must fail closed rather than silently disappear");
   }
 }
-assert.throws(() => validateContractSnapshot({ ...base, providerAddress: "Street\\nSecond line" },
+assert.throws(() => validateContractSnapshot({ ...base, providerAddress: "Street\nSecond line" },
   { allowUnicode: true }), /Unsupported contract glyph/);
 
 console.log("Unicode pipeline gating tests passed");
