@@ -21,7 +21,9 @@ export async function registerContractConfirmation(db, rawSnapshot, { allowUnico
     throw new Error("Order confirmation immutable snapshot conflict");
   }
   return { orderId: snapshot.orderId, snapshotSha256: hash,
-    pdfReady: Boolean(row.pdf_sha256 && row.private_object_key), emailStatus: row.email_status };
+    pdfReady: Boolean(row.pdf_sha256 && row.private_object_key),
+    pdfSha256: row.pdf_sha256, privateObjectKey: row.private_object_key,
+    emailStatus: row.email_status };
 }
 export async function markConfirmationPdfReady(db, { orderId, snapshotHash, pdfSha256, privateObjectKey }) {
   if (!db?.prepare || !hex64.test(snapshotHash || "") || !hex64.test(pdfSha256 || "") ||
