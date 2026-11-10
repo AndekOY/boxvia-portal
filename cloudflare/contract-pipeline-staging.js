@@ -1,7 +1,7 @@
 // BoxVia draft orchestration: no Worker route, no production bindings.
 // Requires pre-validated legal acceptance and immutable annex PDFs.
 // No Resend call occurs until an explicit staging gate is enabled.
-import { validateContractSnapshot } from "./contract-confirmation.js";
+import { validateContractSnapshot, snapshotSha256 } from "./contract-confirmation.js";
 import { renderContractConfirmationA4 } from "./contract-pdf-a4.js";
 import { sha256Bytes, storePrivateContractPdf, loadPrivateContractPdf } from "./contract-private-r2-staging.js";
 import { registerContractConfirmation, markConfirmationPdfReady,
@@ -17,6 +17,7 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
   if (!Array.isArray(annexes) || requiredAnnexIds.some(id => !annexes.some(a => a.id === id))) {
     throw new Error("Complete immutable Terms, Schedule and withdrawal annexes required");
   }
+  if (new Set(annexes.map(a => a.id)).size !== annexes.length) throw new Error("Duplicate annex ID");
   for (const annex of annexes) {
     const reference = snapshot.acceptedDocuments.find(d => d.id === annex.id);
     if (!reference || reference.version !== annex.version || !(annex.bytes instanceof Uint8Array) ||
@@ -49,13 +50,15 @@ export async function dispatchContractConfirmationStaging({ env, acceptedOrder, 
   const record = await env.DB.prepare(
     "SELECT snapshot_sha256, pdf_sha256, private_object_key, email_status FROM contract_confirmations WHERE order_id = ?"
   ).bind(snapshot.orderId).first();
-  if (!record || record.pdf_sha256 !== pdfSha256 || record.private_object_key !== privateObjectKey) {
+  const acceptedSnapshotHash = await snapshotSha256(snapshot);
+  if (!record || record.snapshot_sha256 !== acceptedSnapshotHash || record.pdf_sha256 !== pdfSha256 || record.private_object_key !== privateObjectKey) {
     throw new Error("Contract PDF not registered or mismatch");
   }
   // Revalidate immutable annex bytes before dispatch. No mutable live links.
   if (!Array.isArray(annexes) || requiredAnnexIds.some(id => !annexes.some(a => a.id === id))) {
     throw new Error("Required annexes absent");
   }
+  if (new Set(annexes.map(a => a.id)).size !== annexes.length) throw new Error("Duplicate annex ID");
   for (const a of annexes) {
     const d = snapshot.acceptedDocuments.find(x => x.id === a.id);
     if (!d || d.version !== a.version || await sha256Bytes(a.bytes) !== d.sha256) {
