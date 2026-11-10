@@ -94,7 +94,15 @@ try {
   }), /acceptance/);
   await assert.rejects(prepareContractConfirmationStaging({
     env, acceptedOrder: order, annexes: annexes.slice(0, 2), acceptanceVerified: true
-  }), /annexes/);
+  }), /incomplete|annexes/);
+  await assert.rejects(prepareContractConfirmationStaging({
+    env, acceptedOrder: order, annexes: [...annexes, annexes[0]], acceptanceVerified: true
+  }), /Duplicate annex ID/);
+  await assert.rejects(prepareContractConfirmationStaging({
+    env, acceptedOrder: order,
+    annexes: annexes.map(a => a.id === "terms" ? { ...a, bytes: pdf("tampered") } : a),
+    acceptanceVerified: true
+  }), /Annex differs/);
   const prepared = await prepareContractConfirmationStaging({
     env, acceptedOrder: order, annexes, acceptanceVerified: true
   });
