@@ -4,7 +4,7 @@
 // No PII or PDF bytes are written to logs.
 import { validateContractSnapshot, snapshotSha256 } from "./contract-confirmation.js";
 const hex64 = /^[a-f0-9]{64}$/;
-const safeKey = value => typeof value === "string" && /^[A-Za-z0-9/_-]{1,240}\.pdf$/.test(value);
+const safeKey = value => typeof value === "string" && /^contracts\/[A-Za-z0-9_-]{6,100}\/[a-f0-9]{64}\.pdf$/.test(value);
 export async function registerContractConfirmation(db, rawSnapshot) {
   if (!db?.prepare) throw new TypeError("D1 binding required");
   const snapshot = validateContractSnapshot(rawSnapshot);
