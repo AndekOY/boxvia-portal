@@ -119,8 +119,8 @@ export async function handlePayment(request, env, url) {
       const order = await paypal(env, "/v2/checkout/orders", "POST", {
         intent: "CAPTURE",
         payment_source: { paypal: { experience_context: {
-          return_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_return=1",
-          cancel_url: url.origin + "/evidence-check/thank-you/?request=" + claimId + "&paypal_cancel=1",
+          return_url: url.origin + "/checkout/?request=" + claimId + "&checkout_session_id=" + encodeURIComponent(contractGate.checkoutSessionId) + "&paypal_return=1",
+          cancel_url: url.origin + "/checkout/?request=" + claimId + "&checkout_session_id=" + encodeURIComponent(contractGate.checkoutSessionId) + "&paypal_cancel=1",
           user_action: "PAY_NOW"
         } } },
         purchase_units: [{ custom_id: String(claimId), description: "BoxVia Check a Claim",
