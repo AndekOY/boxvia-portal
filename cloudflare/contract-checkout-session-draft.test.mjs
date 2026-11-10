@@ -8,7 +8,7 @@ const db = {prepare(sql){return {bind(...p){return {
   if(sessions.has(p[0])) throw Error("Duplicate session");
   sessions.set(p[0],{claimId:p[1],email:p[2],catalog:p[3],expiresAt:p[4],status:"open"});return {success:true};
  }
- if(sql.includes("status = 'consuming'")){
+ if(sql.startsWith("UPDATE contract_checkout_sessions SET status = 'consuming'")){
   const s=sessions.get(p[0]);if(!s||s.claimId!==p[1]||s.email!==p[2]||s.catalog!==p[3]||s.status!=="open"||s.expiresAt<=p[4])return {meta:{changes:0}};
   s.status="consuming";return {meta:{changes:1}};
  }
