@@ -1,0 +1,13 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "boxvia-bxc-sandbox",
+  "main": "../cloudflare/contract-sandbox-probe-draft.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": false,
+  "vars": {
+    "BXC_SANDBOX_ONLY": "true",
+    "PAYPAL_ENV": "sandbox",
+    "PAYPAL_CHECKOUT_ENABLED": "false"
+  },
+  "d1_databases": []
+}
