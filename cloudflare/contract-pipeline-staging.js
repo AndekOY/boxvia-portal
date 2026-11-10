@@ -53,7 +53,7 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
   validateContractAttachments(files);
   const pdfBytes = files[0].bytes;
   const pdfHash = await sha256Bytes(pdfBytes);
-  const registered = await registerContractConfirmation(env.DB, snapshot);
+  const registered = await registerContractConfirmation(env.DB, snapshot, { allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" });
   const stored = await storePrivateContractPdf({
     bucket: env.CONTRACT_R2, orderId: snapshot.orderId, pdfBytes, expectedSha256: pdfHash
   });
