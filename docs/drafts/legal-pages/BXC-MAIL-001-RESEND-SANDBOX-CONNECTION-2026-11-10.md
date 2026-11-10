@@ -32,3 +32,10 @@ Owner selected Resend based on an Outlook screenshot showing a BoxVia Technical 
 3. Run a single explicit sandbox dispatch; record Resend message ID, webhook delivery status, timestamp and immutable attachment hashes.
 4. Run negative tests for absent key, disabled flag, wrong recipient, incomplete attachments and provider error.
 5. Keep BXC release HOLD until all other legal/technical gates are closed.
+
+## Owner address decision — 2026-11-10
+- Owner-selected official customer contact and reply-to: `andrzej.ekhmenin@gmail.com`.
+- No owner-controlled sender domain is available. Do NOT configure `andrzej.ekhmenin@gmail.com` as Resend From; the Gmail domain cannot be verified by BoxVia for Resend sending.
+- Sandbox Resend From remains a separately authorized test sender, subject to Resend account restrictions. Add `BXC_CONFIRMATION_REPLY_TO=andrzej.ekhmenin@gmail.com` to the sandbox environment only when testing is authorized.
+- For real contractual email without a verified domain, assess an alternative authenticated Gmail sending channel or obtain a domain; neither is implemented or approved yet.
+- No deployment or email sending occurred.
