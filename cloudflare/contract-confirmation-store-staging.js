@@ -5,9 +5,9 @@
 import { validateContractSnapshot, snapshotSha256 } from "./contract-confirmation.js";
 const hex64 = /^[a-f0-9]{64}$/;
 const safeKey = value => typeof value === "string" && /^contracts\/[A-Za-z0-9_-]{6,100}\/[a-f0-9]{64}\.pdf$/.test(value);
-export async function registerContractConfirmation(db, rawSnapshot) {
+export async function registerContractConfirmation(db, rawSnapshot, { allowUnicode = false } = {}) {
   if (!db?.prepare) throw new TypeError("D1 binding required");
-  const snapshot = validateContractSnapshot(rawSnapshot);
+  const snapshot = validateContractSnapshot(rawSnapshot, { allowUnicode });
   const hash = await snapshotSha256(snapshot);
   // INSERT OR IGNORE avoids replacement of an already accepted contract.
   await db.prepare(
