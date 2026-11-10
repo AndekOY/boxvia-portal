@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { sha256Bytes, storePrivateContractPdf, loadPrivateContractPdf } from "./contract-private-r2-staging.js";
 const items = new Map();
 const bucket = {
-  async put(key, bytes) { items.set(key, new Uint8Array(bytes)); },
+  async put(key, bytes, options) { assert.equal(options.onlyIf.etagDoesNotMatch, "*"); if (items.has(key)) return null; items.set(key, new Uint8Array(bytes)); return { etag: "mock" }; },
   async get(key) {
     if (!items.has(key)) return null;
     return { async arrayBuffer() { return items.get(key).slice().buffer; } };
