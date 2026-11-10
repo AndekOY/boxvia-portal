@@ -147,6 +147,27 @@ try {
   });
   assert.equal(retry.status, "not_claimed");
   assert.equal(rows.get(uncertainOrder.orderId).attempts, 1);
+  // A provider may accept a message and lose its response before D1 is updated.
+  // This state must stay locked; retry must not create a second send.
+  const acceptedButLostOrder = { ...order, orderId: "BXC-TEST-003" };
+  const third = await prepareContractConfirmationStaging({
+    env, acceptedOrder: acceptedButLostOrder, annexes, acceptanceVerified: true
+  });
+  let uncertainSends = 0;
+  globalThis.fetch = async () => {
+    uncertainSends++;
+    throw new Error("Provider accepted but response was lost");
+  };
+  await assert.rejects(dispatchContractConfirmationStaging({
+    env, acceptedOrder: acceptedButLostOrder, annexes, acceptanceVerified: true,
+    privateObjectKey: third.privateObjectKey, pdfSha256: third.pdfSha256
+  }), /response was lost/);
+  assert.equal(rows.get(acceptedButLostOrder.orderId).email_status, "sending");
+  assert.equal((await dispatchContractConfirmationStaging({
+    env, acceptedOrder: acceptedButLostOrder, annexes, acceptanceVerified: true,
+    privateObjectKey: third.privateObjectKey, pdfSha256: third.pdfSha256
+  })).status, "not_claimed");
+  assert.equal(uncertainSends, 1);
   console.log("Integrated contract staging pipeline mock tests passed");
 } finally {
   globalThis.fetch = originalFetch;
