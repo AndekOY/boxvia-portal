@@ -28,6 +28,9 @@ export async function markConfirmationPdfReady(db, { orderId, snapshotHash, pdfS
     !safeKey(privateObjectKey) || !/^[A-Za-z0-9_-]{6,100}$/.test(orderId || "")) {
     throw new TypeError("Invalid PDF persistence request");
   }
+  if (privateObjectKey !== "contracts/" + orderId + "/" + pdfSha256 + ".pdf") {
+    throw new Error("Private object key must match order and PDF digest");
+  }
   const updated = await db.prepare(
     "UPDATE contract_confirmations SET pdf_sha256 = ?, private_object_key = ?, generated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND snapshot_sha256 = ? AND pdf_sha256 IS NULL AND private_object_key IS NULL"
   ).bind(pdfSha256, privateObjectKey, orderId, snapshotHash).run();
