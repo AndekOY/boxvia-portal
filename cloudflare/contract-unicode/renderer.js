@@ -43,6 +43,8 @@ export async function renderContractConfirmationUnicodeA4(snapshot, fontBytes) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const font = await pdf.embedFont(fontBytes, { subset: true });
+  // Preflight every legal field before producing any document bytes.
+  // A missing glyph must fail, never silently replace a character.
   const page = pdf.addPage(A4);
   const dark = rgb(0.12, 0.16, 0.22);
   let y = 790;
