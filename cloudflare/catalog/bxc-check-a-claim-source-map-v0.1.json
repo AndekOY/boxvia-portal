@@ -14,8 +14,8 @@
     "regon": "541534837",
     "address": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
     "verification": "CEIDG_AS_OF_2026-11-06_AND_VAT_REGISTRY_AS_OF_2026-11-09",
-    "contact": null,
-    "complaintsContact": null,
+    "contact": "andrzej.ekhmenin@gmail.com",
+    "complaintsContact": "andrzej.ekhmenin@gmail.com",
     "ceidgStatus": "active_as_of_2026-11-06",
     "vatStatus": "czynny_as_of_2026-11-09",
     "vatEu": "PL8513329301",
@@ -40,7 +40,9 @@
         "source": "European Commission VIES",
         "asOf": "2026-11-09T11:57:29"
       }
-    ]
+    ],
+    "withdrawalContact": "andrzej.ekhmenin@gmail.com",
+    "contactSource": "OWNER_CONFIRMED_2026-11-10"
   },
   "documents": [
     {
@@ -85,14 +87,13 @@
     "scheduleVersion": null,
     "providerName": "Andrey Ekhmenin – BoxVia",
     "providerAddress": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
-    "providerContact": null,
+    "providerContact": "andrzej.ekhmenin@gmail.com",
     "taxDisclosure": null,
     "deliveryRule": null,
     "deliveryChannel": null
   },
   "openGates": [
     "Legal release and exact approved document bytes",
-    "Verified customer-facing email/complaints/withdrawal contact (CEIDG identity and VAT status confirmed on dated records)",
     "Withdrawal notice and statutory model form",
     "SKU-specific VAT routing and disclosure",
     "Contract confirmation on durable medium",
