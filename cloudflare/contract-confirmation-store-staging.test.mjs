@@ -66,6 +66,8 @@ await assert.rejects(registerContractConfirmation(db, { ...input, exactScope: "C
 assert.equal(await claimContractEmailJob(db, input.orderId), false);
 const pdf = { orderId: input.orderId, snapshotHash: registered.snapshotSha256,
   pdfSha256: "b".repeat(64), privateObjectKey: "contracts/BXC-TEST-100/" + "b".repeat(64) + ".pdf" };
+await assert.rejects(markConfirmationPdfReady(db, { ...pdf, privateObjectKey: "contracts/BXC-OTHER-100/" + pdf.pdfSha256 + ".pdf" }), /match order/);
+await assert.rejects(markConfirmationPdfReady(db, { ...pdf, privateObjectKey: "contracts/BXC-TEST-100/" + "c".repeat(64) + ".pdf" }), /match order/);
 assert.equal((await markConfirmationPdfReady(db, pdf)).status, "pdf_ready");
 assert.equal((await markConfirmationPdfReady(db, pdf)).status, "pdf_ready");
 await assert.rejects(markConfirmationPdfReady(db, { ...pdf, pdfSha256: "c".repeat(64) }), /conflict/);
