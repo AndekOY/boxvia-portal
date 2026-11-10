@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const src=readFileSync(new URL("./paypal-contract-wired-draft.js",import.meta.url),"utf8");
+const create=src.indexOf('if (url.pathname === "/api/paypal/create-order") {');
+const capture=src.indexOf('if (url.pathname === "/api/paypal/capture-order") {');
+assert.ok(create>0 && capture>create);
+const createBody=src.slice(create,capture),captureBody=src.slice(capture);
+assert.ok(createBody.indexOf("preflightPayPalCreateDraft") < createBody.indexOf('"/v2/checkout/orders", "POST"'));
+assert.ok(createBody.includes("persistCreatedPayPalOrderDraft"));
+assert.ok(createBody.includes("Existing PayPal order lacks accepted contract linkage"));
+assert.ok(captureBody.indexOf("preflightPayPalCaptureDraft") < captureBody.indexOf('"/capture"'));
+assert.ok(captureBody.indexOf("preflightPayPalCaptureDraft") < captureBody.indexOf("UPDATE claims SET payment_status = 'paid'"));
+assert.ok(!src.includes('INSERT INTO paypal_orders (claim_id, paypal_order_id, amount, currency, status) VALUES (?, ?, \'20.00\', \'USD\', \'CREATED\')'));
+console.log("Draft PayPal handler integration structural checks passed");
