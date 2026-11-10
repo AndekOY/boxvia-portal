@@ -24,4 +24,23 @@ items.set(first.privateObjectKey, new TextEncoder().encode("%PDF-1.4\ncorrupted"
 await assert.rejects(loadPrivateContractPdf({
   bucket, privateObjectKey: first.privateObjectKey, expectedSha256: digest
 }), /corrupted/);
+
+// Missing write acknowledgment and silent storage corruption must not be accepted.
+const missingBucket = {
+  async get() { return null; },
+  async put() { return undefined; }
+};
+await assert.rejects(storePrivateContractPdf({ ...args, bucket: missingBucket }), /read-after-write/);
+const corruptedBucket = {
+  async get() { return { async arrayBuffer() {
+    return new TextEncoder().encode("%PDF-1.4\\nWRONG\\n%%EOF").buffer;
+  } }; },
+  async put() { throw new Error("Existing object must never be overwritten"); }
+};
+await assert.rejects(storePrivateContractPdf({ ...args, bucket: corruptedBucket }), /integrity failure/);
+const failingPutBucket = {
+  async get() { return null; },
+  async put() { throw new Error("R2 write unavailable"); }
+};
+await assert.rejects(storePrivateContractPdf({ ...args, bucket: failingPutBucket }), /R2 write unavailable/);
 console.log("Private contract R2 adapter mock tests passed");
