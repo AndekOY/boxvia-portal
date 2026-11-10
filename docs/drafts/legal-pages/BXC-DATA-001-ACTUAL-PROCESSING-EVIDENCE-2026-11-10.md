@@ -13,7 +13,7 @@ Scope: BXC sandbox draft code only. This does not certify the production site.
 | Claim capability | bxc-sandbox-worker-draft.js, checkout UI | Claim ID and access token submitted to Worker; UI states no browser storage; do not equate with zero logging |
 | Contract evidence | bxc-sandbox-worker-draft.js, catalog hashes and acceptance API | Intended storage in D1; actual retention and confirmation dispatch not verified |
 | Email | Provider contact owner-confirmed | No verified automated delivery/notification implementation |
-| AI providers | Owner confirms AI-assisted human analysis | Provider identity, contract, inputs, storage, training, transfers not verified |
+| AI provider/tool | Owner confirms ChatGPT is used for human-assisted Check a Claim analysis (not OpenAI API) | Actual workspace/account settings, whether identifiable client content is entered, training controls, retention and transfers not verified |
 | Analytics/cookies | No actual production page audit performed | Cannot claim absent; must inspect deployed pages |
 | Cross-border transfers | Not documented by reviewed code | Cannot infer Cloudflare/PayPal processing countries or GDPR safeguards |
 | Security/retention | No verified policies or deletion schedule | Do not invent days or vendor-specific terms |
@@ -27,7 +27,7 @@ Scope: BXC sandbox draft code only. This does not certify the production site.
 - Do not publish any blanket statement that data never leaves the EEA, is never used for model training, or is deleted after a specific period without evidence.
 
 ## Minimum factual owner/operator decisions
-1. Identify the actual AI tool/provider used on submitted claim material, whether customer data is entered, and the approved data handling mode.
+1. ChatGPT is the owner-confirmed AI tool (not OpenAI API). Verify whether client content or identifiers are entered into ChatGPT, which account/workspace and data controls are used, and whether identifiable customer information is permitted in prompts.
 2. Confirm how results and contract confirmation are emailed, which service transports the email, and whether email is retained.
 3. Identify actual analytics/cookies on the deployed BoxVia website.
 4. Define operational retention periods for claims/reports, contract evidence, payment and accounting records and backups, based on law and necessity.
@@ -37,3 +37,6 @@ Scope: BXC sandbox draft code only. This does not certify the production site.
 PRIVACY CANDIDATE: HOLD for final factual Art. 13 disclosure.
 CONTRACT CANDIDATES: HOLD pending mandatory legal review and working checkout/confirmation.
 No production modification, no vendor verification claim, no PayPal enablement.
+
+## Owner confirmation — 2026-11-10
+The actual AI assistance tool for Check a Claim is ChatGPT, not OpenAI API. This establishes tool identity only. No assertion is made about ChatGPT plan, privacy settings, training use, provider contractual role, retention, data residency or international transfer mechanism. The human analyst remains responsible for the report. Publication of a definitive ChatGPT processing disclosure requires a documented handling rule and confirmation of the relevant account settings and terms.
