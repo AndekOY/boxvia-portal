@@ -107,7 +107,7 @@ export async function handlePayment(request, env, url) {
         }
         const existing = await paypal(env, "/v2/checkout/orders/" + previous.paypal_order_id, "GET");
         const approval = existing.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href;
-        if (approval && /^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(approval)) {
+        if (approval && /^https:\/\/www\.sandbox\.paypal\.com\//.test(approval)) {
           return reply({ order_id: previous.paypal_order_id, approval_url: approval });
         }
         return reply({ error: "Existing order requires reconciliation" }, 409);
@@ -132,7 +132,7 @@ export async function handlePayment(request, env, url) {
       await persistCreatedPayPalOrderDraft({ db: env.DB, preflight: contractGate, paypalOrderId: order.id });
       await markPayPalAttemptLinkedDraft({ db: env.DB, reservation, paypalOrderId: order.id });
       const approval = order.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href;
-      if (!approval || !/^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(approval)) {
+      if (!approval || !/^https:\/\/www\.sandbox\.paypal\.com\//.test(approval)) {
         throw new Error("Missing trusted PayPal approval URL");
       }
       return reply({ order_id: order.id, approval_url: approval }, 201);
