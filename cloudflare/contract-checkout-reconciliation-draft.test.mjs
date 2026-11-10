@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import {validateContractSnapshot} from "./contract-confirmation.js";
 import {inspectInterruptedCheckoutDraft,finalizeInterruptedCheckoutDraft} from "./contract-checkout-reconciliation-draft.js";
 const id="BXC_"+"a".repeat(64), email="buyer@example.test", hash=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
 const snapshot={orderId:id,customerEmail:email,acceptedAt:"2026-11-10T12:00:00.000Z",productId:"check-a-claim",productVersion:"v1",exactScope:"Review one public claim",termsVersion:"v1",scheduleVersion:"v1",providerName:"BoxVia",providerAddress:"Poland",providerContact:"contact@example.test",totalPrice:"20.00",currency:"USD",taxDisclosure:"Tax included",deliveryRule:"Within 24 hours",reportLanguage:"English",deliveryChannel:"Email",acceptedDocuments:["terms","schedule","withdrawal"].map(id=>({id,version:"v1",sha256:"a".repeat(64)}))};
 const evidence={source:"server_checkout",checkoutSessionId:id,acceptanceEventSha256:"b".repeat(64),acceptedAt:snapshot.acceptedAt,orderId:id,customerEmail:email};
-const snapJson=JSON.stringify(snapshot), evidenceJson=JSON.stringify(evidence), digest=await hash(snapJson);
+const snapJson=JSON.stringify(validateContractSnapshot(snapshot)), evidenceJson=JSON.stringify(evidence), digest=await hash(snapJson);
 let status="consuming", archived=true, updates=0;
 const db={prepare(sql){return{bind(...params){return{
  async first(){
