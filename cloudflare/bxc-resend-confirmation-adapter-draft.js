@@ -27,6 +27,10 @@ export function createResendConfirmationSenderDraft(env,{fetchImpl=fetch}={}){
      prepared.attachments.length!==DOCUMENT_IDS.length ||
      DOCUMENT_IDS.some(id=>prepared.attachments.filter(a=>a.id===id).length!==1))
    throw Error("Sandbox recipient or complete confirmation package invalid");
+  if(env.BXC_CONFIRMATION_REPLY_TO!=="andrzej.ekhmenin@gmail.com")
+   throw Error("Owner-approved BoxVia reply-to address not configured");
+  if(/@gmail\.com$/i.test(env.BXC_CONFIRMATION_FROM))
+   throw Error("Unverified consumer Gmail domain cannot be used as Resend From");
   const attachments=prepared.attachments.map(a=>{
    if(typeof a.body!=="string" || !a.body.trim() || typeof a.filename!=="string" ||
       !/^BoxVia-(terms|schedule|withdrawal|privacy)\.txt$/.test(a.filename))
@@ -39,6 +43,7 @@ export function createResendConfirmationSenderDraft(env,{fetchImpl=fetch}={}){
     "Idempotency-Key":"bxc-confirm-"+prepared.orderId+"-"+prepared.snapshotSha256},
    body:JSON.stringify({
     from:env.BXC_CONFIRMATION_FROM,
+    reply_to:env.BXC_CONFIRMATION_REPLY_TO,
     to:[prepared.customerEmail],
     subject:prepared.subject,
     text:prepared.body,
