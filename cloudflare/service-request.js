@@ -88,6 +88,19 @@ export async function handleServiceRequest(request, env, url) {
     if (value) lines.push(label + "\n" + value);
   }
 
+  if (data.service === "technical-pilot") {
+    const reviewFormat = typeof data.review_format === "string" ? data.review_format : "not-sure";
+    const labels = {
+      "evidence-review": "Evidence Review - existing records",
+      "scenario-pilot": "Scenario Pilot - test execution and evidence",
+      "not-sure": "Not sure - scope to be determined"
+    };
+    if (!Object.prototype.hasOwnProperty.call(labels, reviewFormat)) {
+      return json({ error: "Please select a valid review format." }, 400);
+    }
+    lines.push("Requested review format: " + labels[reviewFormat]);
+  }
+
   const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
   if (!env.TURNSTILE_SECRET_KEY || !env.RESEND_API_KEY || !env.NOTIFICATION_FROM || !env.NOTIFICATION_TO) {
     return unavailable();
