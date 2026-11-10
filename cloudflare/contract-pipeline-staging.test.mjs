@@ -123,6 +123,23 @@ try {
   assert.equal((await dispatchContractConfirmationStaging(params)).status, "not_claimed");
   assert.equal(sends, 1);
   assert.equal(rows.get(order.orderId).email_status, "provider_accepted");
+  // Simulate provider transport uncertainty for a second synthetic order.
+  const uncertainOrder = { ...order, orderId: "BXC-TEST-002" };
+  const second = await prepareContractConfirmationStaging({
+    env, acceptedOrder: uncertainOrder, annexes, acceptanceVerified: true
+  });
+  globalThis.fetch = async () => { throw new Error("Simulated network uncertainty"); };
+  await assert.rejects(dispatchContractConfirmationStaging({
+    env, acceptedOrder: uncertainOrder, annexes, acceptanceVerified: true,
+    privateObjectKey: second.privateObjectKey, pdfSha256: second.pdfSha256
+  }), /network uncertainty/);
+  assert.equal(rows.get(uncertainOrder.orderId).email_status, "sending");
+  const retry = await dispatchContractConfirmationStaging({
+    env, acceptedOrder: uncertainOrder, annexes, acceptanceVerified: true,
+    privateObjectKey: second.privateObjectKey, pdfSha256: second.pdfSha256
+  });
+  assert.equal(retry.status, "not_claimed");
+  assert.equal(rows.get(uncertainOrder.orderId).attempts, 1);
   console.log("Integrated contract staging pipeline mock tests passed");
 } finally {
   globalThis.fetch = originalFetch;
