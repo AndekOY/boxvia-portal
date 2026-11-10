@@ -1,0 +1,13 @@
+{
+  // Separate draft-only Worker. DO NOT deploy without explicit owner approval.
+  "name": "boxvia-mailbox-smoke-staging",
+  "main": "contract-mailbox-smoke-worker-staging.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": true,
+  "vars": {
+    "BXC_MAIL_SMOKE_ENABLED": "false",
+    "BXC_MAIL_SMOKE_RECIPIENT": "andek.oy@gmail.com"
+  }
+  // Secrets must be provisioned separately: BXC_MAIL_SMOKE_TOKEN,
+  // RESEND_API_KEY, CONTRACT_FROM (non-secret sender may also be a var).
+}
