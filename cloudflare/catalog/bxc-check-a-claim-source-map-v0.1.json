@@ -49,19 +49,23 @@
       "id": "terms",
       "source": "BXC-001 General Service Terms v0.1 EN/RU",
       "driveId": "1v7fXOTTDtOz21SmVIna6gea3ZpZQF6gyS71XE0XuztY",
-      "status": "OWNER_APPROVED_INTERNAL_BASELINE_ONLY",
+      "status": "EN_CANDIDATE_NOT_RELEASED",
       "version": "v0.1-draft",
       "publicUrl": null,
-      "sha256": null
+      "sha256": null,
+      "candidatePath": "docs/releases/candidates/BXC-001-v0.1-EN.md",
+      "candidateVersion": "v0.1-EN-review"
     },
     {
       "id": "schedule",
       "source": "BXC-002 Consumer and Protected Sole Trader Schedule v0.1 EN/RU",
       "driveId": "1En4C9wBkpKkv5UdBr68oB0qQ2P22mZxIb_7hcmdtekA",
-      "status": "OWNER_APPROVED_INTERNAL_BASELINE_ONLY",
+      "status": "EN_CANDIDATE_NOT_RELEASED",
       "version": "v0.1-draft",
       "publicUrl": null,
-      "sha256": null
+      "sha256": null,
+      "candidatePath": "docs/releases/candidates/BXC-002-v0.1-EN.md",
+      "candidateVersion": "v0.1-EN-review"
     },
     {
       "id": "withdrawal",
@@ -156,5 +160,6 @@
     "scope": "BXC public contract documents, checkout disclosures, and order confirmation",
     "additionalLanguageRule": "Only where mandatory under applicable law; not automatically published",
     "source": "OWNER_EXPLICIT_DIRECTION_2026-11-10"
-  }
+  },
+  "releaseVerification": "docs/drafts/legal-pages/BXC-REL-002-MINIMAL-RELEASE-VERIFICATION-2026-11-10.md"
 }
