@@ -47,7 +47,9 @@ export function validateContractSnapshot(input) {
   if (input.earlyPerformanceRequest != null) {
     if (!plain(input.earlyPerformanceRequest.textVersion) ||
         !plain(input.earlyPerformanceRequest.requestedAt) ||
-        Number.isNaN(Date.parse(input.earlyPerformanceRequest.requestedAt))) {
+        Number.isNaN(Date.parse(input.earlyPerformanceRequest.requestedAt)) ||
+        !/^[A-Za-z0-9_.-]{1,100}$/.test(input.earlyPerformanceRequest.textVersion) ||
+        /[^\x20-\x7e]/.test(input.earlyPerformanceRequest.requestedAt)) {
       throw new TypeError("Invalid early performance evidence");
     }
   }
