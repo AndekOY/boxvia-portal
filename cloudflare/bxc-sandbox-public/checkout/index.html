@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoxVia BXC — Sandbox checkout</title><style>
+body{font:16px/1.55 system-ui,sans-serif;max-width:720px;margin:36px auto;padding:0 18px;color:#172333}
+h1{font-size:1.6rem}fieldset{border:1px solid #ccd3dc;border-radius:8px;margin:16px 0;padding:16px}
+label{display:block;margin:12px 0}input[type=text],input[type=password],input[type=number]{box-sizing:border-box;width:100%;padding:10px;border:1px solid #9da9b7;border-radius:6px}
+button{padding:11px 16px;background:#173b66;color:white;border:0;border-radius:6px;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}.notice{background:#f4f6f9;padding:12px;border-radius:8px}
+#status{white-space:pre-wrap;overflow-wrap:anywhere}.hidden{display:none}
+</style></head><body>
+<h1>BoxVia — Check a Claim</h1>
+<p class="notice"><strong>SANDBOX ONLY.</strong> This is a test checkout, not a live order. No real payment should be made.</p>
+<p>Service price: <strong>USD 20.00</strong>. Read the documents and provide explicit consent before opening PayPal Sandbox.</p>
+<form id="checkout">
+<fieldset><legend>Sandbox claim capability</legend>
+<label>Claim ID <input id="claim" type="number" min="1" required></label>
+<label>Access token (never stored in browser storage) <input id="access" type="password" autocomplete="off" required></label>
+</fieldset>
+<fieldset><legend>Contract documents</legend><div id="docs">Loading reviewed documents...</div></fieldset>
+<fieldset><legend>Required acknowledgements</legend>
+<label><input type="checkbox" id="affirmative" required> I affirmatively agree to this paid order.</label>
+<label><input type="checkbox" id="terms" required> I have read and accept the terms.</label>
+<label><input type="checkbox" id="schedule" required> I have read and accept the service schedule.</label>
+<label><input type="checkbox" id="withdrawal" required> I have read the withdrawal notice.</label>
+<label><input type="checkbox" id="privacy" required> I acknowledge the privacy notice.</label>
+</fieldset>
+<button id="start" type="submit" disabled>Accept contract and open PayPal Sandbox</button>
+</form>
+<fieldset id="return" class="hidden"><legend>PayPal Sandbox return</legend>
+<p>After approving in PayPal Sandbox, re-enter the claim ID and access token above, then verify the sandbox capture.</p>
+<button id="capture" type="button">Verify sandbox payment</button></fieldset>
+<p id="status" role="status" aria-live="polite"></p>
+<script>
+"use strict";
+const $=id=>document.getElementById(id), params=new URLSearchParams(location.search);
+const state={catalog:null,session:null};
+const status=msg=>{$("status").textContent=msg};
+const validUrl=u=>{try{const x=new URL(u);return x.protocol==="https:"}catch{return false}};
+async function api(path,body){
+ const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),credentials:"same-origin"});
+ const j=await r.json();if(!r.ok)throw Error(j.error||"Request failed ("+r.status+")");return j;
+}
+(async()=>{
+ try{
+  const r=await fetch("/api/bxc/catalog",{cache:"no-store"});
+  if(!r.ok)throw Error("Reviewed contract catalog is not available");
+  const data=await r.json();state.catalog=data;
+  const docs=$("docs");docs.replaceChildren();
+  for(const d of data.documents){
+   if(!validUrl(d.url))throw Error("Invalid contract document URL");
+   const p=document.createElement("p"),a=document.createElement("a");
+   a.href=d.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=d.label+" ("+d.version+")";
+   p.append(a);docs.append(p);
+  }
+  const p=document.createElement("p");p.textContent="Provider: "+data.providerName+" | "+data.providerContact+" | Tax: "+data.taxDisclosure+" | Delivery: "+data.deliveryRule;
+  docs.append(p);$("start").disabled=false;
+ }catch(e){status("Checkout blocked: "+e.message)}
+})();
+$("checkout").addEventListener("submit",async e=>{
+ e.preventDefault();$("start").disabled=true;
+ try{
+  if(!state.catalog)throw Error("Contract catalog unavailable");
+  const claim_id=Number($("claim").value),access_token=$("access").value;
+  const session=await api("/api/bxc/checkout-session",{claim_id,access_token});
+  state.session=session.checkout_session_id;
+  const consent={affirmative:$("affirmative").checked,termsAccepted:$("terms").checked,
+   scheduleAccepted:$("schedule").checked,withdrawalNoticeAcknowledged:$("withdrawal").checked,
+   privacyNoticeAcknowledged:$("privacy").checked};
+  await api("/api/bxc/accept",{claim_id,access_token,checkout_session_id:state.session,consent});
+  const order=await api("/api/paypal/create-order",{claim_id,access_token,checkout_session_id:state.session});
+  if(!validUrl(order.approval_url)||new URL(order.approval_url).hostname.endsWith(".paypal.com")===false)
+   throw Error("Untrusted PayPal approval URL");
+  status("Contract accepted. Redirecting to PayPal Sandbox.");
+  location.assign(order.approval_url);
+ }catch(e){status("STOP: "+e.message);$("start").disabled=false}
+});
+if(params.has("paypal_return")){
+ $("return").classList.remove("hidden");
+ $("claim").value=params.get("request")||"";
+ status("Returned from PayPal Sandbox. Re-enter the access token to verify payment.");
+}
+if(params.has("paypal_cancel"))status("Sandbox payment cancelled. No payment confirmation.");
+$("capture").addEventListener("click",async()=>{
+ $("capture").disabled=true;
+ try{
+  const order_id=params.get("token"),checkout_session_id=params.get("checkout_session_id");
+  if(!order_id||!checkout_session_id)throw Error("Missing PayPal return identifiers");
+  const data=await api("/api/paypal/capture-order",{
+   claim_id:Number($("claim").value),access_token:$("access").value,
+   checkout_session_id,order_id
+  });
+  status(data.payment_status==="paid"?"Sandbox payment confirmed; check fulfillment queue.":"Payment not confirmed");
+ }catch(e){status("STOP: "+e.message)}finally{$("capture").disabled=false}
+});
+</script></body></html>
