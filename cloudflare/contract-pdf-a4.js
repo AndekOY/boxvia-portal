@@ -26,10 +26,12 @@ export function renderContractConfirmationA4(s) {
   for (const key of required) if (typeof s?.[key] !== "string" || !s[key].trim()) throw new Error("Missing field: " + key);
   if (!["check-a-claim","one-question-review","focused-ai-governance-review"].includes(s.productId)) throw new Error("Unsupported service");
   if (!Array.isArray(s.acceptedDocuments) || !s.acceptedDocuments.length) throw new Error("Accepted documents required");
+  const serviceNames = { "check-a-claim": "Check a Claim", "one-question-review": "One Question Review", "focused-ai-governance-review": "Focused AI Governance Review" };
+  const serviceName = serviceNames[s.productId];
   const commands = []; let y = 793;
   const add = (text, { bold = false, size = 9, leading = 13, gap = 0 } = {}) => {
     for (const line of wrap(text, 505, size)) {
-      if (y - leading < 48) throw new Error("A4 confirmation overflow");
+      if (y - leading < 83) throw new Error("A4 confirmation overflow");
       commands.push(`BT /${bold ? "F2" : "F1"} ${size} Tf 1 0 0 1 45 ${y.toFixed(2)} Tm (${safe(line)}) Tj ET`);
       y -= leading;
     }
@@ -38,13 +40,14 @@ export function renderContractConfirmationA4(s) {
   const heading = t => add(t, { bold: true, size: 10, leading: 16, gap: 2 });
   add("BOXVIA | ORDER & CONTRACT CONFIRMATION", { bold: true, size: 15, leading: 23, gap: 3 });
   add("Document: Order confirmation | Language: English | Page 1 of 1", { size: 8, leading: 16, gap: 8 });
+  add("SERVICE: " + serviceName, { bold: true, size: 12, leading: 19, gap: 6 });
   heading("1. CONTRACT AND PARTIES");
   add(`Order ID: ${s.orderId} | Accepted (UTC): ${s.acceptedAt}`);
   add(`Provider: ${s.providerName} | Contact: ${s.providerContact}`);
   add(`Provider address: ${s.providerAddress}`);
   add(`Customer email: ${s.customerEmail}`, { gap: 5 });
   heading("2. SERVICE AND PRICE");
-  add(`Service: ${s.productId} | Version: ${s.productVersion}`);
+  add(`Service name: ${serviceName} | Version: ${s.productVersion}`);
   add(`Agreed scope: ${s.exactScope}`);
   add(`Total payable: ${s.totalPrice} ${s.currency} | Tax: ${s.taxDisclosure}`, { gap: 5 });
   heading("3. DELIVERY");
@@ -63,7 +66,13 @@ export function renderContractConfirmationA4(s) {
   heading("5. RECORD INTEGRITY");
   add("This confirmation records the accepted order. Payment alone does not remove statutory withdrawal rights.", { size: 8, leading: 12 });
   add("Keep this PDF and the accompanying contractual documents for your records.", { size: 8, leading: 12 });
-  const stream = commands.join("\n") + "\n";
+  // Fixed footer remains separate from the variable-length body.
+  const footer = [
+    "0.7 w 45 62 m 550 62 l S",
+    `BT /F2 8 Tf 1 0 0 1 45 48 Tm (${safe("BOXVIA | " + serviceName)}) Tj ET`,
+    `BT /F1 7 Tf 1 0 0 1 45 35 Tm (${safe("Order: " + s.orderId + " | Contract confirmation | Page 1 of 1")}) Tj ET`
+  ];
+  const stream = [...commands, ...footer].join("\\n") + "\\n";
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
