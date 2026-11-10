@@ -7,6 +7,8 @@ on:
       - 'cloudflare/contract-*.js'
       - 'cloudflare/contract-*.mjs'
       - 'cloudflare/contract-unicode/**'
+      - 'staging/bxc-sandbox-schema-draft.sql'
+      - 'staging/test_bxc_sandbox_schema.py'
       - '.github/workflows/bxc-contract-draft-tests.yml'
   workflow_dispatch:
 permissions:
@@ -20,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Sandbox D1 schema SQLite checks
+        run: python3 staging/test_bxc_sandbox_schema.py
       - name: Check JavaScript module syntax
         run: |
           for file in cloudflare/contract-*.js cloudflare/contract-*.mjs; do
