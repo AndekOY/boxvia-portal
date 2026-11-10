@@ -161,5 +161,13 @@
     "additionalLanguageRule": "Only where mandatory under applicable law; not automatically published",
     "source": "OWNER_EXPLICIT_DIRECTION_2026-11-10"
   },
-  "releaseVerification": "docs/drafts/legal-pages/BXC-REL-002-MINIMAL-RELEASE-VERIFICATION-2026-11-10.md"
+  "releaseVerification": "docs/drafts/legal-pages/BXC-REL-002-MINIMAL-RELEASE-VERIFICATION-2026-11-10.md",
+  "ownerDataMinimizationDecision": "docs/drafts/legal-pages/BXC-GDPR-DEC-001-DATA-MINIMIZATION-OWNER-DECISION-2026-11-10.md",
+  "operationalReleasePreflight": "docs/drafts/legal-pages/BXC-OPS-001-EN-RELEASE-PREFLIGHT-2026-11-10.md",
+  "checkoutReadiness": {
+    "status": "HOLD",
+    "earlyPerformanceConsent": "MISSING_IN_CURRENT_SANDBOX_UI_AND_ACCEPTANCE_PAYLOAD",
+    "durableContractDispatch": "NOT_IMPLEMENTED_IN_CURRENT_CONFIRMATION_MODULE",
+    "realClientInputsAllowed": false
+  }
 }
