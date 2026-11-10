@@ -156,6 +156,50 @@ try {
   });
   assert.equal(retry.status, "not_claimed");
   assert.equal(rows.get(uncertainOrder.orderId).attempts, 1);
+  // Crash after R2 write but before D1 commit: retry must not send,
+  // and must either recover consistently or fail closed without changing
+  // the accepted snapshot.
+  const crashOrder = { ...order, orderId: "BXC-TEST-004" };
+  const originalPut = CONTRACT_R2.put;
+  let crashOnce = true;
+  CONTRACT_R2.put = async (key, bytes) => {
+    await originalPut(key, bytes);
+    if (crashOnce) {
+      crashOnce = false;
+      throw new Error("Simulated crash after R2 write");
+    }
+  };
+  try {
+    await assert.rejects(prepareContractConfirmationStaging({
+      env, acceptedOrder: crashOrder, annexes, acceptanceVerified: true, unicodeFontBytes
+    }), /Simulated crash/);
+  } finally {
+    CONTRACT_R2.put = originalPut;
+  }
+  assert.equal(rows.get(crashOrder.orderId).pdf_sha256, null);
+  const crashRetry = await prepareContractConfirmationStaging({
+    env, acceptedOrder: crashOrder, annexes, acceptanceVerified: true, unicodeFontBytes
+  });
+  assert.equal(rows.get(crashOrder.orderId).pdf_sha256, crashRetry.pdfSha256);
+  assert.equal(rows.get(crashOrder.orderId).email_status, "pending");
+  // Concurrent requests for one accepted order: at most one immutable
+  // D1 reference can win. Any losing writer must fail closed.
+  const concurrentOrder = { ...order, orderId: "BXC-TEST-005" };
+  const results = await Promise.allSettled([1, 2].map(() =>
+    prepareContractConfirmationStaging({
+      env, acceptedOrder: concurrentOrder, annexes, acceptanceVerified: true, unicodeFontBytes
+    })));
+  assert.ok(results.some(r => r.status === "fulfilled"), "At least one preparation must succeed");
+  const winner = rows.get(concurrentOrder.orderId);
+  assert.ok(winner?.pdf_sha256 && winner.private_object_key);
+  for (const outcome of results) {
+    if (outcome.status === "fulfilled") {
+      assert.equal(outcome.value.pdfSha256, winner.pdf_sha256);
+    } else {
+      assert.match(String(outcome.reason), /integrity conflict|mismatch|missing order/);
+    }
+  }
+  assert.equal(rows.get(concurrentOrder.orderId).email_status, "pending");
   console.log("Integrated Unicode contract staging pipeline mock tests passed");
 } finally {
   globalThis.fetch = originalFetch;
