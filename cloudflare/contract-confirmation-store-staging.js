@@ -39,7 +39,9 @@ export async function markConfirmationPdfReady(db, { orderId, snapshotHash, pdfS
     row.private_object_key === privateObjectKey) return { status: "pdf_ready" };
   throw new Error("Confirmation PDF integrity conflict or missing order");
 }
-// Fail closed: no automatic retry of failed or uncertain sending states.\n// A verified reconciliation workflow must authorize any subsequent attempt.\nexport async function claimContractEmailJob(db, orderId) {
+// Fail closed: no automatic retry of failed or uncertain sending states.
+// A verified reconciliation workflow must authorize any subsequent attempt.
+export async function claimContractEmailJob(db, orderId) {
   if (!db?.prepare || !/^[A-Za-z0-9_-]{6,100}$/.test(orderId || "")) throw new TypeError("Invalid job");
   const result = await db.prepare(
     "UPDATE contract_confirmations SET email_status = 'sending', attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND pdf_sha256 IS NOT NULL AND private_object_key IS NOT NULL AND attempts < 5 AND email_status = 'pending'"
