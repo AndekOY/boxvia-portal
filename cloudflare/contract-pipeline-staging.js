@@ -19,7 +19,7 @@ function validateAnnexSet(snapshot, annexes) {
     throw new Error("Complete immutable Terms, Schedule and withdrawal annexes required");
   }
   for (const annex of annexes) {
-    if (!/^[A-Za-z0-9_.-]{1,100}\\.pdf$/.test(annex.filename || "") ||
+    if (!/^[A-Za-z0-9_.-]{1,100}\.pdf$/.test(annex.filename || "") ||
         !(annex.bytes instanceof Uint8Array)) throw new Error("Invalid annex PDF");
   }
 }
