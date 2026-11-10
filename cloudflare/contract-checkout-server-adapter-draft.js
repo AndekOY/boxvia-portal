@@ -40,7 +40,8 @@ export async function acceptCheckoutOnServerDraft({
   if (Number.isNaN(Date.parse(acceptedAt))) throw new Error("Invalid server timestamp");
   const rawSnapshot = {
     ...catalog, orderId: checkoutSessionId,
-    customerEmail: claim.customer_email, acceptedAt
+    customerEmail: claim.customer_email, acceptedAt,
+    earlyPerformanceRequest: consent?.earlyPerformanceRequested === true && consent?.earlyPerformanceConsequencesAcknowledged === true && consent?.earlyPerformanceTextVersion === "BXC-EARLY-001-v0.1" ? {textVersion:"BXC-EARLY-001-v0.1",requestedAt:acceptedAt} : null
   };
   return archiveCheckoutAcceptanceDraft({
     db, claimId, accessToken, checkoutSessionId, rawSnapshot, consent,
