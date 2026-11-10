@@ -1,4 +1,5 @@
 // Draft-only PayPal integration. Do NOT import into production worker.js.
+import { reservePayPalCreateDraft, markPayPalAttemptLinkedDraft } from "./contract-paypal-create-attempt-draft.js";
 import { preflightPayPalCreateDraft, persistCreatedPayPalOrderDraft, preflightPayPalCaptureDraft } from "./contract-paypal-boundary-draft.js";
 // BoxVia PayPal Orders integration. Closed by default (PAYPAL_CHECKOUT_ENABLED !== "true").
 // The browser never receives PayPal credentials. Request IDs alone are NOT authorization.
@@ -114,6 +115,7 @@ export async function handlePayment(request, env, url) {
       if (contractGate.existingPayPalOrderId) {
         return reply({ error: "Linked PayPal order requires reconciliation" }, 409);
       }
+      const reservation = await reservePayPalCreateDraft({ db: env.DB, preflight: contractGate });
       const order = await paypal(env, "/v2/checkout/orders", "POST", {
         intent: "CAPTURE",
         payment_source: { paypal: { experience_context: {
@@ -123,11 +125,12 @@ export async function handlePayment(request, env, url) {
         } } },
         purchase_units: [{ custom_id: String(claimId), description: "BoxVia Check a Claim",
           amount: { currency_code: "USD", value: "20.00" } }]
-      }, "boxvia-create-" + claimId);
+      }, reservation.requestId);
       if (!idPattern.test(order.id || "") || !["CREATED", "PAYER_ACTION_REQUIRED"].includes(order.status)) {
         throw new Error("Unexpected PayPal order");
       }
       await persistCreatedPayPalOrderDraft({ db: env.DB, preflight: contractGate, paypalOrderId: order.id });
+      await markPayPalAttemptLinkedDraft({ db: env.DB, reservation, paypalOrderId: order.id });
       const approval = order.links?.find(link => link.rel === "payer-action" || link.rel === "approve")?.href;
       if (!approval || !/^https:\/\/(www\.)?(sandbox\.)?paypal\.com\//.test(approval)) {
         throw new Error("Missing trusted PayPal approval URL");
