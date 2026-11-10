@@ -68,7 +68,7 @@ export async function dispatchContractConfirmationStaging({ env, acceptedOrder, 
   if (env?.BXC_CONTRACT_STAGING_ENABLED !== "true" || acceptanceVerified !== true) {
     throw new Error("Staging dispatch or acceptance gate closed");
   }
-  const snapshot = validateContractSnapshot(acceptedOrder);
+  const snapshot = validateContractSnapshot(acceptedOrder, { allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" });
   const record = await env.DB.prepare(
     "SELECT snapshot_sha256, pdf_sha256, private_object_key, email_status FROM contract_confirmations WHERE order_id = ?"
   ).bind(snapshot.orderId).first();
