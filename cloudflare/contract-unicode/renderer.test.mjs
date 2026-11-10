@@ -5,6 +5,7 @@ import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { renderContractConfirmationUnicodeA4 } from "./renderer.js";
 import { validateContractSnapshot } from "../contract-confirmation.js";
 import { prepareContractConfirmationStaging } from "../contract-pipeline-staging.js";
+import { sha256Bytes } from "../contract-private-r2-staging.js";
 
 const font = new Uint8Array(await readFile(process.env.BXC_TEST_TTF || "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"));
 const base = {
@@ -45,6 +46,10 @@ console.log("Unicode embedded-font A4 PDF staging tests passed");
 
 assert.throws(() => validateContractSnapshot(base), /Unsupported contract glyph/);
 assert.equal(validateContractSnapshot(base, { allowUnicode: true }).providerAddress, base.providerAddress);
+const sampleAnnexes = await Promise.all(["terms", "schedule", "withdrawal"].map(async id => {
+  const bytes = new TextEncoder().encode("%PDF-1.4 test " + id);
+  return { id, version: "v1", filename: id + ".pdf", bytes, sha256: await sha256Bytes(bytes) };
+}));
 await assert.rejects(prepareContractConfirmationStaging({
   env: {
     BXC_CONTRACT_STAGING_ENABLED: "true",
@@ -52,11 +57,11 @@ await assert.rejects(prepareContractConfirmationStaging({
     DB: { prepare() { throw new Error("Unexpected DB access"); } },
     CONTRACT_R2: {}
   },
-  acceptedOrder: base,
-  annexes: ["terms", "schedule", "withdrawal"].map(id => ({
-    id, version: "v1", filename: id + ".pdf",
-    bytes: new TextEncoder().encode("%PDF-1.4 test")
-  })),
+  acceptedOrder: {
+    ...base,
+    acceptedDocuments: sampleAnnexes.map(({ id, version, sha256 }) => ({ id, version, sha256 }))
+  },
+  annexes: sampleAnnexes,
   acceptanceVerified: true
-}), /Annex differs|Unicode staging requires/);
+}), /Unicode staging requires reviewed TTF bytes/);
 console.log("Unicode pipeline gating tests passed");
