@@ -24,7 +24,17 @@ export async function buildVerifiedCheckoutAcceptanceDraft({
       consent?.privacyNoticeAcknowledged !== true) {
     throw new Error("Affirmative checkout acknowledgements required");
   }
+  if(typeof consent.earlyPerformanceRequested !== "boolean" ||
+      typeof consent.earlyPerformanceConsequencesAcknowledged !== "boolean" ||
+      consent.earlyPerformanceRequested !== consent.earlyPerformanceConsequencesAcknowledged ||
+      consent.earlyPerformanceTextVersion !== "BXC-EARLY-001-v0.1") {
+    throw new Error("Invalid optional early performance choice");
+  }
   const snapshot = validateContractSnapshot(rawSnapshot, { allowUnicode: true });
+  if(Boolean(snapshot.earlyPerformanceRequest) !== consent.earlyPerformanceRequested ||
+      (snapshot.earlyPerformanceRequest && (snapshot.earlyPerformanceRequest.textVersion !== consent.earlyPerformanceTextVersion || snapshot.earlyPerformanceRequest.requestedAt !== snapshot.acceptedAt))) {
+    throw new Error("Early performance evidence mismatch");
+  }
   if (snapshot.customerEmail !== claim.customer_email ||
       snapshot.productId !== "check-a-claim" ||
       snapshot.orderId !== checkoutSessionId) {
@@ -52,6 +62,9 @@ export async function buildVerifiedCheckoutAcceptanceDraft({
     scheduleAccepted: true,
     withdrawalNoticeAcknowledged: true,
     privacyNoticeAcknowledged: true,
+    earlyPerformanceRequested:consent.earlyPerformanceRequested,
+    earlyPerformanceConsequencesAcknowledged:consent.earlyPerformanceConsequencesAcknowledged,
+    earlyPerformanceTextVersion:consent.earlyPerformanceTextVersion,
     documents: snapshot.acceptedDocuments
   };
   return { snapshot, evidence: {
