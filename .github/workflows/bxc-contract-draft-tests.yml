@@ -1,0 +1,31 @@
+name: BXC Contract Draft Tests
+on:
+  push:
+    branches:
+      - draft/bxc-legal-trust-v01
+    paths:
+      - 'cloudflare/contract-*.js'
+      - 'cloudflare/contract-*.mjs'
+      - '.github/workflows/bxc-contract-draft-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract-draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pure snapshot tests
+        run: node --experimental-default-type=module cloudflare/contract-confirmation-staging.test.mjs
+      - name: PDF A4 tests
+        run: node --experimental-default-type=module cloudflare/contract-pdf-a4.test.mjs
+      - name: D1 state tests
+        run: node --experimental-default-type=module cloudflare/contract-confirmation-store-staging.test.mjs
+      - name: R2 storage tests
+        run: node --experimental-default-type=module cloudflare/contract-private-r2-staging.test.mjs
+      - name: Integrated mocked pipeline tests
+        run: node --experimental-default-type=module cloudflare/contract-pipeline-staging.test.mjs
