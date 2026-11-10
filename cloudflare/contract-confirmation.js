@@ -10,7 +10,7 @@ const plain = value => typeof value === "string" && value.trim().length > 0;
 const asString = value => String(value ?? "").trim();
 const invalidControl = value => /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value);
 const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
-export function validateContractSnapshot(input) {
+export function validateContractSnapshot(input, { allowUnicode = false } = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new TypeError("Invalid contract snapshot");
   for (const key of required) {
     if (!plain(input[key])) throw new TypeError("Missing contract field: " + key);
@@ -18,7 +18,7 @@ export function validateContractSnapshot(input) {
   }
   // Reject fields the current A4 renderer cannot reproduce faithfully.
   for (const key of required) {
-    if (/[^\x20-\x7e]/.test(input[key])) throw new TypeError("Unsupported contract glyph or line break: " + key);
+    if (allowUnicode ? /[\u0000-\u001f\u007f]/u.test(input[key]) : /[^\x20-\x7e]/.test(input[key])) {\n      throw new TypeError("Unsupported contract glyph or line break: " + key);\n    }
   }
   if (input.reportLanguage !== "English") throw new TypeError("English-only contract report required");
   if (!productIds.has(input.productId)) throw new TypeError("Unsupported standardized service");
