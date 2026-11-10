@@ -16,7 +16,11 @@ export function validateContractSnapshot(input) {
     if (!plain(input[key])) throw new TypeError("Missing contract field: " + key);
     if (asString(input[key]).length > 5000 || invalidControl(input[key])) throw new TypeError("Invalid contract field: " + key);
   }
-  // The current A4 renderer cannot faithfully reproduce multiline or Unicode legal fields.\n  // Reject before D1 registration rather than silently altering the agreed contract.\n  for (const key of required) {\n    if (/[^\\x20-\\x7e]/.test(input[key])) throw new TypeError("Unsupported contract glyph or line break: " + key);\n  }\n  if (input.reportLanguage !== "English") throw new TypeError("English-only contract report required");
+  // Reject fields the current A4 renderer cannot reproduce faithfully.
+  for (const key of required) {
+    if (/[^\x20-\x7e]/.test(input[key])) throw new TypeError("Unsupported contract glyph or line break: " + key);
+  }
+  if (input.reportLanguage !== "English") throw new TypeError("English-only contract report required");
   if (!productIds.has(input.productId)) throw new TypeError("Unsupported standardized service");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.customerEmail)) throw new TypeError("Invalid email");
   if (!/^\d{4}-\d{2}-\d{2}T/.test(input.acceptedAt) || Number.isNaN(Date.parse(input.acceptedAt))) throw new TypeError("Invalid acceptance time");
