@@ -67,20 +67,26 @@
       "id": "withdrawal",
       "source": "BXC-WD-001 Withdrawal Notice v0.1 EN/RU",
       "driveId": "1En4C9wBkpKkv5UdBr68oB0qQ2P22mZxIb_7hcmdtekA",
-      "status": "RELEASE_CANDIDATE_REVIEW_ONLY",
+      "status": "EN_CANDIDATE_HASHED_NOT_RELEASED",
       "version": "v0.1-review",
       "publicUrl": null,
       "sha256": null,
-      "repositoryPath": "docs/drafts/legal-pages/BXC-WD-001-WITHDRAWAL-NOTICE-v0.1-EN-RU.md"
+      "repositoryPath": "docs/drafts/legal-pages/BXC-WD-001-WITHDRAWAL-NOTICE-v0.1-EN-RU.md",
+      "candidatePath": "docs/releases/candidates/BXC-WD-001-v0.1-EN.md",
+      "candidateSha256": "e7addd2fbc3a9626feef4afee33c401f973e7d2950040d0da8dbe66733429e41",
+      "candidateVersion": "v0.1-EN-review"
     },
     {
       "id": "privacy",
       "source": "BXC-PRIV-001 Privacy Notice v0.1 EN/RU",
-      "status": "RELEASE_CANDIDATE_REVIEW_ONLY",
+      "status": "EN_CANDIDATE_HASHED_NOT_RELEASED",
       "version": "v0.1-review",
       "publicUrl": null,
       "sha256": null,
-      "repositoryPath": "docs/drafts/legal-pages/BXC-PRIV-001-PRIVACY-NOTICE-v0.1-EN-RU.md"
+      "repositoryPath": "docs/drafts/legal-pages/BXC-PRIV-001-PRIVACY-NOTICE-v0.1-EN-RU.md",
+      "candidatePath": "docs/releases/candidates/BXC-PRIV-001-v0.1-EN.md",
+      "candidateSha256": "e2e2e3ef15961066c9d1b2eac357fe5f6e18d08d6fbaaa3c72fc36e06d15fc7a",
+      "candidateVersion": "v0.1-EN-review"
     }
   ],
   "contractFields": {
