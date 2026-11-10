@@ -23,6 +23,16 @@ assert.throws(() => validateContractSnapshot({ ...base, providerAddress: "Żwirk
 assert.throws(() => validateContractSnapshot({ ...base, exactScope: "First line\nSecond line" }), /Unsupported contract glyph/);
 assert.throws(() => validateContractSnapshot({ ...base, totalPrice: "50.00" }));
 assert.throws(() => validateContractSnapshot({ ...base, acceptedDocuments: [] }));
+assert.throws(() => validateContractSnapshot({ ...base, acceptedDocuments: [
+  { id: "terms", version: "v1", sha256: sha },
+  { id: "terms", version: "v1", sha256: sha }
+] }), /duplicate/);
+assert.throws(() => validateContractSnapshot({ ...base, acceptedDocuments: [
+  { id: "terms", version: "wersja-ł", sha256: sha }
+] }), /Invalid or duplicate/);
+assert.throws(() => validateContractSnapshot({ ...base, earlyPerformanceRequest: {
+  textVersion: "wersja-ł", requestedAt: "2026-11-10T10:00:00Z"
+} }), /early performance/);
 assert.throws(() => validateContractAttachments([]));
 const pdf = new Uint8Array([37, 80, 68, 70, 45, 49, 46, 52, 10, 37]);
 assert.equal(validateContractAttachments([{ filename: "confirmation.pdf", bytes: pdf }, { filename: "terms.pdf", bytes: pdf }]).length, 2);
