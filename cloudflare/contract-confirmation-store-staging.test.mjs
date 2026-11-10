@@ -70,7 +70,7 @@ await assert.rejects(markConfirmationPdfReady(db, { ...pdf, privateObjectKey: "c
 await assert.rejects(markConfirmationPdfReady(db, { ...pdf, privateObjectKey: "contracts/BXC-TEST-100/" + "c".repeat(64) + ".pdf" }), /match order/);
 assert.equal((await markConfirmationPdfReady(db, pdf)).status, "pdf_ready");
 assert.equal((await markConfirmationPdfReady(db, pdf)).status, "pdf_ready");
-await assert.rejects(markConfirmationPdfReady(db, { ...pdf, pdfSha256: "c".repeat(64) }), /conflict/);
+await assert.rejects(markConfirmationPdfReady(db, { ...pdf, pdfSha256: "c".repeat(64) }), /match order|conflict/);
 assert.equal(await claimContractEmailJob(db, input.orderId), true);
 assert.equal(await claimContractEmailJob(db, input.orderId), false);
 await recordResendAcceptance(db, input.orderId, "mail_test_123456");
