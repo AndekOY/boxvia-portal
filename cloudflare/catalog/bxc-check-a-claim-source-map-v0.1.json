@@ -9,13 +9,38 @@
   "pricingRule": "Final customer price charged by BoxVia; VAT chargeable by BoxVia included, not added",
   "provider": {
     "tradingName": "BoxVia",
-    "legalName": "Andrey Ekhmenin - BoxVia",
+    "legalName": "Andrey Ekhmenin – BoxVia",
     "nip": "8513329301",
     "regon": "541534837",
     "address": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
-    "verification": "INVOICE_TEMPLATE_ONLY_NOT_LIVE_CEIDG_VERIFIED",
+    "verification": "CEIDG_AS_OF_2026-11-06_AND_VAT_REGISTRY_AS_OF_2026-11-09",
     "contact": null,
-    "complaintsContact": null
+    "complaintsContact": null,
+    "ceidgStatus": "active_as_of_2026-11-06",
+    "vatStatus": "czynny_as_of_2026-11-09",
+    "vatEu": "PL8513329301",
+    "viesStatus": "valid_as_of_2026-11-09",
+    "eDeliveryAddress": "AE:PL-59801-12067-ISHGE-13",
+    "ceidgEmailPublished": false,
+    "ceidgPhonePublished": false,
+    "verificationEvidence": [
+      {
+        "document": "certificate (1)(1).pdf",
+        "source": "CEIDG",
+        "asOf": "2026-11-06"
+      },
+      {
+        "document": "Wynik_wyszukania_CS9Zc-997m85d(1).pdf",
+        "source": "Polish VAT register",
+        "asOf": "2026-11-09",
+        "queryId": "CS9Zc-997m85d"
+      },
+      {
+        "document": "VIES VAT number validation(1).pdf",
+        "source": "European Commission VIES",
+        "asOf": "2026-11-09T11:57:29"
+      }
+    ]
   },
   "documents": [
     {
@@ -58,7 +83,7 @@
     "exactScope": null,
     "termsVersion": null,
     "scheduleVersion": null,
-    "providerName": "Andrey Ekhmenin - BoxVia",
+    "providerName": "Andrey Ekhmenin – BoxVia",
     "providerAddress": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
     "providerContact": null,
     "taxDisclosure": null,
@@ -67,7 +92,7 @@
   },
   "openGates": [
     "Legal release and exact approved document bytes",
-    "Provider live CEIDG and complaint contact",
+    "Verified customer-facing email/complaints/withdrawal contact (CEIDG identity and VAT status confirmed on dated records)",
     "Withdrawal notice and statutory model form",
     "SKU-specific VAT routing and disclosure",
     "Contract confirmation on durable medium",
@@ -80,7 +105,10 @@
     "BXC-004",
     "BXC-005",
     "BXC-006",
-    "BXC-ORDER-001"
+    "BXC-ORDER-001",
+    "CEIDG extract 2026-11-06",
+    "Polish VAT register 2026-11-09",
+    "VIES 2026-11-09"
   ],
   "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON"
 }
