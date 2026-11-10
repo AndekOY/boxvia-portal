@@ -167,7 +167,15 @@
   "checkoutReadiness": {
     "status": "HOLD",
     "earlyPerformanceConsent": "MISSING_IN_CURRENT_SANDBOX_UI_AND_ACCEPTANCE_PAYLOAD",
-    "durableContractDispatch": "NOT_IMPLEMENTED_IN_CURRENT_CONFIRMATION_MODULE",
+    "durableContractDispatch": "MANUAL_GMAIL_INTERIM_PROCESS_APPROVED_NOT_YET_TESTED",
     "realClientInputsAllowed": false
+  },
+  "contractConfirmationDelivery": {
+    "mode": "MANUAL_GMAIL_INTERIM",
+    "sender": "andrzej.ekhmenin@gmail.com",
+    "decision": "docs/drafts/legal-pages/BXC-MAIL-003-MANUAL-GMAIL-CONFIRMATION-2026-11-10.md",
+    "automation": "DEFERRED",
+    "dispatchProof": "MANUAL_SENT_RECORD_REQUIRED",
+    "status": "OWNER_APPROVED_PROCESS_NOT_RELEASED"
   }
 }
