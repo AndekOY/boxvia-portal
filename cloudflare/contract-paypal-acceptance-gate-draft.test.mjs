@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import {requireAcceptedCheckoutForPayPalDraft} from "./contract-paypal-acceptance-gate-draft.js";
+import {validateContractSnapshot,snapshotSha256} from "./contract-confirmation.js";
+const token="a".repeat(64), sessionId="BXC_"+"b".repeat(64);
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+const snapshot=validateContractSnapshot({orderId:sessionId,acceptedAt:"2026-11-10T12:00:00.000Z",productId:"check-a-claim",productVersion:"v1",exactScope:"Review one public claim",termsVersion:"v1",scheduleVersion:"v1",customerEmail:"customer@example.test",providerName:"BoxVia",providerAddress:"Poland",providerContact:"contact@example.test",totalPrice:"20.00",currency:"USD",taxDisclosure:"Tax included",deliveryRule:"Within 24 hours",reportLanguage:"English",deliveryChannel:"Email",acceptedDocuments:["terms","schedule","withdrawal"].map(id=>({id,version:"v1",sha256:"a".repeat(64)}))},{allowUnicode:true});
+const snapshotHash=await snapshotSha256(snapshot);
+const evidence=JSON.stringify({checkoutSessionId:sessionId,orderId:sessionId});
+const archived={snapshot_json:JSON.stringify(snapshot),snapshot_sha256:snapshotHash,acceptance_evidence_json:evidence,acceptance_evidence_sha256:await sha(evidence)};
+let status="accepted", email="customer@example.test", archiveHash=snapshotHash;
+const db={prepare(sql){return{bind(...p){return{async first(){
+ if(sql.includes("FROM claim_access"))return{token_hash:await sha(token)};
+ if(sql.includes("FROM contract_checkout_sessions"))return{claim_id:42,customer_email:email,status,snapshot_sha256:archiveHash};
+ if(sql.includes("FROM claims"))return{id:42,customer_email:"customer@example.test",payment_status:"pending"};
+ if(sql.includes("FROM contract_acceptance_archive"))return archived;
+ throw Error("Unexpected SQL");
+}};}};}};
+const input={db,claimId:42,accessToken:token,checkoutSessionId:sessionId};
+assert.equal((await requireAcceptedCheckoutForPayPalDraft(input)).snapshotSha256,snapshotHash);
+await assert.rejects(requireAcceptedCheckoutForPayPalDraft({...input,accessToken:"c".repeat(64)}),/capability/);
+status="consuming";await assert.rejects(requireAcceptedCheckoutForPayPalDraft(input),/Accepted checkout session/);status="accepted";
+email="other@example.test";await assert.rejects(requireAcceptedCheckoutForPayPalDraft(input),/Claim and checkout/);email="customer@example.test";
+archiveHash="f".repeat(64);await assert.rejects(requireAcceptedCheckoutForPayPalDraft(input),/Accepted contract does not match/);
+console.log("PayPal acceptance gate draft tests passed");
