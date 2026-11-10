@@ -65,20 +65,22 @@
     },
     {
       "id": "withdrawal",
-      "source": "BXC-002 / BXC-004 withdrawal notice and model form",
+      "source": "BXC-WD-001 Withdrawal Notice v0.1 EN/RU",
       "driveId": "1En4C9wBkpKkv5UdBr68oB0qQ2P22mZxIb_7hcmdtekA",
-      "status": "STATUTORY_NOTICE_AND_MODEL_FORM_NOT_RELEASED",
-      "version": null,
+      "status": "RELEASE_CANDIDATE_REVIEW_ONLY",
+      "version": "v0.1-review",
       "publicUrl": null,
-      "sha256": null
+      "sha256": null,
+      "repositoryPath": "docs/drafts/legal-pages/BXC-WD-001-WITHDRAWAL-NOTICE-v0.1-EN-RU.md"
     },
     {
       "id": "privacy",
-      "source": "Privacy/GDPR notice",
-      "status": "PUBLIC_VERSION_NOT_VERIFIED",
-      "version": null,
+      "source": "BXC-PRIV-001 Privacy Notice v0.1 EN/RU",
+      "status": "RELEASE_CANDIDATE_REVIEW_ONLY",
+      "version": "v0.1-review",
       "publicUrl": null,
-      "sha256": null
+      "sha256": null,
+      "repositoryPath": "docs/drafts/legal-pages/BXC-PRIV-001-PRIVACY-NOTICE-v0.1-EN-RU.md"
     }
   ],
   "contractFields": {
@@ -94,7 +96,7 @@
   },
   "openGates": [
     "Legal release and exact approved document bytes",
-    "Withdrawal notice and statutory model form",
+    "Withdrawal notice and statutory model form final legal review/release",
     "Mandatory transaction-specific tax disclosures, if required by applicable law (general jurisdictional reference approved)",
     "Contract confirmation on durable medium",
     "Actual service scope, delivery trigger and channel",
@@ -110,7 +112,9 @@
     "CEIDG extract 2026-11-06",
     "Polish VAT register 2026-11-09",
     "VIES 2026-11-09",
-    "BXC-TAX-CAC-001"
+    "BXC-TAX-CAC-001",
+    "BXC-WD-001",
+    "BXC-PRIV-001"
   ],
   "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON",
   "taxDisclosureDraft": {
