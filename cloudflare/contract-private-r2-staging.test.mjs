@@ -43,4 +43,22 @@ const failingPutBucket = {
   async put() { throw new Error("R2 write unavailable"); }
 };
 await assert.rejects(storePrivateContractPdf({ ...args, bucket: failingPutBucket }), /R2 write unavailable/);
+// The adapter must request atomic create-only semantics from R2.
+let conditionalObserved = false;
+const conditionalItems = new Map();
+const conditionalBucket = {
+  async get(key) {
+    const bytes = conditionalItems.get(key);
+    return bytes ? { async arrayBuffer() { return bytes.slice().buffer; } } : null;
+  },
+  async put(key, bytes, options) {
+    assert.equal(options.onlyIf.etagDoesNotMatch, "*");
+    conditionalObserved = true;
+    if (conditionalItems.has(key)) return null;
+    conditionalItems.set(key, new Uint8Array(bytes));
+    return { etag: "test-etag" };
+  }
+};
+assert.equal((await storePrivateContractPdf({ ...args, bucket: conditionalBucket })).reused, false);
+assert.equal(conditionalObserved, true);
 console.log("Private contract R2 adapter mock tests passed");
