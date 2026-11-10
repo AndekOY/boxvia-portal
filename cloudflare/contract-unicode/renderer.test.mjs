@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PDFDocument } from "pdf-lib";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { renderContractConfirmationUnicodeA4 } from "./renderer.js";
 
 const font = new Uint8Array(await readFile(process.env.BXC_TEST_TTF || "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"));
@@ -22,6 +23,14 @@ for (const productId of ["check-a-claim", "one-question-review", "focused-ai-gov
   const document = await PDFDocument.load(bytes);
   assert.equal(document.getPageCount(), 1);
   assert.deepEqual(document.getPage(0).getSize(), { width: 595.276, height: 841.89 });
+  const reader = await pdfjs.getDocument({ data: bytes, useSystemFonts: false,
+    disableFontFace: true }).promise;
+  const pageText = await (await reader.getPage(1)).getTextContent();
+  const extracted = pageText.items.map(item => item.str).join(" ");
+  assert.ok(extracted.includes("Żwirki i Wigury"), "Polish Ż must survive PDF extraction");
+  assert.ok(extracted.includes("Szczecin"), "Provider city must survive PDF extraction");
+  assert.ok(extracted.includes("BOXVIA |"), "Confirmation footer must survive extraction");
+  await reader.destroy();
   const raw = new TextDecoder("latin1").decode(bytes);
   assert.ok(raw.includes("/FontFile2") || raw.includes("/FontFile3"), "Embedded font stream required");
 }
