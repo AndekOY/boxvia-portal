@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript module syntax
+        run: |
+          for file in cloudflare/contract-*.js cloudflare/contract-*.mjs; do
+            node --check "$file"
+          done
       - name: Pure snapshot tests
         run: node --experimental-default-type=module cloudflare/contract-confirmation-staging.test.mjs
       - name: PDF A4 tests
