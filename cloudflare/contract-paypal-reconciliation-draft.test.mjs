@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import {inspectUncertainPayPalCreateDraft} from "./contract-paypal-reconciliation-draft.js";
+const sessionId="BXC_"+"a".repeat(64),hash="b".repeat(64),candidatePayPalOrderId="PAYPAL-ORDER-123";
+let link=null,reads=0;
+const db={prepare(sql){return{bind(...p){return{async first(){
+ reads++;
+ if(sql.includes("FROM contract_paypal_create_attempts"))return{claim_id:42,request_id:"bxc-"+sessionId,snapshot_sha256:hash,status:"reserved",paypal_order_id:null};
+ if(sql.includes("FROM contract_checkout_sessions"))return{claim_id:42,status:"accepted",snapshot_sha256:hash};
+ if(sql.includes("FROM contract_paypal_order_links"))return link;
+ throw Error("Unexpected SQL");
+}};}};}};
+const fetchPayPalOrder=async id=>({id,status:"CREATED",purchase_units:[{custom_id:"42",amount:{currency_code:"USD",value:"20.00"}}]});
+const input={db,checkoutSessionId:sessionId,candidatePayPalOrderId,fetchPayPalOrder};
+const result=await inspectUncertainPayPalCreateDraft(input);
+assert.equal(result.status,"review_required");assert.equal(result.linked,false);
+assert.ok(reads>=3);
+await assert.rejects(inspectUncertainPayPalCreateDraft({...input,fetchPayPalOrder:async id=>({...await fetchPayPalOrder(id),purchase_units:[{custom_id:"43",amount:{currency_code:"USD",value:"20.00"}}]})}),/mismatch/);
+link={checkout_session_id:"DIFFERENT",claim_id:42,snapshot_sha256:hash};
+await assert.rejects(inspectUncertainPayPalCreateDraft(input),/link conflict/);
+link={checkout_session_id:sessionId,claim_id:42,snapshot_sha256:hash};
+assert.equal((await inspectUncertainPayPalCreateDraft(input)).linked,true);
+console.log("Uncertain PayPal create reconciliation inspection tests passed");
