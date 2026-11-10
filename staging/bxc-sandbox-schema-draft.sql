@@ -33,7 +33,11 @@ CREATE TABLE IF NOT EXISTS notification_outbox (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  claim_id INTEGER NOT NULL,
  event_type TEXT NOT NULL,
- status TEXT NOT NULL DEFAULT 'pending',
+ status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sending','failed','sent')),
+ attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts >= 0),
+ updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ sent_at TEXT,
+ last_error TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
  UNIQUE(claim_id,event_type),
  FOREIGN KEY(claim_id) REFERENCES claims(id)
