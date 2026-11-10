@@ -25,6 +25,8 @@ jobs:
           for file in cloudflare/contract-*.js cloudflare/contract-*.mjs; do
             node --check "$file"
           done
+      - name: One-time checkout session tests
+        run: node --experimental-default-type=module cloudflare/contract-checkout-session-draft.test.mjs
       - name: Trusted checkout server adapter tests
         run: node --experimental-default-type=module cloudflare/contract-checkout-server-adapter-draft.test.mjs
       - name: Accepted checkout archive bridge tests
