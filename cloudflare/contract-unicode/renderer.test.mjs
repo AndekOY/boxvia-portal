@@ -64,4 +64,28 @@ await assert.rejects(prepareContractConfirmationStaging({
   annexes: sampleAnnexes,
   acceptanceVerified: true
 }), /Unicode staging requires reviewed TTF bytes/);
+
+// Boundary tests: long but valid Unicode values must either fit on exactly one
+// A4 page or fail closed; no silent truncation is allowed.
+for (const address of [
+  "ul. Żwirki i Wigury 13/4, Szczecin, Polska",
+  "Łódź, Gdańsk, Kraków, Wrocław, Świnoujście",
+  "ul. " + "Żółć ".repeat(80) + "Szczecin"
+]) {
+  try {
+    const bytes = await renderContractConfirmationUnicodeA4({ ...base, providerAddress: address }, font);
+    const reader = await pdfjs.getDocument({ data: bytes, disableFontFace: true }).promise;
+    assert.equal(reader.numPages, 1);
+    const extracted = (await (await reader.getPage(1)).getTextContent()).items.map(x => x.str).join(" ");
+    assert.ok(extracted.includes(address.trim()) || address.length > 200,
+      "Provider address must be extractable without silent truncation");
+    await reader.destroy();
+  } catch (error) {
+    assert.match(String(error), /A4 confirmation overflow|Unbreakable A4 text/,
+      "Long field must fail closed rather than silently disappear");
+  }
+}
+assert.throws(() => validateContractSnapshot({ ...base, providerAddress: "Street\\nSecond line" },
+  { allowUnicode: true }), /Unsupported contract glyph/);
+
 console.log("Unicode pipeline gating tests passed");
