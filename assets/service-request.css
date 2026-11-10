@@ -36,3 +36,36 @@
   outline-offset: 3px;
 }
 .service-request .claim-examples { margin: -.35rem 0 .65rem; }
+
+/* Keep radio options aligned on desktop and narrow screens. */
+#service-request-form .request-consents { min-width: 0; }
+#service-request-form .request-consent {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: .8rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: .5rem 0;
+  font-weight: 400;
+  text-align: left;
+}
+#service-request-form .request-consent input[type="radio"],
+#service-request-form .request-consent input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  flex: 0 0 1.25rem;
+  margin: .15rem 0 0;
+  padding: 0;
+  accent-color: #1681ef;
+}
+#service-request-form .request-consent span {
+  display: block;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
