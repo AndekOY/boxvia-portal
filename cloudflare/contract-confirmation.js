@@ -18,7 +18,9 @@ export function validateContractSnapshot(input, { allowUnicode = false } = {}) {
   }
   // Reject fields the current A4 renderer cannot reproduce faithfully.
   for (const key of required) {
-    if (allowUnicode ? /[\u0000-\u001f\u007f]/u.test(input[key]) : /[^\x20-\x7e]/.test(input[key])) {\n      throw new TypeError("Unsupported contract glyph or line break: " + key);\n    }
+    if (allowUnicode ? /[\u0000-\u001f\u007f]/u.test(input[key]) : /[^\x20-\x7e]/.test(input[key])) {
+      throw new TypeError("Unsupported contract glyph or line break: " + key);
+    }
   }
   if (input.reportLanguage !== "English") throw new TypeError("English-only contract report required");
   if (!productIds.has(input.productId)) throw new TypeError("Unsupported standardized service");
@@ -89,7 +91,8 @@ export function confirmationText(snapshot) {
     "Early performance request: " + (snapshot.earlyPerformanceRequest ?
       snapshot.earlyPerformanceRequest.textVersion + " / " + snapshot.earlyPerformanceRequest.requestedAt : "not recorded"),
     "This one-page confirmation is accompanied by the complete accepted terms and applicable statutory notices."
-  ].join("\n");
+  ].join("
+");
 }
 // PDF rendering must enforce A4 page count === 1 and fail closed on overflow.
 // No PDF library, private storage or Resend dispatch is activated in this module.
