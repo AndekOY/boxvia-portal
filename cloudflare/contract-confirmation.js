@@ -91,8 +91,7 @@ export function confirmationText(snapshot) {
     "Early performance request: " + (snapshot.earlyPerformanceRequest ?
       snapshot.earlyPerformanceRequest.textVersion + " / " + snapshot.earlyPerformanceRequest.requestedAt : "not recorded"),
     "This one-page confirmation is accompanied by the complete accepted terms and applicable statutory notices."
-  ].join("
-");
+  ].join("\n");
 }
 // PDF rendering must enforce A4 page count === 1 and fail closed on overflow.
 // No PDF library, private storage or Resend dispatch is activated in this module.
