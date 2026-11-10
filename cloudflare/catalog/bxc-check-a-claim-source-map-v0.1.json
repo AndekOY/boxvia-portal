@@ -1,0 +1,86 @@
+{
+  "schema": "BXC_CONTRACT_CATALOG_SOURCE_MAP_v0.1",
+  "status": "INTERNAL_REVIEW_BASELINE_NOT_RELEASED",
+  "productId": "check-a-claim",
+  "productVersion": "Check a Claim / version pending release",
+  "totalPrice": "20.00",
+  "currency": "USD",
+  "reportLanguage": "English",
+  "pricingRule": "Final customer price charged by BoxVia; VAT chargeable by BoxVia included, not added",
+  "provider": {
+    "tradingName": "BoxVia",
+    "legalName": "Andrey Ekhmenin - BoxVia",
+    "nip": "8513329301",
+    "regon": "541534837",
+    "address": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
+    "verification": "INVOICE_TEMPLATE_ONLY_NOT_LIVE_CEIDG_VERIFIED",
+    "contact": null,
+    "complaintsContact": null
+  },
+  "documents": [
+    {
+      "id": "terms",
+      "source": "BXC-001 General Service Terms v0.1 EN/RU",
+      "driveId": "1v7fXOTTDtOz21SmVIna6gea3ZpZQF6gyS71XE0XuztY",
+      "status": "OWNER_APPROVED_INTERNAL_BASELINE_ONLY",
+      "version": "v0.1-draft",
+      "publicUrl": null,
+      "sha256": null
+    },
+    {
+      "id": "schedule",
+      "source": "BXC-002 Consumer and Protected Sole Trader Schedule v0.1 EN/RU",
+      "driveId": "1En4C9wBkpKkv5UdBr68oB0qQ2P22mZxIb_7hcmdtekA",
+      "status": "OWNER_APPROVED_INTERNAL_BASELINE_ONLY",
+      "version": "v0.1-draft",
+      "publicUrl": null,
+      "sha256": null
+    },
+    {
+      "id": "withdrawal",
+      "source": "BXC-002 / BXC-004 withdrawal notice and model form",
+      "driveId": "1En4C9wBkpKkv5UdBr68oB0qQ2P22mZxIb_7hcmdtekA",
+      "status": "STATUTORY_NOTICE_AND_MODEL_FORM_NOT_RELEASED",
+      "version": null,
+      "publicUrl": null,
+      "sha256": null
+    },
+    {
+      "id": "privacy",
+      "source": "Privacy/GDPR notice",
+      "status": "PUBLIC_VERSION_NOT_VERIFIED",
+      "version": null,
+      "publicUrl": null,
+      "sha256": null
+    }
+  ],
+  "contractFields": {
+    "exactScope": null,
+    "termsVersion": null,
+    "scheduleVersion": null,
+    "providerName": "Andrey Ekhmenin - BoxVia",
+    "providerAddress": "ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska",
+    "providerContact": null,
+    "taxDisclosure": null,
+    "deliveryRule": null,
+    "deliveryChannel": null
+  },
+  "openGates": [
+    "Legal release and exact approved document bytes",
+    "Provider live CEIDG and complaint contact",
+    "Withdrawal notice and statutory model form",
+    "SKU-specific VAT routing and disclosure",
+    "Contract confirmation on durable medium",
+    "Actual service scope, delivery trigger and channel",
+    "EN/RU technical equivalence"
+  ],
+  "sources": [
+    "BXC-001",
+    "BXC-002",
+    "BXC-004",
+    "BXC-005",
+    "BXC-006",
+    "BXC-ORDER-001"
+  ],
+  "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON"
+}
