@@ -40,6 +40,11 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
   if (!env.DB || !env.CONTRACT_R2) throw new Error("Staging D1 and private R2 required");
   const snapshot = validateContractSnapshot(acceptedOrder, { allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" });
   validateAnnexSet(snapshot, annexes);
+  // Reject absent Unicode font before any D1/R2 side effect.
+  if (env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" &&
+      (!(unicodeFontBytes instanceof Uint8Array) || unicodeFontBytes.length < 1024)) {
+    throw new Error("Unicode staging requires reviewed TTF bytes");
+  }
   for (const annex of annexes) {
     const reference = snapshot.acceptedDocuments.find(d => d.id === annex.id);
     if (!reference || reference.version !== annex.version || !(annex.bytes instanceof Uint8Array) ||
