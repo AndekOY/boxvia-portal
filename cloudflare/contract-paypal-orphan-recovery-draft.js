@@ -27,6 +27,8 @@ export async function reconcileOrphanPayPalOrderDraft({
  const existing=await db.prepare(
   "SELECT claim_id,amount,currency FROM paypal_orders WHERE paypal_order_id = ?"
  ).bind(candidatePayPalOrderId).first();
+ if(inspection.linked && !existing)throw new Error("Existing link without PayPal record requires manual review");
+ if(existing && !inspection.linked)throw new Error("PayPal record without contract link requires manual review");
  if(existing&&(existing.claim_id!==inspection.claimId||existing.amount!=="20.00"||existing.currency!=="USD"))
   throw new Error("Existing PayPal record mismatch");
  // D1 batch is atomic. The INSERT guards must each change exactly one row;
