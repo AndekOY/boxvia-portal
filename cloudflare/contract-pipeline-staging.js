@@ -24,11 +24,21 @@ function validateAnnexSet(snapshot, annexes) {
   }
 }
 
-export async function prepareContractConfirmationStaging({ env, acceptedOrder, annexes, acceptanceVerified }) {
+async function renderSelectedPdf(env, snapshot, unicodeFontBytes) {
+  if (env.BXC_CONTRACT_UNICODE_STAGING_ENABLED !== "true") {
+    return renderContractConfirmationA4(snapshot);
+  }
+  if (!(unicodeFontBytes instanceof Uint8Array) || unicodeFontBytes.length < 1024) {
+    throw new Error("Unicode staging requires reviewed TTF bytes");
+  }
+  const { renderContractConfirmationUnicodeA4 } = await import("./contract-unicode/renderer.js");
+  return renderContractConfirmationUnicodeA4(snapshot, unicodeFontBytes);
+}
+export async function prepareContractConfirmationStaging({ env, acceptedOrder, annexes, acceptanceVerified, unicodeFontBytes }) {
   if (env?.BXC_CONTRACT_STAGING_ENABLED !== "true") throw new Error("Staging contract pipeline disabled");
   if (acceptanceVerified !== true) throw new Error("Legal contract acceptance not verified");
   if (!env.DB || !env.CONTRACT_R2) throw new Error("Staging D1 and private R2 required");
-  const snapshot = validateContractSnapshot(acceptedOrder);
+  const snapshot = validateContractSnapshot(acceptedOrder, { allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" });
   validateAnnexSet(snapshot, annexes);
   for (const annex of annexes) {
     const reference = snapshot.acceptedDocuments.find(d => d.id === annex.id);
@@ -37,7 +47,7 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
       throw new Error("Annex differs from accepted contract snapshot");
     }
   }
-  const files = [{ filename: PDF_NAME, bytes: renderContractConfirmationA4(snapshot) },
+  const files = [{ filename: PDF_NAME, bytes: await renderSelectedPdf(env, snapshot, unicodeFontBytes) },
     ...annexes.map(a => ({ filename: a.filename, bytes: a.bytes }))];
   // Validate attachment size and PDF headers before writing anything.
   validateContractAttachments(files);
