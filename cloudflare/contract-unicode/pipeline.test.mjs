@@ -1,13 +1,13 @@
 import { readFile } from "node:fs/promises";
-import * as pdfjs from "./contract-unicode/node_modules/pdfjs-dist/legacy/build/pdf.mjs";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 // Isolated end-to-end integration regression test: no network, no real D1/R2/Resend.
 // Run: node --experimental-default-type=module cloudflare/contract-pipeline-staging.test.mjs
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 if (!globalThis.btoa) globalThis.btoa = str => Buffer.from(str, "binary").toString("base64");
-import { prepareContractConfirmationStaging, dispatchContractConfirmationStaging } from "./contract-pipeline-staging.js";
-import { sha256Bytes } from "./contract-private-r2-staging.js";
+import { prepareContractConfirmationStaging, dispatchContractConfirmationStaging } from "../contract-pipeline-staging.js";
+import { sha256Bytes } from "../contract-private-r2-staging.js";
 const unicodeFontBytes = new Uint8Array(await readFile(process.env.BXC_TEST_TTF || "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"));
 const pdf = text => new TextEncoder().encode("%PDF-1.4\n" + text + "\n" + " ".repeat(50) + "\n%%EOF\n");
 const annexes = await Promise.all(["terms", "schedule", "withdrawal"].map(async id => {
