@@ -23,15 +23,17 @@ export async function storePrivateContractPdf({ bucket, orderId, pdfBytes, expec
     if (oldHash !== actualHash) throw new Error("Existing private object integrity failure");
     return { privateObjectKey: key, pdfSha256: actualHash, reused: true };
   }
-  await bucket.put(key, pdfBytes, {
+  const writeResult = await bucket.put(key, pdfBytes, {
+    onlyIf: { etagDoesNotMatch: "*" },
     httpMetadata: { contentType: "application/pdf", contentDisposition: "attachment" },
     customMetadata: { orderId, sha256: actualHash }
   });
+  // A conditional write may lose a race; verify the winning bytes instead.
   const stored = await bucket.get(key);
   if (!stored) throw new Error("R2 read-after-write verification failed");
   const storedHash = await sha256Bytes(new Uint8Array(await stored.arrayBuffer()));
   if (storedHash !== actualHash) throw new Error("Stored PDF integrity failure");
-  return { privateObjectKey: key, pdfSha256: actualHash, reused: false };
+  return { privateObjectKey: key, pdfSha256: actualHash, reused: !writeResult };
 }
 export async function loadPrivateContractPdf({ bucket, privateObjectKey, expectedSha256 }) {
   if (!bucket?.get || !/^contracts\/[A-Za-z0-9_-]{6,100}\/[a-f0-9]{64}\.pdf$/.test(privateObjectKey || "") ||
