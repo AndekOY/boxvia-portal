@@ -119,9 +119,18 @@
     "fixedCustomerPrice": "20.00",
     "currency": "USD",
     "vatIncludedIfChargeableByBoxVia": true,
-    "skuClassification": null,
+    "skuClassification": "human-performed analytical service (operational description; PKWiU and VAT classification pending)",
     "polishVatRate": null,
     "eligibleJurisdictionsForAutomaticPaidCheckout": [],
-    "reason": "SKU tax routing and buyer status require case-specific review"
+    "reason": "SKU tax routing and buyer status require case-specific review",
+    "serviceModelConfirmed": "human-performed individualized analytical service with AI assistance; no fully automated result"
+  },
+  "serviceDeliveryModel": {
+    "classification": "HUMAN_PERFORMED_INDIVIDUAL_ANALYTICAL_SERVICE",
+    "humanInvolvement": "SUBSTANTIVE_AND_MANDATORY",
+    "aiRole": "ANALYSIS_ASSISTANCE_ONLY",
+    "fullyAutomatedCustomerOutput": false,
+    "source": "OWNER_EXPLICIT_CONFIRMATION_2026-11-10",
+    "taxConclusion": "DOES_NOT_BY_ITSELF_DETERMINE_VAT_RATE_OR_PLACE_OF_SUPPLY"
   }
 }
