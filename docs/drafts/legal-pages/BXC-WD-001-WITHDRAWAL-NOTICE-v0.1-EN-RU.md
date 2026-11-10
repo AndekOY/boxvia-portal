@@ -4,14 +4,14 @@ Status: INTERNAL LEGAL REVIEW / NOT RELEASED / NOT FOR CLIENT CHECKOUT
 Scope: Check a Claim, treated provisionally as a human-performed service. This classification is not a VAT ruling and must be checked against actual execution.
 
 ## EN — withdrawal notice
-For a qualifying distance contract for services, the consumer generally has 14 days from conclusion of the contract to withdraw without giving a reason, subject to applicable mandatory law and exceptions. To exercise this right, send an unequivocal statement to the verified BoxVia withdrawal contact [CONTACT TO VERIFY], by email or post, before the deadline. The statutory model form below is optional for exercising the right, but must be made available to the consumer.
+For a qualifying distance contract for services, the consumer generally has 14 days from conclusion of the contract to withdraw without giving a reason, subject to applicable mandatory law and exceptions. To exercise this right, send an unequivocal statement to the verified BoxVia withdrawal contact andrzej.ekhmenin@gmail.com, by email or post, before the deadline. The statutory model form below is optional for exercising the right, but must be made available to the consumer.
 
 If you expressly request performance before the withdrawal period ends, and then withdraw after performance has begun, a proportionate payment for the service actually performed may be due only if the statutory requirements are satisfied. A generic agreement to Terms is not an early-performance request. Full performance does not automatically remove the withdrawal right: loss of that right is subject to the applicable statutory conditions, including prior express consent and informed acknowledgment where required. No blanket waiver applies.
 
 Where a valid withdrawal requires reimbursement, BoxVia will refund payments within the applicable statutory period, generally no later than 14 days after receiving the withdrawal statement, using the original payment method unless another method is expressly agreed without cost to the consumer. Any lawful proportionate service charge must be assessed under the specific facts.
 
 ## RU — технический перевод
-Для дистанционного договора об оказании услуг потребитель, как правило, вправе отказаться от договора в течение 14 дней со дня его заключения без объяснения причин, с учетом обязательного права и предусмотренных законом исключений. Для отказа направь однозначное заявление на подтвержденный контакт BoxVia [КОНТАКТ ТРЕБУЕТ ПРОВЕРКИ] по электронной или обычной почте до истечения срока. Приведенная ниже установленная законом модель формы не обязательна для самого отказа, но должна предоставляться потребителю.
+Для дистанционного договора об оказании услуг потребитель, как правило, вправе отказаться от договора в течение 14 дней со дня его заключения без объяснения причин, с учетом обязательного права и предусмотренных законом исключений. Для отказа направь однозначное заявление на подтвержденный контакт BoxVia andrzej.ekhmenin@gmail.com по электронной или обычной почте до истечения срока. Приведенная ниже установленная законом модель формы не обязательна для самого отказа, но должна предоставляться потребителю.
 
 Если потребитель отдельно и прямо потребовал начать оказание услуги до истечения срока отказа, а затем отказался после начала исполнения, пропорциональная оплата фактически выполненной части может причитаться только при соблюдении предусмотренных законом условий. Общее согласие с Terms не является отдельным требованием о досрочном начале. Полное исполнение не прекращает право отказа автоматически: применяются законные условия, включая предварительное прямое согласие и информированное подтверждение последствий, когда они необходимы. Универсального отказа от прав нет.
 
@@ -19,8 +19,8 @@ Where a valid withdrawal requires reimbursement, BoxVia will refund payments wit
 
 ## Model withdrawal form / Образец заявления об отказе (EN)
 To: Andrey Ekhmenin – BoxVia
-Postal address: [VERIFY CURRENT REGISTERED/COMPLAINT ADDRESS]
-Email: [VERIFY WITHDRAWAL EMAIL]
+Postal address: ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska
+Email: andrzej.ekhmenin@gmail.com
 
 I hereby give notice that I withdraw from my contract for the provision of the following service: [service name / order ID].
 Date of conclusion of contract: [date].
@@ -31,8 +31,8 @@ Signature: [only if submitted on paper].
 
 ## Образец заявления (RU, технический перевод)
 Кому: Andrey Ekhmenin – BoxVia
-Почтовый адрес: [ПОДТВЕРДИТЬ]
-Email: [ПОДТВЕРДИТЬ]
+Почтовый адрес: ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Polska
+Email: andrzej.ekhmenin@gmail.com
 
 Настоящим уведомляю об отказе от договора на оказание следующей услуги: [название / номер заказа].
 Дата заключения договора: [дата].
