@@ -109,7 +109,19 @@
     "BXC-ORDER-001",
     "CEIDG extract 2026-11-06",
     "Polish VAT register 2026-11-09",
-    "VIES 2026-11-09"
+    "VIES 2026-11-09",
+    "BXC-TAX-CAC-001"
   ],
-  "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON"
+  "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON",
+  "taxDisclosureDraft": {
+    "source": "docs/drafts/legal-pages/BXC-TAX-CAC-001-CHECK-A-CLAIM-v0.1-EN-RU.md",
+    "status": "INTERNAL_DRAFT_NOT_TRANSACTION_APPROVED",
+    "fixedCustomerPrice": "20.00",
+    "currency": "USD",
+    "vatIncludedIfChargeableByBoxVia": true,
+    "skuClassification": null,
+    "polishVatRate": null,
+    "eligibleJurisdictionsForAutomaticPaidCheckout": [],
+    "reason": "SKU tax routing and buyer status require case-specific review"
+  }
 }
