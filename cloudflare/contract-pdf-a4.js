@@ -72,7 +72,7 @@ export function renderContractConfirmationA4(s) {
     `BT /F2 8 Tf 1 0 0 1 45 48 Tm (${safe("BOXVIA | " + serviceName)}) Tj ET`,
     `BT /F1 7 Tf 1 0 0 1 45 35 Tm (${safe("Order: " + s.orderId + " | Contract confirmation | Page 1 of 1")}) Tj ET`
   ];
-  const stream = [...commands, ...footer].join("\\n") + "\\n";
+  const stream = [...commands, ...footer].join("\n") + "\n";
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
