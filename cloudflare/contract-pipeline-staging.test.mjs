@@ -117,6 +117,13 @@ try {
     ...params, acceptedOrder: { ...order, exactScope: "Changed scope" }
   }), /mismatch/);
   assert.equal(sends, 0);
+  // R2 corruption must fail before the email lease and before sending.
+  const originalPdf = objects.get(prepared.privateObjectKey);
+  objects.set(prepared.privateObjectKey, pdf("corrupted"));
+  await assert.rejects(dispatchContractConfirmationStaging(params), /corrupted/);
+  assert.equal(sends, 0);
+  assert.equal(rows.get(order.orderId).email_status, "pending");
+  objects.set(prepared.privateObjectKey, originalPdf);
   const result = await dispatchContractConfirmationStaging(params);
   assert.equal(result.status, "provider_accepted");
   assert.equal(sends, 1);
