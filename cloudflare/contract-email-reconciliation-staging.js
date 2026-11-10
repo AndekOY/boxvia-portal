@@ -10,7 +10,7 @@ export async function reconcileProviderAcceptedStaging({ db, orderId, resendMess
       evidence.source !== "resend_authenticated" ||
       evidence.orderId !== orderId || evidence.resendMessageId !== resendMessageId ||
       typeof evidence.checkedAt !== "string" ||
-      !/^\\d{4}-\\d{2}-\\d{2}T/.test(evidence.checkedAt) ||
+      !/^\d{4}-\d{2}-\d{2}T/.test(evidence.checkedAt) ||
       typeof evidence.reference !== "string" || evidence.reference.length < 8) {
     throw new Error("Independent authenticated provider evidence required");
   }
