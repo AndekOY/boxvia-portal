@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-bxc-sandbox",
+  "main": "cloudflare/bxc-sandbox-worker-draft.js",
+  "compatibility_date": "2026-11-02",
+  "assets": {
+    "directory": "./cloudflare/bxc-sandbox-public",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": true
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "boxvia-bxc-sandbox",
+    "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+  }],
+  "vars": {
+    "BXC_SANDBOX_ONLY": "true",
+    "PAYPAL_ENV": "sandbox",
+    "PAYPAL_CHECKOUT_ENABLED": "false"
+  }
+}
