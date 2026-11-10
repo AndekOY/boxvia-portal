@@ -19,6 +19,8 @@ const snapshot = validateContractSnapshot(base);
 assert.equal((await snapshotSha256(snapshot)).length, 64);
 assert.throws(() => validateContractSnapshot({ ...base, productId: "technical-pilot" }));
 assert.throws(() => validateContractSnapshot({ ...base, reportLanguage: "EN" }), /English-only/);
+assert.throws(() => validateContractSnapshot({ ...base, providerAddress: "Żwirki i Wigury 13" }), /Unsupported contract glyph/);
+assert.throws(() => validateContractSnapshot({ ...base, exactScope: "First line\\nSecond line" }), /Unsupported contract glyph/);
 assert.throws(() => validateContractSnapshot({ ...base, totalPrice: "50.00" }));
 assert.throws(() => validateContractSnapshot({ ...base, acceptedDocuments: [] }));
 assert.throws(() => validateContractAttachments([]));
