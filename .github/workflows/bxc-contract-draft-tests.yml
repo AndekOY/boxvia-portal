@@ -25,6 +25,8 @@ jobs:
           for file in cloudflare/contract-*.js cloudflare/contract-*.mjs; do
             node --check "$file"
           done
+      - name: Accepted checkout archive bridge tests
+        run: node --experimental-default-type=module cloudflare/contract-checkout-archive-bridge-draft.test.mjs
       - name: Checkout acceptance evidence tests
         run: node --experimental-default-type=module cloudflare/contract-checkout-evidence-draft.test.mjs
       - name: Pure snapshot tests
