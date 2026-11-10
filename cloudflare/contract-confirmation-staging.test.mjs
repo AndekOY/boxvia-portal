@@ -11,13 +11,14 @@ const base = {
   customerEmail: "test@example.invalid", providerName: "Example Provider",
   providerAddress: "Example Street 1", providerContact: "contact@example.invalid",
   totalPrice: "20.00", currency: "USD", taxDisclosure: "TEST ONLY",
-  deliveryRule: "24 hours after accepted lawful order (TEST)", reportLanguage: "EN",
+  deliveryRule: "24 hours after accepted lawful order (TEST)", reportLanguage: "English",
   deliveryChannel: "email", acceptedDocuments: [{ id: "terms", version: "v0.1", sha256: sha }],
   earlyPerformanceRequest: null
 };
 const snapshot = validateContractSnapshot(base);
 assert.equal((await snapshotSha256(snapshot)).length, 64);
 assert.throws(() => validateContractSnapshot({ ...base, productId: "technical-pilot" }));
+assert.throws(() => validateContractSnapshot({ ...base, reportLanguage: "EN" }), /English-only/);
 assert.throws(() => validateContractSnapshot({ ...base, totalPrice: "50.00" }));
 assert.throws(() => validateContractSnapshot({ ...base, acceptedDocuments: [] }));
 assert.throws(() => validateContractAttachments([]));
