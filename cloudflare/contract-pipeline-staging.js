@@ -47,13 +47,27 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
       throw new Error("Annex differs from accepted contract snapshot");
     }
   }
+  // Register and check immutable state BEFORE rendering: pdf-lib Unicode bytes
+  // may vary between renders, so a completed order must reuse its original PDF.
+  const registered = await registerContractConfirmation(env.DB, snapshot, {
+    allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true"
+  });
+  if (registered.pdfReady) {
+    const existingPdf = await loadPrivateContractPdf({
+      bucket: env.CONTRACT_R2, privateObjectKey: registered.privateObjectKey,
+      expectedSha256: registered.pdfSha256
+    });
+    validateContractAttachments([{ filename: PDF_NAME, bytes: existingPdf },
+      ...annexes.map(a => ({ filename: a.filename, bytes: a.bytes }))]);
+    return { orderId: snapshot.orderId, pdfSha256: registered.pdfSha256,
+      privateObjectKey: registered.privateObjectKey, emailStatus: registered.emailStatus,
+      reused: true };
+  }
   const files = [{ filename: PDF_NAME, bytes: await renderSelectedPdf(env, snapshot, unicodeFontBytes) },
     ...annexes.map(a => ({ filename: a.filename, bytes: a.bytes }))];
-  // Validate attachment size and PDF headers before writing anything.
   validateContractAttachments(files);
   const pdfBytes = files[0].bytes;
   const pdfHash = await sha256Bytes(pdfBytes);
-  const registered = await registerContractConfirmation(env.DB, snapshot, { allowUnicode: env.BXC_CONTRACT_UNICODE_STAGING_ENABLED === "true" });
   const stored = await storePrivateContractPdf({
     bucket: env.CONTRACT_R2, orderId: snapshot.orderId, pdfBytes, expectedSha256: pdfHash
   });
@@ -62,7 +76,8 @@ export async function prepareContractConfirmationStaging({ env, acceptedOrder, a
     pdfSha256: stored.pdfSha256, privateObjectKey: stored.privateObjectKey
   });
   return { orderId: snapshot.orderId, pdfSha256: stored.pdfSha256,
-    privateObjectKey: stored.privateObjectKey, emailStatus: registered.emailStatus };
+    privateObjectKey: stored.privateObjectKey, emailStatus: registered.emailStatus,
+    reused: false };
 }
 export async function dispatchContractConfirmationStaging({ env, acceptedOrder, annexes, acceptanceVerified, privateObjectKey, pdfSha256 }) {
   if (env?.BXC_CONTRACT_STAGING_ENABLED !== "true" || acceptanceVerified !== true) {
