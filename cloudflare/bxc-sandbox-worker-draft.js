@@ -5,8 +5,9 @@ import { createCheckoutSessionDraft, hashTrustedCatalogDraft } from "./contract-
 import { verifyClaimCapabilityDraft } from "./contract-checkout-server-adapter-draft.js";
 import { acceptOneTimeCheckoutDraft } from "./contract-checkout-orchestrator-draft.js";
 import { handlePayment } from "./paypal-contract-wired-draft.js";
+import { validateContractSnapshot } from "./contract-confirmation.js";
 const reply=(value,status=200)=>Response.json(value,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
-const hex=bytes=>[...bytes].map(v=>v.toString(16).padStart(2,"0")).join("");
+
 function catalogFromEnv(env){
  if(typeof env.BXC_CONTRACT_CATALOG_JSON!=="string")throw Error("Trusted contract catalog missing");
  const c=JSON.parse(env.BXC_CONTRACT_CATALOG_JSON);
@@ -15,6 +16,14 @@ function catalogFromEnv(env){
     !Array.isArray(c.acceptedDocuments)||c.acceptedDocuments.length!==3||
     !["terms","schedule","withdrawal"].every(id=>c.acceptedDocuments.some(d=>d.id===id&&/^[a-f0-9]{64}$/.test(d.sha256))))
   throw Error("Trusted contract catalog incomplete");
+ // Check the complete legal snapshot shape before any checkout session is issued.
+ validateContractSnapshot({...c,orderId:"BXC_CATALOG_PREFLIGHT",customerEmail:"sandbox@example.invalid",
+   acceptedAt:"2026-11-10T00:00:00.000Z"},{allowUnicode:true});
+ if(!c.documentUrls||typeof c.documentUrls!=="object"||
+   !["terms","schedule","withdrawal","privacy"].every(id=>{
+     try{const u=new URL(c.documentUrls[id]);return u.protocol==="https:"&&u.username===""&&u.password===""}
+     catch{return false}
+   }))throw Error("Reviewed document URLs missing");
  return c;
 }
 async function readBody(request){
@@ -30,6 +39,23 @@ export default {
   if(url.pathname==="/api/health")return reply({service:"bxc-sandbox",status:"ok"});
   if(env.BXC_SANDBOX_ONLY!=="true"||env.PAYPAL_ENV!=="sandbox"||!env.DB)
    return reply({error:"Sandbox environment not configured"},503);
+  if(request.method==="GET"&&url.pathname==="/api/bxc/catalog"){
+   try{
+    const c=catalogFromEnv(env);
+    return reply({
+     productId:c.productId,totalPrice:c.totalPrice,currency:c.currency,
+     providerName:c.providerName,providerContact:c.providerContact,
+     taxDisclosure:c.taxDisclosure,deliveryRule:c.deliveryRule,
+     documents:[
+      ...c.acceptedDocuments.map(d=>({id:d.id,label:({terms:"Terms",schedule:"Service schedule",withdrawal:"Withdrawal notice"})[d.id],
+       version:d.version,sha256:d.sha256,url:c.documentUrls[d.id]})),
+      {id:"privacy",label:"Privacy notice",version:c.privacyVersion||"current",url:c.documentUrls.privacy}
+     ]
+    });
+   }catch(error){console.error("BXC catalog not ready",error);return reply({error:"Reviewed contract catalog unavailable"},503)}
+  }
+  if(request.method==="GET"&&url.pathname.startsWith("/checkout"))
+   return env.ASSETS.fetch(request);
   if(request.method!=="POST"||request.headers.get("Origin")!==url.origin)
    return reply({error:"Forbidden"},403);
   if(["/api/paypal/create-order","/api/paypal/capture-order","/api/claim-status"].includes(url.pathname))
