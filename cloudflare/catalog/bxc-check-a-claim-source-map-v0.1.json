@@ -100,7 +100,7 @@
     "Mandatory transaction-specific tax disclosures, if required by applicable law (general jurisdictional reference approved)",
     "Contract confirmation on durable medium",
     "Actual service scope, delivery trigger and channel",
-    "EN/RU technical equivalence"
+    "EN public texts with RU internal technical-equivalence review"
   ],
   "sources": [
     "BXC-001",
@@ -143,5 +143,12 @@
     "fullyAutomatedCustomerOutput": false,
     "source": "OWNER_EXPLICIT_CONFIRMATION_2026-11-10",
     "taxConclusion": "DOES_NOT_BY_ITSELF_DETERMINE_VAT_RATE_OR_PLACE_OF_SUPPLY"
+  },
+  "publicationLanguagePolicy": {
+    "public": "EN",
+    "internalTechnicalTranslation": "RU",
+    "scope": "BXC public contract documents, checkout disclosures, and order confirmation",
+    "additionalLanguageRule": "Only where mandatory under applicable law; not automatically published",
+    "source": "OWNER_EXPLICIT_DIRECTION_2026-11-10"
   }
 }
