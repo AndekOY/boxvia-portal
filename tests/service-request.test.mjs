@@ -69,3 +69,32 @@ test("missing D1 fails closed", async () => {
   const response = await handleServiceRequest(request(body()), { TURNSTILE_SECRET_KEY: "test-secret" }, url);
   assert.equal(response.status, 503);
 });
+
+const cases = [
+  ["one-question-review", { question: "What is the commercial boundary?" }],
+  ["ai-governance-review", { question: "Which approval is required?", control: "Approval policy" }],
+  ["technical-pilot", { system: "Synthetic runtime", scenario: "Run a deterministic case", expected: "One result" }],
+  ["pre-decision-review", { decision: "Whether to adopt the system" }],
+  ["ai-governance-gap-assessment", { system: "Synthetic AI service", requirements: "One stated requirement" }],
+  ["faar-stage-1", { project: "Synthetic cross-border project" }]
+];
+for (const [service, fields] of cases) {
+  test("D1 accepts " + service, async () => {
+    const state = { rows: [] };
+    await withTurnstile({ success: true, hostname: url.hostname, action: "service-request" }, async () => {
+      const response = await handleServiceRequest(request({ ...body(), ...fields, service }), {
+        DB: db(state), TURNSTILE_SECRET_KEY: "test-secret"
+      }, url);
+      assert.equal(response.status, 201);
+      assert.equal(state.rows.length, 1);
+      assert.equal(state.rows[0][0], service);
+    });
+  });
+}
+test("D1 write failure does not report successful receipt", async () => {
+  const broken = { prepare() { return { bind() { return { async run() { throw new Error("D1 unavailable"); } }; } }; } };
+  await withTurnstile({ success: true, hostname: url.hostname, action: "service-request" }, async () => {
+    const response = await handleServiceRequest(request(body()), { DB: broken, TURNSTILE_SECRET_KEY: "test-secret" }, url);
+    assert.equal(response.status, 503);
+  });
+});
