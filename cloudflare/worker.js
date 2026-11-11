@@ -51,7 +51,7 @@ export default {
           "SELECT id FROM claims WHERE id > ? ORDER BY id ASC LIMIT 100"
         ).bind(claimsAfter).all();
         return reply({
-          claims: (claims.results || []).map(row => ({ id: row.id })),
+          claims: (claims.results || []).map(row => row.id),
           // Other service forms currently use email delivery, not a D1 service queue.
           services: []
         });
