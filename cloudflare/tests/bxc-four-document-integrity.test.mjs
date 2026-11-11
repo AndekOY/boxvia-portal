@@ -1,4 +1,4 @@
-// Run from repository root: node --test cloudflare/tests/bxc-four-document-integrity.test.mjs
+// Run from repository root: node --experimental-default-type=module --test cloudflare/tests/bxc-four-document-integrity.test.mjs
 // No network, email, PayPal, production DB or real customer data.
 import test from "node:test";
 import assert from "node:assert/strict";
