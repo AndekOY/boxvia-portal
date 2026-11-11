@@ -182,7 +182,8 @@
     "preConsumptionConsentValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
     "preConsumptionCatalogValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
     "privacyOperationalFacts": "TEN_FACTUAL_GATES_OPEN_NOT_VERIFIED",
-    "sharedSnapshotDocumentGate": "FOUR_REQUIRED_DOCUMENTS_ENFORCED_IN_SHARED_VALIDATOR_DRAFT"
+    "sharedSnapshotDocumentGate": "FOUR_REQUIRED_DOCUMENTS_ENFORCED_IN_SHARED_VALIDATOR_DRAFT",
+    "ciEvidence": "WORKFLOW_SUMMARY_AND_TAP_ARTIFACT_CONFIGURED_NOT_OBSERVED"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
