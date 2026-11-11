@@ -178,12 +178,12 @@
     "offlineRegressionTests": "TEN_TESTS_COMMITTED_EXECUTION_NOT_VERIFIED",
     "testCommand": "node --experimental-default-type=module --test cloudflare/tests/bxc-four-document-integrity.test.mjs",
     "ciWorkflow": ".github/workflows/bxc-offline-regression.yml",
-    "ciResult": "RUN_42982356863_FAILED_9_PASS_1_FAIL_TEST8_ASSERTION_FIXED_PENDING_NEW_RUN",
+    "ciResult": "PASS_OBSERVED_IN_GITHUB_ACTIONS_UI_RUN_11_COMMIT_751a453",
     "preConsumptionConsentValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
     "preConsumptionCatalogValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
     "privacyOperationalFacts": "TEN_FACTUAL_GATES_OPEN_NOT_VERIFIED",
     "sharedSnapshotDocumentGate": "FOUR_REQUIRED_DOCUMENTS_ENFORCED_IN_SHARED_VALIDATOR_DRAFT",
-    "ciEvidence": "https://github.com/AndekOY/boxvia-portal/actions/runs/42982356863"
+    "ciEvidence": "USER_SCREENSHOT_2026-11-11_RUN_11_GREEN_CHECK;INDIVIDUAL_TEST_COUNTS_NOT_RETRIEVED"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
