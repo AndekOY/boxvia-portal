@@ -170,7 +170,9 @@
     "durableContractDispatch": "MANUAL_GMAIL_INTERIM_PROCESS_APPROVED_NOT_YET_TESTED",
     "realClientInputsAllowed": false,
     "syntheticTest": "STATIC_REVIEW_ONLY_NOT_E2E_EXECUTED",
-    "manualGmailTemplate": "DRAFT_READY_NOT_LIVE"
+    "manualGmailTemplate": "DRAFT_READY_NOT_LIVE",
+    "earlyPerformancePreSessionValidation": "IMPLEMENTED_IN_SANDBOX_UI_NOT_RUNTIME_TESTED",
+    "manualDispatchEvidence": "INTERNAL_TEMPLATE_READY_NO_REAL_ORDER"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
@@ -181,5 +183,6 @@
     "status": "OWNER_APPROVED_PROCESS_NOT_RELEASED"
   },
   "manualConfirmationTemplate": "docs/drafts/legal-pages/BXC-MAIL-004-MANUAL-CONFIRMATION-TEMPLATE-v0.1-EN.md",
-  "syntheticOrderDryRun": "docs/drafts/legal-pages/BXC-TEST-001-SYNTHETIC-ORDER-DRY-RUN-2026-11-10.md"
+  "syntheticOrderDryRun": "docs/drafts/legal-pages/BXC-TEST-001-SYNTHETIC-ORDER-DRY-RUN-2026-11-10.md",
+  "manualDispatchEvidenceRegister": "docs/drafts/legal-pages/BXC-MAIL-005-MANUAL-DISPATCH-EVIDENCE-REGISTER-v0.1.md"
 }
