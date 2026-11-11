@@ -13,8 +13,8 @@ function catalogFromEnv(env){
  const c=JSON.parse(env.BXC_CONTRACT_CATALOG_JSON);
  if(!c||Array.isArray(c)||c.productId!=="check-a-claim"||c.totalPrice!=="20.00"||
     c.currency!=="USD"||c.reportLanguage!=="English"||
-    !Array.isArray(c.acceptedDocuments)||c.acceptedDocuments.length!==3||
-    !["terms","schedule","withdrawal"].every(id=>c.acceptedDocuments.some(d=>d.id===id&&/^[a-f0-9]{64}$/.test(d.sha256))))
+    !Array.isArray(c.acceptedDocuments)||c.acceptedDocuments.length!==4||
+    !["terms","schedule","withdrawal","privacy"].every(id=>c.acceptedDocuments.some(d=>d.id===id&&/^[a-f0-9]{64}$/.test(d.sha256))))
   throw Error("Trusted contract catalog incomplete");
  // Check the complete legal snapshot shape before any checkout session is issued.
  validateContractSnapshot({...c,orderId:"BXC_CATALOG_PREFLIGHT",customerEmail:"sandbox@example.invalid",
@@ -47,9 +47,8 @@ export default {
      providerName:c.providerName,providerContact:c.providerContact,
      taxDisclosure:c.taxDisclosure,deliveryRule:c.deliveryRule,
      documents:[
-      ...c.acceptedDocuments.map(d=>({id:d.id,label:({terms:"Terms",schedule:"Service schedule",withdrawal:"Withdrawal notice"})[d.id],
-       version:d.version,sha256:d.sha256,url:c.documentUrls[d.id]})),
-      {id:"privacy",label:"Privacy notice",version:c.privacyVersion||"current",url:c.documentUrls.privacy}
+      ...c.acceptedDocuments.map(d=>({id:d.id,label:({terms:"Terms",schedule:"Service schedule",withdrawal:"Withdrawal notice",privacy:"Privacy notice"})[d.id],
+       version:d.version,sha256:d.sha256,url:c.documentUrls[d.id]}))
      ]
     });
    }catch(error){console.error("BXC catalog not ready",error);return reply({error:"Reviewed contract catalog unavailable"},503)}
