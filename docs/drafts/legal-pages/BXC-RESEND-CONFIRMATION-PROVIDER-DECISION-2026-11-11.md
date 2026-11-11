@@ -1,3 +1,9 @@
+# SUPERSEDED — NOT ACTIVE
+
+This Resend decision was revoked by the owner on 2026-11-11. The content below is historical only. Do not implement, activate or cite it as current BXC policy. Current decision: manual Gmail confirmation after independent PayPal payment verification. Resend removed from the draft branch. No production deployment was performed.
+
+---
+
 # BXC — Resend confirmation provider decision
 Date: 2026-11-11
 Status: OWNER-APPROVED TARGET ARCHITECTURE / NOT ACTIVATED / LEGAL HOLD
