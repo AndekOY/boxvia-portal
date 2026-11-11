@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-service-preview",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boxvia-bxc-sandbox",
+      "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+    }
+  ]
+}
