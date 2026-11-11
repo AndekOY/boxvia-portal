@@ -13,6 +13,53 @@ export default {
     if (url.pathname === "/api/service-request" && request.method === "POST") {
       return handleServiceRequest(request, env, url);
     }
+    if (url.pathname === "/api/owner-notifications") {
+      const reply = (body, status = 200) => Response.json(body, {
+        status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }
+      });
+      if (request.method !== "GET") return reply({ error: "Method not allowed" }, 405);
+      const secret = env.OWNER_NOTIFICATION_TOKEN;
+      const authorization = request.headers.get("Authorization") || "";
+      const supplied = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+      if (typeof secret !== "string" || secret.length < 32) {
+        return reply({ error: "Notification API not configured" }, 503);
+      }
+      // Compare digests, not secret strings; never include credentials in logs or URLs.
+      const digest = async value => new Uint8Array(await crypto.subtle.digest(
+        "SHA-256", new TextEncoder().encode(value)
+      ));
+      const expected = await digest(secret);
+      const actual = await digest(supplied);
+      let difference = 0;
+      for (let i = 0; i < expected.length; i++) difference |= expected[i] ^ actual[i];
+      if (!supplied || difference !== 0) return reply({ error: "Unauthorized" }, 401);
+      if (!env.DB) return reply({ error: "Database unavailable" }, 503);
+      const parseCursor = name => {
+        const value = url.searchParams.get(name) ?? "0";
+        if (!/^(0|[1-9][0-9]{0,12})$/.test(value)) return null;
+        const parsed = Number(value);
+        return Number.isSafeInteger(parsed) ? parsed : null;
+      };
+      const claimsAfter = parseCursor("claims_after");
+      const servicesAfter = parseCursor("services_after");
+      if (claimsAfter === null || servicesAfter === null) {
+        return reply({ error: "Invalid cursor" }, 400);
+      }
+      try {
+        // Only non-personal queue metadata; never expose customer email, claim text or URLs.
+        const claims = await env.DB.prepare(
+          "SELECT id FROM claims WHERE id > ? ORDER BY id ASC LIMIT 100"
+        ).bind(claimsAfter).all();
+        return reply({
+          claims: (claims.results || []).map(row => ({ id: row.id })),
+          // Other service forms currently use email delivery, not a D1 service queue.
+          services: []
+        });
+      } catch (error) {
+        console.error("Owner notification query failed");
+        return reply({ error: "Notification data unavailable" }, 503);
+      }
+    }
     if (url.pathname === "/api/health" && request.method === "GET") {
       return Response.json({ service: "boxvia", status: "ok" }, {
         headers: { "Cache-Control": "no-store" }

@@ -17,5 +17,13 @@
       "database_name": "boxvia-claims",
       "database_id": "9e860945-027b-4fe9-8a43-c02206b88617"
     }
-  ]
+  ],
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+      }
+    ]
+  }
 }
