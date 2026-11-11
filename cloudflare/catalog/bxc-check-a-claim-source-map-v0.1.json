@@ -166,13 +166,15 @@
   "operationalReleasePreflight": "docs/drafts/legal-pages/BXC-OPS-001-EN-RELEASE-PREFLIGHT-2026-11-10.md",
   "checkoutReadiness": {
     "status": "HOLD",
-    "earlyPerformanceConsent": "MISSING_IN_CURRENT_SANDBOX_UI_AND_ACCEPTANCE_PAYLOAD",
-    "durableContractDispatch": "MANUAL_GMAIL_INTERIM_PROCESS_APPROVED_NOT_YET_TESTED",
+    "earlyPerformanceConsent": "IMPLEMENTED_IN_SANDBOX_UI_AND_SERVER_EVIDENCE_NOT_RUNTIME_TESTED",
+    "durableContractDispatch": "MANUAL_GMAIL_APPROVED_NO_LIVE_DELIVERY_TEST",
     "realClientInputsAllowed": false,
     "syntheticTest": "STATIC_REVIEW_ONLY_NOT_E2E_EXECUTED",
     "manualGmailTemplate": "DRAFT_READY_NOT_LIVE",
     "earlyPerformancePreSessionValidation": "IMPLEMENTED_IN_SANDBOX_UI_NOT_RUNTIME_TESTED",
-    "manualDispatchEvidence": "INTERNAL_TEMPLATE_READY_NO_REAL_ORDER"
+    "manualDispatchEvidence": "INTERNAL_TEMPLATE_READY_NO_REAL_ORDER",
+    "privacyNoticeHash": "MISSING_FROM_ACCEPTED_CONTRACT_SNAPSHOT",
+    "immutableDocumentBytes": "NOT_RELEASED"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
