@@ -21,6 +21,16 @@ Method: repository source review only. Not a production configuration audit or v
 - Checkout must not send access tokens or claim materials to analytics or third-party scripts.
 - This is a proposed operating restriction, not proof that current deployment enforces it.
 
+## Owner-confirmed launch processing boundary (2026-11-11)
+Decision confirmed by owner:
+- Cloudflare: website, checkout and necessary records.
+- PayPal: payment processing.
+- Gmail: contractual confirmations and customer correspondence.
+- ChatGPT: analysis of genuinely anonymized material only; no client personal data or identifiable case material is to be sent to ChatGPT.
+- No other external processors of client data are authorized for the initial BXC launch model.
+
+This is a **design and operating instruction**, not a verified observation of live traffic, service contracts or provider subprocessors. Cloudflare, PayPal and Google may each have their own subprocessors; these remain subject to their actual terms and transfer documentation. The term "anonymous" must be assessed against reidentification risk, including combinations of publicly accessible claim facts. If anonymization cannot be achieved, the material must not be sent to ChatGPT.
+
 ## Open confirmations required from owner / service dashboards
 1. Cloudflare account processing terms and any applicable subprocessors and transfer documentation.
 2. PayPal business processing terms, actual merchant entity, data categories, recipient countries.
