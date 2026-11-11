@@ -180,7 +180,8 @@
     "ciWorkflow": ".github/workflows/bxc-offline-regression.yml",
     "ciResult": "NOT_VERIFIED",
     "preConsumptionConsentValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
-    "preConsumptionCatalogValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED"
+    "preConsumptionCatalogValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED",
+    "privacyOperationalFacts": "TEN_FACTUAL_GATES_OPEN_NOT_VERIFIED"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
@@ -193,5 +194,6 @@
   "manualConfirmationTemplate": "docs/drafts/legal-pages/BXC-MAIL-004-MANUAL-CONFIRMATION-TEMPLATE-v0.1-EN.md",
   "syntheticOrderDryRun": "docs/drafts/legal-pages/BXC-TEST-001-SYNTHETIC-ORDER-DRY-RUN-2026-11-10.md",
   "manualDispatchEvidenceRegister": "docs/drafts/legal-pages/BXC-MAIL-005-MANUAL-DISPATCH-EVIDENCE-REGISTER-v0.1.md",
-  "offlineRegressionTestPath": "cloudflare/tests/bxc-four-document-integrity.test.mjs"
+  "offlineRegressionTestPath": "cloudflare/tests/bxc-four-document-integrity.test.mjs",
+  "privacyReleaseFactsMatrix": "docs/drafts/legal-pages/BXC-PRIV-002-RELEASE-FACTS-MATRIX-2026-11-11.md"
 }
