@@ -26,4 +26,25 @@ jobs:
         with:
           node-version: '22'
       - name: Run synthetic offline BXC tests (no secrets)
-        run: node --experimental-default-type=module --test cloudflare/tests/bxc-four-document-integrity.test.mjs
+        run: |
+          set -o pipefail
+          node --experimental-default-type=module --test --test-reporter=tap cloudflare/tests/bxc-four-document-integrity.test.mjs | tee bxc-test-results.tap
+      - name: Publish test result summary
+        if: always()
+        run: |
+          if [ -f bxc-test-results.tap ]; then
+            echo '## BXC offline regression' >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 12 bxc-test-results.tap >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'BXC test runner did not produce a TAP result.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Preserve TAP test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bxc-offline-test-report
+          path: bxc-test-results.tap
+          if-no-files-found: ignore
+          retention-days: 14
