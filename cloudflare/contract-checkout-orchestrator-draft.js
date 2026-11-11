@@ -38,7 +38,10 @@ export async function acceptOneTimeCheckoutDraft({
   // Preflight the immutable contract catalog before the irreversible session transition.
   // Do not strand a session in 'consuming' because a document is missing or malformed.
   const preflight = validateContractSnapshot({
-    ...catalog,orderId:checkoutSessionId,customerEmail:claim.customer_email,acceptedAt
+    ...catalog,orderId:checkoutSessionId,customerEmail:claim.customer_email,acceptedAt,
+    earlyPerformanceRequest:consent.earlyPerformanceRequested
+      ? {textVersion:consent.earlyPerformanceTextVersion,requestedAt:acceptedAt}
+      : null
   },{allowUnicode:true});
   const requiredDocuments = ["terms","schedule","withdrawal","privacy"];
   if(preflight.acceptedDocuments.length !== requiredDocuments.length ||
