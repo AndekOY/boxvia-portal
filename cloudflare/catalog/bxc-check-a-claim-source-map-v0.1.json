@@ -175,10 +175,11 @@
     "manualDispatchEvidence": "INTERNAL_TEMPLATE_READY_NO_REAL_ORDER",
     "privacyNoticeHash": "REQUIRED_IN_DRAFT_ACCEPTANCE_AND_CONFIRMATION_NOT_RELEASED",
     "immutableDocumentBytes": "NOT_RELEASED",
-    "offlineRegressionTests": "SIX_TESTS_COMMITTED_CI_CONFIGURED_RESULT_NOT_VERIFIED",
+    "offlineRegressionTests": "SEVEN_TESTS_COMMITTED_EXECUTION_NOT_VERIFIED",
     "testCommand": "node --experimental-default-type=module --test cloudflare/tests/bxc-four-document-integrity.test.mjs",
     "ciWorkflow": ".github/workflows/bxc-offline-regression.yml",
-    "ciResult": "NOT_VERIFIED"
+    "ciResult": "NOT_VERIFIED",
+    "preConsumptionConsentValidation": "IMPLEMENTED_DRAFT_NOT_RUNTIME_TESTED"
   },
   "contractConfirmationDelivery": {
     "mode": "MANUAL_GMAIL_INTERIM",
