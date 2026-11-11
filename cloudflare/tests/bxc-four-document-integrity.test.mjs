@@ -80,3 +80,14 @@ test("incomplete trusted catalog is rejected before session consumption",async()
  }),/Incomplete trusted contract catalog/);
  assert.equal(updates,0);
 });
+
+test("shared snapshot validator rejects missing Privacy Notice independently of checkout route",async()=>{
+ const {snapshot}=await fixture();
+ snapshot.acceptedDocuments=snapshot.acceptedDocuments.filter(doc=>doc.id!=="privacy");
+ assert.throws(()=>validateContractSnapshot(snapshot),/Incomplete accepted document set/);
+});
+test("shared snapshot validator rejects substituted legal document ID",async()=>{
+ const {snapshot}=await fixture();
+ snapshot.acceptedDocuments=snapshot.acceptedDocuments.map(doc=>doc.id==="privacy"?{...doc,id:"marketing"}:doc);
+ assert.throws(()=>validateContractSnapshot(snapshot),/Incomplete accepted document set/);
+});
