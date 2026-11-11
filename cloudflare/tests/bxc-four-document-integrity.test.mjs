@@ -6,6 +6,7 @@ import { webcrypto } from "node:crypto";
 import { validateContractSnapshot } from "../contract-confirmation.js";
 import { buildVerifiedCheckoutAcceptanceDraft } from "../contract-checkout-evidence-draft.js";
 import { prepareDurableConfirmationDraft } from "../contract-confirmation-dispatch-gate-draft.js";
+import { acceptOneTimeCheckoutDraft } from "../contract-checkout-orchestrator-draft.js";
 globalThis.crypto ??= webcrypto;
 const sha=async s=>Buffer.from(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s))).toString("hex");
 const bodies={terms:"Synthetic terms",schedule:"Synthetic schedule",withdrawal:"Synthetic withdrawal notice",privacy:"Synthetic privacy notice"};
@@ -35,4 +36,27 @@ test("four complete attachment bodies verified; altered privacy rejected",async(
  const ok=await prepareDurableConfirmationDraft({db:archiveDb,orderId:session,documentBytesById:bodies});assert.equal(ok.attachments.length,4);
  await assert.rejects(prepareDurableConfirmationDraft({db:archiveDb,orderId:session,documentBytesById:{...bodies,privacy:"Tampered"}}),/Document bytes differ/);
  await assert.rejects(prepareDurableConfirmationDraft({db:archiveDb,orderId:session,documentBytesById:{...bodies,privacy:undefined}}),/Missing complete immutable document/);
+});
+
+test("invalid consent is rejected before checkout session consumption",async()=>{
+ const {snapshot,consent}=await fixture();
+ consent.earlyPerformanceRequested=true;
+ let updates=0;
+ const accessToken="a".repeat(64);
+ const tokenHash=await sha(accessToken);
+ const sessionDb={prepare(sql){
+  return {bind(){return {
+   async first(){
+    if(sql.includes("FROM claim_access"))return {token_hash:tokenHash};
+    if(sql.includes("FROM claims"))return {id:1,customer_email:"synthetic@example.invalid",payment_status:"pending"};
+    throw Error("Unexpected query");
+   },
+   async run(){updates++;throw Error("Session must not be consumed")}
+  }}};
+ }};
+ await assert.rejects(acceptOneTimeCheckoutDraft({
+  db:sessionDb,claimId:1,accessToken,checkoutSessionId:session,consent,
+  catalog:{productId:"check-a-claim",totalPrice:"20.00",currency:"USD"}
+ }),/Invalid checkout consent/);
+ assert.equal(updates,0);
 });
