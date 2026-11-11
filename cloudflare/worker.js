@@ -1,11 +1,15 @@
 import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
 import { handleServiceRequest } from "./service-request.js";
+import { handleOwnerNotificationPoll } from "./owner-notification.js";
 
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
 // Claim intake stays disabled until notification, privacy and abuse controls are verified.
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/owner-notifications" && request.method === "GET") {
+      return handleOwnerNotificationPoll(request, env);
+    }
     if (url.pathname === "/api/service-request" && request.method === "POST") {
       return handleServiceRequest(request, env, url);
     }
