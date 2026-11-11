@@ -40,8 +40,8 @@ export default {
         const parsed = Number(value);
         return Number.isSafeInteger(parsed) ? parsed : null;
       };
-      const claimsAfter = parseCursor("claims-after");
-      const servicesAfter = parseCursor("services-after");
+      const claimsAfter = parseCursor("claims_after");
+      const servicesAfter = parseCursor("services_after");
       if (claimsAfter === null || servicesAfter === null) {
         return reply({ error: "Invalid cursor" }, 400);
       }
@@ -51,7 +51,7 @@ export default {
           "SELECT id FROM claims WHERE id > ? ORDER BY id ASC LIMIT 100"
         ).bind(claimsAfter).all();
         return reply({
-          claims: (claims.results || []).map(row => row.id),
+          claims: (claims.results || []).map(row => ({ id: row.id })),
           // Other service forms currently use email delivery, not a D1 service queue.
           services: []
         });
