@@ -40,3 +40,10 @@ No production activation, live payment or legal publication authorized.
 
 ## PayPal Business dashboard screenshot — 2026-11-11
 Owner-provided screenshot of paypal.com/businessmanage/account/aboutBusiness shows the Business information page for a PayPal profile labeled BoxVia and a populated PayPal Merchant ID (identifier deliberately omitted from this record). This confirms access to a merchant/business-profile interface and a merchant identifier; it does NOT establish account registration country, legal owner, tax residency, actual account restrictions, or applicability of a particular country-specific agreement. Next evidence: open Business information > Update or Account owner information and provide a redacted screenshot showing only account country, legal business type and business name; hide identifiers, address, contact details and financial information. No settings should be changed.
+
+## PayPal business profile and account owner — dashboard screenshots 2026-11-11
+Owner supplied two PayPal Business profile screenshots, approximately 11:32–11:33 local screen time.
+Verified UI facts: business name BoxVia; business type Individual; business contact address in Szczecin, Poland; account owner's displayed legal name Andrey Ekhmenin; category Computer Network/Information Services; VAT field "Not provided"; business website "Not provided"; customer service email "Not provided".
+No Merchant ID, date of birth, residential address, phone or personal email copied into this record.
+Interpretation: PayPal profile is configured with a Polish business address and individual business type; the screen does not independently prove PayPal's legal contracting entity or the exact accepted legal-document revision. A missing VAT entry is not proof of missing Polish VAT registration.
+Release recommendation: before enabling live checkout, provide public business website and customer service email in PayPal profile, confirm exact applicable agreement, and verify customer receipt/merchant descriptor.
