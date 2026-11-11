@@ -1,9 +1,9 @@
 # BXC — MINIMAX retention and provider verification
 Date: 2026-11-11
-Status: OPERATIONAL DRAFT / NOT A VERIFIED PRIVACY NOTICE
+Status: OWNER-APPROVED INTERIM OPERATING RETENTION POLICY / NOT A VERIFIED PRIVACY NOTICE
 Scope: Check a Claim, Poland/EU consumer orders, one manually screened order at a time.
 
-## Data minimization and proposed retention (owner approval required)
+## Data minimization and interim retention (owner approved 2026-11-11; statutory validation pending)
 | Category | Minimum | Proposed operating trigger | Mandatory exception |
 |---|---|---|---|
 | Unpaid inquiry / claim material | Email, public claim, source URL, order reference | Delete or anonymize 30 days after last meaningful contact if no contract and no active dispute | Preserve only if legal claim or documented legal duty applies |
@@ -31,3 +31,11 @@ These are **proposed operating limits**, not established legal retention periods
 
 ## Release decision
 **HOLD** until actual facts and approved final privacy disclosures are recorded. No production changes, no automatic deletions, no customer-data collection, no payment enablement. One synthetic sandbox E2E test after release-gate resolution.
+
+## Owner approval and supplied tax evidence — 2026-11-11
+- Owner expressly accepted the proposed interim operational retention schedule and continued minimal legal/tax review. This does not approve live checkout or publication of an unverified privacy notice.
+- Owner-provided Polish VAT register result, query ID CS9Zc-997m85d, dated 2026-11-09 11:55:01: NIP 8513329301, ANDREY EKHMENIN, status Czynny, REGON 541534837, registration date 2025-05-01, reinstatement date 2026-08-21 under Art. 96 ust. 9g.
+- Owner-provided European Commission VIES validation, dated 2026-11-09 11:57:29: valid PL VAT number 8513329301, ANDREY EKHMENIN, Szczecin.
+- These records substantiate dated VAT/VIES registration status **only**. They do not establish SKU classification, VAT rate, place of supply, invoice obligations, or current account configuration.
+- Operating deletion is manual for first pilots; maintain evidence of each deletion and do not delete statutory/claim records prematurely. No automatic deletion or production configuration change authorized.
+- Remaining gates: tax classification and accounting treatment for PL/EU consumers; actual provider settings and privacy disclosures; consumer-law checkout review. HOLD for real payments.
