@@ -46,6 +46,13 @@ export function validateContractSnapshot(input, { allowUnicode = false } = {}) {
     }
     documentIds.add(doc.id);
   }
+  // All four legal documents are required for every BXC checkout snapshot.
+  // Enforce at the shared boundary, not only in the route and evidence builder.
+  const requiredDocumentIds = ["terms", "schedule", "withdrawal", "privacy"];
+  if (documentIds.size !== requiredDocumentIds.length ||
+      requiredDocumentIds.some(id => !documentIds.has(id))) {
+    throw new TypeError("Incomplete accepted document set");
+  }
   if (input.earlyPerformanceRequest != null) {
     if (!plain(input.earlyPerformanceRequest.textVersion) ||
         !plain(input.earlyPerformanceRequest.requestedAt) ||
