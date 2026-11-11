@@ -77,7 +77,7 @@ test("incomplete trusted catalog is rejected before session consumption",async()
  catalog.acceptedDocuments=catalog.acceptedDocuments.filter(d=>d.id!=="privacy");
  await assert.rejects(acceptOneTimeCheckoutDraft({
    db:sessionDb,claimId:1,accessToken,checkoutSessionId:session,consent,catalog,now:()=>timestamp
- }),/Incomplete trusted contract catalog/);
+ }),/Incomplete accepted document set/);
  assert.equal(updates,0);
 });
 
