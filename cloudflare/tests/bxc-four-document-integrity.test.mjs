@@ -60,3 +60,23 @@ test("invalid consent is rejected before checkout session consumption",async()=>
  }),/Invalid checkout consent/);
  assert.equal(updates,0);
 });
+
+test("incomplete trusted catalog is rejected before session consumption",async()=>{
+ const {snapshot,consent}=await fixture();
+ const accessToken="b".repeat(64),tokenHash=await sha(accessToken);
+ let updates=0;
+ const sessionDb={prepare(sql){return {bind(){return {
+   async first(){
+     if(sql.includes("FROM claim_access"))return {token_hash:tokenHash};
+     if(sql.includes("FROM claims"))return {id:1,customer_email:"synthetic@example.invalid",payment_status:"pending"};
+     throw Error("Unexpected query");
+   },
+   async run(){updates++;throw Error("Session must not be consumed")}
+ }}}}};
+ const {orderId,customerEmail,acceptedAt,...catalog}=snapshot;
+ catalog.acceptedDocuments=catalog.acceptedDocuments.filter(d=>d.id!=="privacy");
+ await assert.rejects(acceptOneTimeCheckoutDraft({
+   db:sessionDb,claimId:1,accessToken,checkoutSessionId:session,consent,catalog,now:()=>timestamp
+ }),/Incomplete trusted contract catalog/);
+ assert.equal(updates,0);
+});
