@@ -4,7 +4,7 @@ import { validateContractSnapshot } from "./contract-confirmation.js";
 const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
 const digest = async text => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
 const validId = s => typeof s === "string" && /^[A-Za-z0-9_-]{6,100}$/.test(s);
-const allowedDocuments = ["terms", "schedule", "withdrawal"];
+const allowedDocuments = ["terms", "schedule", "withdrawal", "privacy"];
 export async function buildVerifiedCheckoutAcceptanceDraft({
   db, claimId, accessToken, checkoutSessionId, rawSnapshot, consent,
   verifyClaimCapability, now = () => new Date().toISOString()
