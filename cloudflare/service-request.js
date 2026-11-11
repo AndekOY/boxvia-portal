@@ -70,7 +70,7 @@ export async function handleServiceRequest(request, env, url) {
     return json({ error: "Please check your request and try again." }, 400);
   }
 
-  const service = services.get(data?.service);
+  if (data?.public_material_confirmation !== "yes" || data?.terms_acknowledgement !== "yes") {\n    return json({ error: "Please confirm both required statements." }, 400);\n  }\n\n  const service = services.get(data?.service);
   const email = typeof data?.email === "string" ? data.email.trim() : "";
   const token = data?.["cf-turnstile-response"];
   if (!service || email.length > 254 || !/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(email) ||
