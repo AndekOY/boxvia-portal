@@ -19,6 +19,17 @@ export async function acceptOneTimeCheckoutDraft({
   if (!claim || claim.id !== claimId || claim.payment_status !== "pending") {
     throw new Error("Claim not eligible");
   }
+  // Reject malformed consent before consuming the one-time checkout session.
+  // The evidence builder repeats these checks independently during archive creation.
+  if(consent?.affirmative !== true || consent?.termsAccepted !== true ||
+     consent?.scheduleAccepted !== true || consent?.withdrawalNoticeAcknowledged !== true ||
+     consent?.privacyNoticeAcknowledged !== true ||
+     typeof consent?.earlyPerformanceRequested !== "boolean" ||
+     typeof consent?.earlyPerformanceConsequencesAcknowledged !== "boolean" ||
+     consent.earlyPerformanceRequested !== consent.earlyPerformanceConsequencesAcknowledged ||
+     consent.earlyPerformanceTextVersion !== "BXC-EARLY-001-v0.1") {
+    throw new Error("Invalid checkout consent; session not consumed");
+  }
   // Catalog MUST be a trusted server-side, versioned constant with real annex hashes.
   const catalogSha256 = await hashTrustedCatalogDraft(catalog);
   const acceptedAt = now();
