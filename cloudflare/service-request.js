@@ -78,6 +78,10 @@ export async function handleServiceRequest(request, env, url) {
     return json({ error: "Please check your email address and complete the security check." }, 400);
   }
 
+  if (data.public_material_confirmation !== "yes" || data.terms_acknowledgement !== "yes") {
+    return json({ error: "Please confirm the required statements." }, 400);
+  }
+
   const [title, fields] = service;
   const lines = ["Service: " + title, "Customer email: " + email];
   for (const [name, label, max, required] of fields) {
