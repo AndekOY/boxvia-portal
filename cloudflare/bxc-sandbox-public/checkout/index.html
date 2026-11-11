@@ -29,7 +29,7 @@ button:disabled{opacity:.4;cursor:not-allowed}.notice{background:#f4f6f9;padding
 <label><input type="checkbox" id="early"> I expressly request BoxVia to begin performing Check a Claim before the end of my applicable withdrawal period.</label>
 <label><input type="checkbox" id="earlyConsequences"> I acknowledge that, if I withdraw after performance has begun at my express request, I may have to pay a proportionate amount for services supplied; once the service has been fully performed, I may lose the withdrawal right where applicable law permits.</label>
 </fieldset>
-<button id="start" type="submit" disabled>Accept contract and open PayPal Sandbox</button>
+<button id="start" type="submit" disabled>Continue to PayPal Sandbox — USD 20.00 (payment required)</button>
 </form>
 <fieldset id="return" class="hidden"><legend>PayPal Sandbox return</legend>
 <p>After approving in PayPal Sandbox, re-enter the claim ID and access token above, then verify the sandbox capture.</p>
@@ -79,7 +79,7 @@ $("checkout").addEventListener("submit",async e=>{
   const order=await api("/api/paypal/create-order",{claim_id,access_token,checkout_session_id:state.session});
   if(!validUrl(order.approval_url)||new URL(order.approval_url).hostname.endsWith(".paypal.com")===false)
    throw Error("Untrusted PayPal approval URL");
-  status("Contract accepted. Redirecting to PayPal Sandbox.");
+  status("Terms recorded. No paid contract is formed yet. Redirecting to PayPal Sandbox.");
   location.assign(order.approval_url);
  }catch(e){status("STOP: "+e.message);$("start").disabled=false}
 });
@@ -98,7 +98,7 @@ $("capture").addEventListener("click",async()=>{
    claim_id:Number($("claim").value),access_token:$("access").value,
    checkout_session_id,order_id
   });
-  status(data.payment_status==="paid"?"Sandbox payment confirmed; check fulfillment queue.":"Payment not confirmed");
+  status(data.payment_status==="paid" && data.contract_status==="formed" ? "Sandbox payment verified and contract formation recorded. Service has NOT been authorized to start; durable confirmation and lawful start conditions remain pending." : "Payment or contract formation not confirmed; contact support if charged.");
  }catch(e){status("STOP: "+e.message)}finally{$("capture").disabled=false}
 });
 </script></body></html>
