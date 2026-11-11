@@ -45,3 +45,20 @@ Human-performed independent analytical service; digital report delivered manuall
 - Polish VAT: https://podatki.gov.pl/podatki-firmowe/vat/poradniki-i-informatory/miejsce-swiadczenia-opodatkowania
 - Consumer Rights Act, 2026 consolidated text: https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260001244
 - UOKiK: https://prawakonsumenta.uokik.gov.pl/prawo-do-informacji/sprzedaz-poza-lokalem-i-na-odleglosc/
+
+## Production evidence update — 2026-11-11 (owner screenshots)
+- Cloudflare Web Analytics is **enabled** for boxvia.andeks.workers.dev; do not claim analytics is absent. Actual cookie/storage behavior and legal basis are **not verified**.
+- Cloudflare HTTP request logs are visible in the account dashboard. Worker-specific logs, precise retention and backup settings remain **unverified**.
+- Turnstile widget `boxvia-claim-form` is configured Managed, no pre-clearance, one hostname. A controlled production test produced one Siteverify request and one valid token; the accepted claim was #23. This verifies one successful validation path, not every rejection path.
+- Owner deleted all 67 synthetic rows from the five application tables in Production D1 `boxvia-claims`; post-delete SQL counts were zero for `claims`, `claim_access`, `paypal_orders`, `notification_outbox`, and `service_requests`. The historical Time Travel/backup/log state is not erased by that operation.
+- Production Worker screenshot showed `CLAIM_INTAKE_ENABLED=true`, `PAYPAL_CHECKOUT_ENABLED=true`, `PAYPAL_ENV=live`, and Resend variables/secrets present. These facts **contradict** the earlier draft assertion that Resend is absent from production infrastructure; intended BXC future processing must be distinguished from the existing production implementation. Do not assert that no Resend processing occurs without runtime evidence.
+- Two `COMPLETED` 20 USD D1 rows were owner-identified as PayPal Sandbox transactions. A PayPal Live activity screenshot showed no transactions under displayed criteria; not an exhaustive reconciliation.
+
+## Consolidated MINIMAX publication blockers (do not create parallel documents)
+1. Verify Cloudflare, PayPal, Google/Gmail, and **existing Resend** actual data flows and provider privacy/DPA/transfer disclosures. Record exact provider documentation links and processing roles; distinguish existing site traffic from BXC-specific checkout.
+2. Verify actual cookies/analytics on live site and checkout, including whether any nonessential storage requires consent before loading. No invented no-cookie or EU-only statements.
+3. Confirm retention of provider logs/backups and actual manual deletion responsibility. Approved 30/90/12-month operational schedule remains interim, statutory evidence retained as required.
+4. Verify consumer checkout transaction-specific order, approved documents and hashes, final pay-obligation control, optional early performance and withdrawal, durable confirmation; preserve 24h timing condition.
+5. Owner waived separate accountant workflow, **not** the obligation to present legally accurate final gross price and mandatory transaction disclosures. Do not claim VAT rate confirmed.
+
+No production deployment, no new processor, no live payment test. HOLD pending verified disclosures and explicit owner approval.
