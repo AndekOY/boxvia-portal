@@ -31,6 +31,12 @@ export async function acceptOneTimeCheckoutDraft({
      consent.earlyPerformanceTextVersion !== "BXC-EARLY-001-v0.1") {
     throw new Error("Invalid checkout consent; session not consumed");
   }
+  // Match the server adapter's supported product boundary before consuming a session.
+  // A valid snapshot for a different product must not strand this Check a Claim order.
+  if (Array.isArray(catalog) || catalog.productId !== "check-a-claim" ||
+      catalog.totalPrice !== "20.00" || catalog.currency !== "USD") {
+    throw new Error("Unsupported trusted checkout catalog; session not consumed");
+  }
   // Catalog MUST be a trusted server-side, versioned constant with real annex hashes.
   const catalogSha256 = await hashTrustedCatalogDraft(catalog);
   const acceptedAt = now();
