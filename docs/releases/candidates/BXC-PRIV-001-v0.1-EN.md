@@ -1,30 +1,19 @@
-# BXC-PRIV-001 — Privacy Notice | v0.2 | EN
-Status: CONTROLLED RELEASE CANDIDATE — NOT PUBLISHED
-Date: 2026-11-11
+# BXC-PRIV-001 — Privacy Notice | v0.1 | EN
 
-## Controller and contact
-Andrey Ekhmenin – BoxVia, ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Poland, NIP 8513329301.
-Privacy enquiries and requests: andrzej.ekhmenin@gmail.com.
+Status: ENGLISH RELEASE CANDIDATE — NOT PUBLISHED; requires final compliance review and owner release authorization.
 
-## Data, purposes and legal grounds
-BoxVia processes the contact and order details, submitted claim material, contract acknowledgements, payment references and correspondence necessary to provide the service, administer orders, respond to complaints, meet legal accounting and tax duties, and establish or defend claims.
-The applicable legal grounds under Article 6(1) of Regulation (EU) 2016/679 (GDPR) are contract performance, compliance with legal obligations and, where applicable and justified, legitimate interests in securing records and defending claims.
-Whether particular information is contractually or legally required, and the consequences of not providing it, must be specified accurately at the relevant collection point.
-Do not submit unnecessary identifiers, special-category personal data or confidential third-party material in the public intake.
+**Controller.** Andrey Ekhmenin – BoxVia, ul. Żwirki i Wigury 13/4, 71-176 Szczecin, Poland; NIP 8513329301; contact: andrzej.ekhmenin@gmail.com.
 
-## Recipients and transfers
-The approved intended initial model uses Cloudflare for the site, checkout and necessary records, PayPal for payments, and Google Gmail for customer communications and durable confirmations.
-Their actual legal roles, subprocessors, processing locations and any applicable international transfer safeguards must be verified before this notice is published.
-BoxVia does not request card details in its intake form.
-ChatGPT may assist only with genuinely anonymized case material that cannot reasonably identify a person; identifiable or merely pseudonymized client material is not authorized for that purpose.
+**Purpose and legal basis.** We process order and contact details, contract acceptance records, payment references, and material you choose to submit to assess your claim, perform the contract, communicate about the result, handle complaints, comply with accounting/tax obligations and establish or defend legal claims. The legal bases may include GDPR Art. 6(1)(b) (contract), (c) (legal obligation), and (f) (legitimate interests, where appropriate). Do not submit special-category personal data, confidential third-party material or unnecessary identifiers in the public intake form.
 
-## Retention, rights and safeguards
-Data is retained only for the periods required by applicable law or necessary for the specified purposes; the actual retention periods or objective criteria must be confirmed and disclosed before release.
-Data subjects have the rights provided by GDPR, including access, rectification, erasure where applicable, restriction, portability where applicable, objection where applicable, and the right to lodge a complaint with the Polish supervisory authority (UODO).
-BoxVia must verify and disclose any applicable international transfer safeguards and the existence or absence of relevant automated decision-making, including profiling, in accordance with GDPR Article 13.
-Website cookies and analytics must be checked against actual deployed technologies and applicable EU/Polish electronic communications rules before release.
+**Recipients and service providers.** The intended initial service configuration uses Cloudflare for website, checkout and necessary records; PayPal for payment processing; and Gmail (Google) for contractual confirmations and customer correspondence. Each provider's role, independent-controller or processor status as applicable, subprocessors, and contractual safeguards require verification before release. We may also disclose information where legally required. Payment card details are processed through the payment provider and are not requested in the BoxVia intake form. No other external recipient of customer personal data is included in the approved initial operating model.
 
-## Applicable law
-Personal data processing is governed by GDPR and applicable Polish data protection law; this notice does not reduce statutory rights.
+**International transfers.** Any transfer outside the EEA requires a lawful GDPR transfer mechanism and applicable safeguards; the actual providers, countries and safeguards must be documented before release.
 
-Release restriction: this is not a publishable Article 13 notice until the missing factual disclosures are verified and completed.
+**Retention.** Contract and tax records are retained for periods required by applicable law; other operational data is retained only as long as necessary for its stated purpose. Exact periods or criteria and deletion procedures must be documented before release.
+
+**Rights.** Subject to applicable law, you may request access, rectification, erasure, restriction, portability, or object to certain processing. You may complain to the Polish supervisory authority (UODO). Send privacy requests to andrzej.ekhmenin@gmail.com. Contractual and statutory recordkeeping may limit erasure.
+
+**AI-assisted analysis and anonymization.** Check a Claim is a human-performed analytical service. ChatGPT may assist with analysis only after case material has been genuinely anonymized so that no customer or other person is identifiable by reasonably likely means, including from combinations of details. We do not authorize sending identifiable or merely pseudonymized customer materials to ChatGPT in the initial service model. If adequate anonymization is not possible, the material is not sent to ChatGPT. The service does not automatically issue a client result. Actual website cookies, analytics and any profiling must still be verified separately.
+
+**Release checks.** Confirm all subprocessors, transfer mechanisms, retention periods, actual website cookies/analytics, security controls, and the accuracy of any AI-provider disclosure before publication.
