@@ -140,7 +140,7 @@ export async function handlePayment(request, env, url) {
     if (url.pathname === "/api/paypal/capture-order") {
       const orderId = body.order_id;
       if (typeof orderId !== "string" || !idPattern.test(orderId)) return reply({ error: "Invalid order" }, 400);
-      await preflightPayPalCaptureDraft({
+      const contractLink = await preflightPayPalCaptureDraft({
         db: env.DB, claimId, accessToken: body.access_token,
         checkoutSessionId: body.checkout_session_id, paypalOrderId: orderId
       });
@@ -169,7 +169,15 @@ export async function handlePayment(request, env, url) {
         ).bind(captureId, record.id, captureId),
         env.DB.prepare(
           "UPDATE claims SET payment_status = 'paid' WHERE id = ? AND payment_status IN ('pending', 'paid') AND EXISTS (SELECT 1 FROM paypal_orders WHERE id = ? AND claim_id = ? AND paypal_order_id = ? AND status = 'COMPLETED' AND capture_id = ?)"
-        ).bind(claimId, record.id, claimId, orderId, captureId)
+        ).bind(claimId, record.id, claimId, orderId, captureId),
+        // Persist formation only if the paid claim, verified capture, accepted
+        // checkout and immutable acceptance archive are all linked.
+        env.DB.prepare(
+          "INSERT INTO bxc_contract_formations (claim_id, checkout_session_id, snapshot_sha256, paypal_order_id, capture_id, amount, currency) SELECT ?, ?, ?, ?, ?, '20.00', 'USD' WHERE EXISTS (SELECT 1 FROM claims WHERE id = ? AND payment_status = 'paid') AND EXISTS (SELECT 1 FROM contract_paypal_order_links WHERE claim_id = ? AND checkout_session_id = ? AND paypal_order_id = ? AND snapshot_sha256 = ?) AND EXISTS (SELECT 1 FROM contract_checkout_sessions WHERE claim_id = ? AND session_id = ? AND status = 'accepted' AND snapshot_sha256 = ?) AND EXISTS (SELECT 1 FROM contract_acceptance_archive WHERE order_id = ? AND snapshot_sha256 = ?) AND NOT EXISTS (SELECT 1 FROM bxc_contract_formations WHERE claim_id = ?)"
+        ).bind(claimId, contractLink.checkoutSessionId, contractLink.snapshotSha256, orderId, captureId,
+          claimId, claimId, contractLink.checkoutSessionId, orderId, contractLink.snapshotSha256,
+          claimId, contractLink.checkoutSessionId, contractLink.snapshotSha256,
+          contractLink.checkoutSessionId, contractLink.snapshotSha256, claimId)
       ]);
       if (!batch.every(x => x.success)) {
         throw new Error("Payment reconciliation requires review");
@@ -180,6 +188,15 @@ export async function handlePayment(request, env, url) {
       if (confirmed?.payment_status !== "paid") {
         throw new Error("Payment reconciliation not confirmed");
       }
+      const formation = await env.DB.prepare(
+        "SELECT claim_id, checkout_session_id, snapshot_sha256, paypal_order_id, capture_id, amount, currency, formed_at FROM bxc_contract_formations WHERE claim_id = ?"
+      ).bind(claimId).first();
+      if (!formation || formation.checkout_session_id !== contractLink.checkoutSessionId ||
+          formation.snapshot_sha256 !== contractLink.snapshotSha256 ||
+          formation.paypal_order_id !== orderId || formation.capture_id !== captureId ||
+          formation.amount !== "20.00" || formation.currency !== "USD") {
+        throw new Error("Contract formation record missing or conflicting; manual reconciliation required");
+      }
       // Queue the notification only after the verified payment is committed.
       // A missing outbox must not undo a captured payment.
       try {
@@ -189,7 +206,7 @@ export async function handlePayment(request, env, url) {
       } catch (error) {
         console.error("Paid claim notification enqueue failed", error);
       }
-      return reply({ ok: true, claim_id: claimId, payment_status: "paid" });
+      return reply({ ok: true, claim_id: claimId, payment_status: "paid", contract_status: "formed", contract_formed_at: formation.formed_at, performance_authorized: false });
     }
     return reply({ error: "Unknown endpoint" }, 404);
   } catch (error) {
