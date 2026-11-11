@@ -28,3 +28,13 @@ No user secrets or customer records were requested or collected for this review.
 Open Cloudflare D1 > boxvia-bxc-sandbox > Overview/Settings and provide a screenshot of metadata and location/region, without opening row contents or revealing customer data.
 Then inspect actual retention/backup settings and Cloudflare account data processing terms.
 No deployment or release authorization.
+
+
+## D1 Settings screenshot — 2026-11-11, approximately 11:15 screen time
+Owner-provided Cloudflare Dashboard screenshot: D1 Database > boxvia-bxc-sandbox > Settings.
+- General > Jurisdiction: None.
+- General > Region: Eastern Europe.
+- Read replication: Disabled.
+- No retention or backup duration displayed on this Settings screen.
+Interpretation: the selected primary database region is Eastern Europe; no jurisdictional restriction is configured; global read replication is disabled. This is **not** evidence that all personal data, backups or provider processing remain within the EU/EEA. Do not claim EU-only residency.
+Next: inspect Time Travel tab for the displayed recovery window; do not open table records or change settings.
