@@ -62,3 +62,6 @@ Human-performed independent analytical service; digital report delivered manuall
 5. Owner waived separate accountant workflow, **not** the obligation to present legally accurate final gross price and mandatory transaction disclosures. Do not claim VAT rate confirmed.
 
 No production deployment, no new processor, no live payment test. HOLD pending verified disclosures and explicit owner approval.
+
+## Owner clarification — Resend (2026-11-11)
+Owner explicitly states: **Resend is not used**. Therefore Resend is **not part of the approved BXC operating model**, and its presence as production environment variables/secrets must not be described as proof of actual processing or as a confirmed active BXC recipient. The prior mention of Resend as an actual processor was not established. Existing production configuration still contains Resend-related values, but no live API invocation was verified. No need to request Resend account setup or add Resend to the BXC Privacy Notice solely due to dormant variables. If production source/runtime evidence later shows actual transmission, reassess disclosure. Do not delete production secrets or change deployment on this basis.
