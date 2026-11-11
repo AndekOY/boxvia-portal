@@ -66,8 +66,6 @@ $("checkout").addEventListener("submit",async e=>{
  try{
   if(!state.catalog)throw Error("Contract catalog unavailable");
   const claim_id=Number($("claim").value),access_token=$("access").value;
-  const session=await api("/api/bxc/checkout-session",{claim_id,access_token});
-  state.session=session.checkout_session_id;
   const consent={affirmative:$("affirmative").checked,termsAccepted:$("terms").checked,
    scheduleAccepted:$("schedule").checked,withdrawalNoticeAcknowledged:$("withdrawal").checked,
    privacyNoticeAcknowledged:$("privacy").checked,
@@ -75,6 +73,8 @@ $("checkout").addEventListener("submit",async e=>{
    earlyPerformanceConsequencesAcknowledged:$("earlyConsequences").checked,
    earlyPerformanceTextVersion:"BXC-EARLY-001-v0.1"};
   if(consent.earlyPerformanceRequested!==consent.earlyPerformanceConsequencesAcknowledged)throw Error("Early performance request and consequences acknowledgment must both be selected, or both left blank");
+  const session=await api("/api/bxc/checkout-session",{claim_id,access_token});
+  state.session=session.checkout_session_id;
   await api("/api/bxc/accept",{claim_id,access_token,checkout_session_id:state.session,consent});
   const order=await api("/api/paypal/create-order",{claim_id,access_token,checkout_session_id:state.session});
   if(!validUrl(order.approval_url)||new URL(order.approval_url).hostname.endsWith(".paypal.com")===false)
