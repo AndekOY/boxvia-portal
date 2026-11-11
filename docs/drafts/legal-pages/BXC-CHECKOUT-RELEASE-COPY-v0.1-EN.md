@@ -34,9 +34,9 @@ Product: Check a Claim | Final payable amount: USD 20.00
 If either optional control is checked without the other, do not submit; show a clear explanation. No optional consent is inferred from payment or required as a condition of ordering.
 
 ## Final binding action
-**Order with obligation to pay — USD 20.00**
+**Continue to PayPal — USD 20.00 (payment required to place the order)**
 
-This wording is a release candidate requiring consumer-law review, including whether contract formation occurs at this step or later at PayPal authorization/capture. The user must not be misled into believing that opening PayPal alone completes payment.
+Owner decision: the contract is formed only after PayPal payment is successfully captured and verified by BoxVia, with the accepted order terms bound to that payment. Opening PayPal or merely authorizing an unconfirmed payment does not form the contract. This formation rule requires consumer-law review and a technical reconciliation of the PayPal callback, capture and order-state transitions. The final website action must still clearly disclose the obligation to pay before the customer proceeds to PayPal.
 
 ## Durable confirmation before legally required performance
 Send a complete contract confirmation to the verified order email on a durable medium, including the exact accepted order and complete immutable versions of all four documents. For the approved initial operating model, send manually from owner Gmail and record dispatch evidence. Do not equate Gmail Sent status with confirmed delivery.
