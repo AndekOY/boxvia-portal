@@ -47,10 +47,10 @@ export default {
     checkoutEnabled:false,paymentEnabled:false,
     warning:"Unapproved review candidates. No binding order, consent capture, or payment is permitted using these links.",
     documents:[
-     {id:"terms",label:"General Service Terms",version:"v0.1-EN-review",url:base+"BXC-001-v0.1-EN.md"},
-     {id:"schedule",label:"Consumer and Protected Sole Trader Schedule",version:"v0.1-EN-review",url:base+"BXC-002-v0.1-EN.md"},
-     {id:"withdrawal",label:"Withdrawal Notice and Model Form",version:"v0.1-EN-review",url:base+"BXC-WD-001-v0.1-EN.md"},
-     {id:"privacy",label:"Privacy Notice",version:"v0.1-EN-review",url:base+"BXC-PRIV-001-v0.1-EN.md"}
+     {id:"terms",label:"General Service Terms",version:"v0.2-EN-review",url:base+"BXC-001-v0.2-EN.md"},
+     {id:"schedule",label:"Consumer and Protected Sole Trader Schedule",version:"v0.2-EN-review",url:base+"BXC-002-v0.2-EN.md"},
+     {id:"withdrawal",label:"Withdrawal Notice and Model Form",version:"v0.3-EN-review",url:base+"BXC-WD-001-v0.3-EN.md"},
+     {id:"privacy",label:"Privacy Notice",version:"v0.2-EN-review",url:base+"BXC-PRIV-001-v0.2-EN.md"}
     ]});
   }
   if(request.method==="GET"&&url.pathname==="/api/bxc/catalog"){
