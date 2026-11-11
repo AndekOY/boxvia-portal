@@ -102,7 +102,7 @@ export async function handleServiceRequest(request, env, url) {
   }
 
   const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
-  if (!env.TURNSTILE_SECRET_KEY || !env.RESEND_API_KEY || !env.NOTIFICATION_FROM || !env.NOTIFICATION_TO) {
+  if (!env.TURNSTILE_SECRET_KEY || !env.DB) {
     return unavailable();
   }
 
@@ -117,18 +117,14 @@ export async function handleServiceRequest(request, env, url) {
       return json({ error: "Please complete the security check again." }, 400);
     }
 
-    const delivery = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + env.RESEND_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: env.NOTIFICATION_FROM,
-        to: [env.NOTIFICATION_TO],
-        subject: "BoxVia service request - " + title,
-        text: lines.join("\n\n")
-      })
-    });
-    if (!delivery.ok || !(await delivery.json())?.id) return unavailable();
-    return json({ received: true });
+    // Persist the complete request in D1. No third-party mail dependency.
+    // The owner notification endpoint exposes only id and service code.
+    const stored = await env.DB.prepare(
+      "INSERT INTO service_requests (service_code, customer_email, request_body, status) VALUES (?, ?, ?, 'new')"
+    ).bind(data.service, email, lines.join("\\n\\n")).run();
+    if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
+        stored.meta.last_row_id <= 0) return unavailable();
+    return json({ received: true, id: stored.meta.last_row_id }, 201);
   } catch {
     return unavailable();
   }
