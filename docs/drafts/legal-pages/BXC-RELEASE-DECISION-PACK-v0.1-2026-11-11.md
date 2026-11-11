@@ -34,6 +34,22 @@ All remain unpublished release candidates. The source map is NOT a deployable tr
 5. Prepare manual Gmail confirmation packet and dispatch evidence form; confirm who sends, when, and from which account.
 6. Owner reviews a concise go/no-go record and explicitly authorizes each production action.
 
+## Final minimum viable launch configuration (proposed, not activated)
+- One product only: Check a Claim, USD 20.00 final, scope fixed in each order.
+- One operator: BoxVia proprietor; human prepares and checks the deliverable.
+- One confirmation channel: owner-controlled Gmail, manual send with all four accepted immutable documents attached.
+- One customer-input boundary: public claim or minimal statement; no confidential attachments or special-category data through checkout by default.
+- No automatic start of work merely on payment; commencement requires legally effective conditions and any required durable-medium confirmation.
+- No additional regression suite; the next technical evidence is one synthetic sandbox walkthrough, not another collection of unit tests.
+
+## Owner input needed to resolve factual release blockers
+These facts cannot be established from source code alone. Do not invent or mark complete:
+1. Confirm which real external services will process customer data on launch (Cloudflare, PayPal, Gmail, AI assistant, analytics if any), and whether any other services are enabled.
+2. Confirm actual storage/retention and access arrangement for D1 acceptance records, customer submissions, sent Gmail and backups.
+3. Confirm whether public checkout uses analytics, cookies or tracking beyond strictly necessary technical operation.
+
+The operator can draft language and code without these confirmations, but cannot truthfully finalize GDPR disclosures or release the checkout.
+
 ## Release decision
 GO: prohibited until every gate above is evidenced and owner explicitly approves.
 NO-GO/HOLD: current status. No new testing program is required merely to increase test count.
