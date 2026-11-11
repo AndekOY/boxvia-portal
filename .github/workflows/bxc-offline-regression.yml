@@ -6,6 +6,9 @@ on:
     paths:
       - 'cloudflare/contract-confirmation.js'
       - 'cloudflare/contract-checkout-evidence-draft.js'
+      - 'cloudflare/contract-checkout-orchestrator-draft.js'
+      - 'cloudflare/contract-checkout-server-adapter-draft.js'
+      - 'cloudflare/contract-checkout-session-draft.js'
       - 'cloudflare/contract-checkout-acceptance-draft.js'
       - 'cloudflare/contract-confirmation-dispatch-gate-draft.js'
       - 'cloudflare/tests/bxc-four-document-integrity.test.mjs'
