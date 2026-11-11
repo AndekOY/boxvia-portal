@@ -59,7 +59,22 @@ async function api(path,body){
   }
   const p=document.createElement("p");p.textContent="Provider: "+data.providerName+" | "+data.providerContact+" | Tax: "+data.taxDisclosure+" | Delivery: "+data.deliveryRule;
   docs.append(p);$("start").disabled=false;
- }catch(e){status("Checkout blocked: "+e.message)}
+ }catch(e){
+  status("Checkout blocked: "+e.message+". Draft documents can be reviewed below; they cannot be accepted for a binding order.");
+  try{
+   const preview=await fetch("/api/bxc/catalog-preview",{cache:"no-store"});
+   if(!preview.ok)throw Error("Preview unavailable");
+   const data=await preview.json();
+   if(data.status!=="DRAFT_PREVIEW_ONLY"||data.checkoutEnabled!==false)throw Error("Unsafe preview state");
+   const docs=$("docs");docs.replaceChildren();
+   const warning=document.createElement("p");warning.textContent="REVIEW ONLY — these four documents are not approved, frozen or published as contract terms. Checkout and payments remain disabled.";docs.append(warning);
+   for(const d of data.documents){
+    if(!validUrl(d.url))continue;
+    const p=document.createElement("p"),a=document.createElement("a");
+    a.href=d.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=d.label+" ("+d.version+", draft)";p.append(a);docs.append(p);
+   }
+  }catch(previewError){$("docs").textContent="Contract documents unavailable; checkout blocked."}
+ }
 })();
 $("checkout").addEventListener("submit",async e=>{
  e.preventDefault();$("start").disabled=true;
