@@ -91,3 +91,24 @@ test("shared snapshot validator rejects substituted legal document ID",async()=>
  snapshot.acceptedDocuments=snapshot.acceptedDocuments.map(doc=>doc.id==="privacy"?{...doc,id:"marketing"}:doc);
  assert.throws(()=>validateContractSnapshot(snapshot),/Incomplete accepted document set/);
 });
+
+test("unsupported catalog product is rejected before session consumption",async()=>{
+ const {snapshot,consent}=await fixture();
+ const accessToken="b".repeat(64),tokenHash=await sha(accessToken);
+ let updates=0;
+ const sessionDb={prepare(sql){return {bind(){return {
+   async first(){
+     if(sql.includes("FROM claim_access"))return {token_hash:tokenHash};
+     if(sql.includes("FROM claims"))return {id:1,customer_email:"synthetic@example.invalid",payment_status:"pending"};
+     throw Error("Unexpected query");
+   },
+   async run(){updates++;throw Error("Session must not be consumed")}
+ }}}}};
+ const {orderId,customerEmail,acceptedAt,...catalog}=snapshot;
+ catalog.productId="one-question-review";
+ await assert.rejects(acceptOneTimeCheckoutDraft({
+   db:sessionDb,claimId:1,accessToken,checkoutSessionId:session,consent,catalog,now:()=>timestamp
+ }),/Unsupported trusted checkout catalog/);
+ assert.equal(updates,0);
+});
+
