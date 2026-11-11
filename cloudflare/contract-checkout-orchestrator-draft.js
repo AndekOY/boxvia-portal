@@ -4,6 +4,7 @@
 // it must never automatically reopen or retry. Not imported by production.
 import { claimCheckoutAcceptanceDraft, finalizeCheckoutAcceptanceDraft, hashTrustedCatalogDraft } from "./contract-checkout-session-draft.js";
 import { acceptCheckoutOnServerDraft, verifyClaimCapabilityDraft } from "./contract-checkout-server-adapter-draft.js";
+import { validateContractSnapshot } from "./contract-confirmation.js";
 export async function acceptOneTimeCheckoutDraft({
   db, claimId, accessToken, checkoutSessionId, consent, catalog,
   now = () => new Date().toISOString()
@@ -34,6 +35,16 @@ export async function acceptOneTimeCheckoutDraft({
   const catalogSha256 = await hashTrustedCatalogDraft(catalog);
   const acceptedAt = now();
   if (Number.isNaN(Date.parse(acceptedAt))) throw new Error("Invalid server timestamp");
+  // Preflight the immutable contract catalog before the irreversible session transition.
+  // Do not strand a session in 'consuming' because a document is missing or malformed.
+  const preflight = validateContractSnapshot({
+    ...catalog,orderId:checkoutSessionId,customerEmail:claim.customer_email,acceptedAt
+  },{allowUnicode:true});
+  const requiredDocuments = ["terms","schedule","withdrawal","privacy"];
+  if(preflight.acceptedDocuments.length !== requiredDocuments.length ||
+     requiredDocuments.some(id=>!preflight.acceptedDocuments.some(doc=>doc.id===id))) {
+    throw new Error("Incomplete trusted contract catalog; session not consumed");
+  }
   await claimCheckoutAcceptanceDraft({
     db, sessionId: checkoutSessionId, claimId,
     customerEmail: claim.customer_email, contractCatalogSha256: catalogSha256,
