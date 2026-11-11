@@ -1,4 +1,5 @@
 import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
+import { handleServiceRequest } from "./service-request.js";
 
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
 // Claim intake stays disabled until notification, privacy and abuse controls are verified.
@@ -6,7 +7,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/api/service-request" && request.method === "POST") {
-      return Response.json({ error: "Service request form temporarily unavailable; contact BoxVia directly." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+      return handleServiceRequest(request, env, url);
     }
     if (url.pathname === "/api/health" && request.method === "GET") {
       return Response.json({ service: "boxvia", status: "ok" }, {
