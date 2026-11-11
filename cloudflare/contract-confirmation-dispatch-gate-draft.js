@@ -13,7 +13,7 @@ export async function prepareDurableConfirmationDraft({db,orderId,documentBytesB
     const body=documentBytesById[id];
     if(typeof body!=="string" || !body.trim())throw Error("Missing complete immutable document: "+id);
     const acceptedRef=accepted.snapshot.acceptedDocuments.find(x=>x.id===id);
-    if(id!=="privacy" && (!acceptedRef || await sha256(body)!==acceptedRef.sha256))throw Error("Document bytes differ from accepted contract: "+id);
+    if(!acceptedRef || await sha256(body)!==acceptedRef.sha256)throw Error("Document bytes differ from accepted contract: "+id);
     attachments.push(Object.freeze({id,filename:"BoxVia-"+id+".txt",contentType:"text/plain; charset=utf-8",body,sha256:await sha256(body)}));
   }
   return Object.freeze({
