@@ -26,6 +26,16 @@ function catalogFromEnv(env){
    }))throw Error("Reviewed document URLs missing");
  return c;
 }
+// Per-claim scope must be server-controlled and identical to the archived acceptance.
+function orderForClaim(catalog,claimId){
+ const o=catalog?.ordersByClaimId?.[String(claimId)];
+ if(!o||typeof o!=="object"||Array.isArray(o))throw Error("Verified order summary missing");
+ const keys=["exactScope","deliverable","deliveryChannel","deliveryRule","lawfulStartRule"];
+ if(keys.some(k=>typeof o[k]!=="string"||!o[k].trim()||o[k].length>2000))throw Error("Order summary incomplete");
+ if(o.exactScope!==catalog.exactScope||o.deliveryChannel!==catalog.deliveryChannel||o.deliveryRule!==catalog.deliveryRule)
+  throw Error("Order summary does not match immutable contract snapshot");
+ return o;
+}
 async function readBody(request){
  if(!(request.headers.get("Content-Type")||"").toLowerCase().startsWith("application/json")||
     Number(request.headers.get("Content-Length")||0)>8192)return null;
@@ -73,7 +83,7 @@ export default {
    return reply({error:"Forbidden"},403);
   if(["/api/paypal/create-order","/api/paypal/capture-order","/api/claim-status"].includes(url.pathname))
    return handlePayment(request,env,url);
-  if(!["/api/bxc/checkout-session","/api/bxc/accept"].includes(url.pathname))
+  if(!["/api/bxc/order-summary","/api/bxc/checkout-session","/api/bxc/accept"].includes(url.pathname))
    return reply({error:"Endpoint unavailable"},404);
   const body=await readBody(request);
   if(!body||!Number.isSafeInteger(body.claim_id)||body.claim_id<1)
@@ -82,6 +92,15 @@ export default {
    const catalog=catalogFromEnv(env);
    if(!await verifyClaimCapabilityDraft(env.DB,body.claim_id,body.access_token))
     return reply({error:"Not authorized"},403);
+   const order=orderForClaim(catalog,body.claim_id);
+   if(url.pathname==="/api/bxc/order-summary"){
+    return reply({claimId:body.claim_id,service:"Check a Claim",exactScope:order.exactScope,
+     deliverable:order.deliverable,deliveryChannel:order.deliveryChannel,
+     deliveryRule:order.deliveryRule,lawfulStartRule:order.lawfulStartRule,
+     totalPrice:catalog.totalPrice,currency:catalog.currency,taxDisclosure:catalog.taxDisclosure,
+     providerName:catalog.providerName,providerContact:catalog.providerContact,
+     documents:catalog.acceptedDocuments.map(d=>({id:d.id,version:d.version,sha256:d.sha256,url:catalog.documentUrls[d.id]}))});
+   }
    if(url.pathname==="/api/bxc/checkout-session"){
     const created=await createCheckoutSessionDraft({
      db:env.DB,claimId:body.claim_id,accessToken:body.access_token,
