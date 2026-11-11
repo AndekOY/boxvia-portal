@@ -121,7 +121,7 @@ export async function handleServiceRequest(request, env, url) {
     // The owner notification endpoint exposes only id and service code.
     const stored = await env.DB.prepare(
       "INSERT INTO service_requests (service_code, customer_email, request_body, status) VALUES (?, ?, ?, 'new')"
-    ).bind(data.service, email, lines.join("\\n\\n")).run();
+    ).bind(data.service, email, lines.join("\n\n")).run();
     if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
         stored.meta.last_row_id <= 0) return unavailable();
     return json({ received: true, id: stored.meta.last_row_id }, 201);
