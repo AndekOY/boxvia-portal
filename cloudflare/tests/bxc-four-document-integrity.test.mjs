@@ -112,3 +112,25 @@ test("unsupported catalog product is rejected before session consumption",async(
  assert.equal(updates,0);
 });
 
+
+test("one-time session claim rejects replay without reopening the session",async()=>{
+ const {claimCheckoutAcceptanceDraft}=await import("../contract-checkout-session-draft.js");
+ let status="open",transitions=0;
+ const oneTimeDb={prepare(sql){
+   assert.match(sql,/UPDATE contract_checkout_sessions SET status = 'consuming'/);
+   return {bind(sessionId,claimId,email,catalogHash,nowIso){
+     assert.equal(sessionId,session);assert.equal(claimId,1);
+     assert.equal(email,"synthetic@example.invalid");
+     assert.equal(catalogHash,"a".repeat(64));assert.equal(nowIso,timestamp);
+     return {async run(){
+       if(status!=="open")return {meta:{changes:0}};
+       status="consuming";transitions++;return {meta:{changes:1}};
+     }};
+   }};
+ }};
+ const args={db:oneTimeDb,sessionId:session,claimId:1,customerEmail:"synthetic@example.invalid",contractCatalogSha256:"a".repeat(64),nowIso:timestamp};
+ assert.equal((await claimCheckoutAcceptanceDraft(args)).status,"consuming");
+ await assert.rejects(claimCheckoutAcceptanceDraft(args),/Checkout session unavailable, expired or consumed/);
+ assert.equal(transitions,1);
+ assert.equal(status,"consuming");
+});
