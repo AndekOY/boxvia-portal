@@ -39,6 +39,20 @@ export default {
   if(url.pathname==="/api/health")return reply({service:"bxc-sandbox",status:"ok"});
   if(env.BXC_SANDBOX_ONLY!=="true"||env.PAYPAL_ENV!=="sandbox"||!env.DB)
    return reply({error:"Sandbox environment not configured"},503);
+  // Read-only legal candidate preview. Never used as an accepted contract catalog.
+  // These branch URLs are mutable review sources, NOT immutable contract documents.
+  if(request.method==="GET"&&url.pathname==="/api/bxc/catalog-preview"){
+   const base="https://github.com/AndekOY/boxvia-portal/blob/draft/bxc-legal-trust-v01/docs/releases/candidates/";
+   return reply({status:"DRAFT_PREVIEW_ONLY",contractCatalogReady:false,
+    checkoutEnabled:false,paymentEnabled:false,
+    warning:"Unapproved review candidates. No binding order, consent capture, or payment is permitted using these links.",
+    documents:[
+     {id:"terms",label:"General Service Terms",version:"v0.1-EN-review",url:base+"BXC-001-v0.1-EN.md"},
+     {id:"schedule",label:"Consumer and Protected Sole Trader Schedule",version:"v0.1-EN-review",url:base+"BXC-002-v0.1-EN.md"},
+     {id:"withdrawal",label:"Withdrawal Notice and Model Form",version:"v0.1-EN-review",url:base+"BXC-WD-001-v0.1-EN.md"},
+     {id:"privacy",label:"Privacy Notice",version:"v0.1-EN-review",url:base+"BXC-PRIV-001-v0.1-EN.md"}
+    ]});
+  }
   if(request.method==="GET"&&url.pathname==="/api/bxc/catalog"){
    try{
     const c=catalogFromEnv(env);
