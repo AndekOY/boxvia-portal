@@ -38,3 +38,11 @@ Owner-provided Cloudflare Dashboard screenshot: D1 Database > boxvia-bxc-sandbox
 - No retention or backup duration displayed on this Settings screen.
 Interpretation: the selected primary database region is Eastern Europe; no jurisdictional restriction is configured; global read replication is disabled. This is **not** evidence that all personal data, backups or provider processing remain within the EU/EEA. Do not claim EU-only residency.
 Next: inspect Time Travel tab for the displayed recovery window; do not open table records or change settings.
+
+
+## D1 Time Travel screenshot — 2026-11-11, approximately 11:16 screen time
+Owner-provided dashboard screenshot: D1 Database > boxvia-bxc-sandbox > Time Travel.
+- UI states: "Restore your database to any point in time within the past 7 days".
+- Actual restore window shown: 10 November 2026 16:24 through 11 November 2026 11:16.
+- Restore warning: restoring to an older version overwrites the current database.
+Interpretation: seven days is the maximum advertised point-in-time recovery horizon, not a customer-data retention policy or a guarantee of exactly seven days of retained backups. The visible window is shorter, consistent with recent database history but creation time is not independently verified. Deleted records may remain recoverable during the available window. Do not execute restore. Provider-side backups, logs and deletion semantics remain unverified.
