@@ -37,3 +37,6 @@ Status: PRIMARY PUBLIC DOCUMENTS + SOURCE REVIEW COMPLETE; MERCHANT ACCOUNT UNVE
 5. Confirm the live dates of PayPal legal pages, because public search and open caches yielded different version dates.
 
 No production activation, live payment or legal publication authorized.
+
+## PayPal Business dashboard screenshot — 2026-11-11
+Owner-provided screenshot of paypal.com/businessmanage/account/aboutBusiness shows the Business information page for a PayPal profile labeled BoxVia and a populated PayPal Merchant ID (identifier deliberately omitted from this record). This confirms access to a merchant/business-profile interface and a merchant identifier; it does NOT establish account registration country, legal owner, tax residency, actual account restrictions, or applicability of a particular country-specific agreement. Next evidence: open Business information > Update or Account owner information and provide a redacted screenshot showing only account country, legal business type and business name; hide identifiers, address, contact details and financial information. No settings should be changed.
