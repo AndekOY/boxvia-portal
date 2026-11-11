@@ -16,6 +16,7 @@ button:disabled{opacity:.4;cursor:not-allowed}.notice{background:#f4f6f9;padding
 <label>Claim ID <input id="claim" type="number" min="1" required></label>
 <label>Access token (never stored in browser storage) <input id="access" type="password" autocomplete="off" required></label>
 </fieldset>
+<fieldset><legend>Verified order summary — review before payment</legend><p id="orderSummary">Enter your claim ID and access token, then load the verified order summary.</p><button id="loadSummary" type="button" disabled>Load order summary</button></fieldset>
 <fieldset><legend>Contract documents</legend><div id="docs">Loading reviewed documents...</div></fieldset>
 <fieldset><legend>Required acknowledgements</legend>
 <label><input type="checkbox" id="affirmative" required> I affirmatively agree to this paid order.</label>
@@ -38,7 +39,7 @@ button:disabled{opacity:.4;cursor:not-allowed}.notice{background:#f4f6f9;padding
 <script>
 "use strict";
 const $=id=>document.getElementById(id), params=new URLSearchParams(location.search);
-const state={catalog:null,session:null};
+const state={catalog:null,session:null,order:null};
 const status=msg=>{$("status").textContent=msg};
 const validUrl=u=>{try{const x=new URL(u);return x.protocol==="https:"}catch{return false}};
 async function api(path,body){
@@ -58,7 +59,7 @@ async function api(path,body){
    p.append(a);docs.append(p);
   }
   const p=document.createElement("p");p.textContent="Provider: "+data.providerName+" | "+data.providerContact+" | Tax: "+data.taxDisclosure+" | Delivery: "+data.deliveryRule;
-  docs.append(p);$("start").disabled=false;
+  docs.append(p);$("loadSummary").disabled=false;
  }catch(e){
   status("Checkout blocked: "+e.message+". Draft documents can be reviewed below; they cannot be accepted for a binding order.");
   try{
@@ -76,11 +77,46 @@ async function api(path,body){
   }catch(previewError){$("docs").textContent="Contract documents unavailable; checkout blocked."}
  }
 })();
+function clearOrder(){state.order=null;$("start").disabled=true;$("orderSummary").textContent="Order summary not verified. Load it before payment.";}
+$("claim").addEventListener("input",clearOrder);
+$("access").addEventListener("input",clearOrder);
+$("loadSummary").addEventListener("click",async()=>{
+ clearOrder();$("loadSummary").disabled=true;
+ try{
+  if(!state.catalog)throw Error("Approved contract catalog unavailable");
+  const claim_id=Number($("claim").value);
+  if(!Number.isSafeInteger(claim_id)||claim_id<1||!$("access").value)throw Error("Claim ID and access token required");
+  const o=await api("/api/bxc/order-summary",{claim_id,access_token:$("access").value});
+  if(o.claimId!==claim_id||o.totalPrice!=="20.00"||o.currency!=="USD"||
+    !o.exactScope||!o.deliverable||!o.deliveryChannel||!o.lawfulStartRule||
+    !Array.isArray(o.documents)||o.documents.length!==4)throw Error("Verified order incomplete");
+  const summary=$("orderSummary");summary.replaceChildren();
+  for(const [label,value] of [["Claim ID",String(claim_id)],["Service",o.service],["Exact agreed scope",o.exactScope],
+   ["Deliverable",o.deliverable],["Delivery channel",o.deliveryChannel],["Delivery arrangements",o.deliveryRule],
+   ["Lawful commencement and 24-hour clock",o.lawfulStartRule],
+   ["Final payable amount",o.currency+" "+o.totalPrice],["Tax disclosure",o.taxDisclosure],
+   ["Provider",o.providerName],["Contact",o.providerContact]]){
+    const row=document.createElement("p"),b=document.createElement("strong");b.textContent=label+": ";
+    row.append(b,document.createTextNode(value||""));summary.append(row);
+  }
+  const h=document.createElement("strong");h.textContent="Exact document versions and SHA-256:";summary.append(h);
+  for(const d of o.documents){
+   if(!validUrl(d.url)||!/^[a-f0-9]{64}$/.test(d.sha256))throw Error("Immutable legal document reference missing");
+   const row=document.createElement("p"),a=document.createElement("a");a.href=d.url;a.target="_blank";
+   a.rel="noopener noreferrer";a.textContent=d.id+" — "+d.version;
+   row.append(a,document.createTextNode(" | SHA-256 "+d.sha256));summary.append(row);
+  }
+  state.order={claimId:claim_id,token:$("access").value};$("start").disabled=false;
+  status("Verified order summary loaded. Review all details and legal documents before payment.");
+ }catch(e){clearOrder();status("Checkout blocked: "+e.message)}
+ finally{$("loadSummary").disabled=!state.catalog}
+});
 $("checkout").addEventListener("submit",async e=>{
  e.preventDefault();$("start").disabled=true;
  try{
-  if(!state.catalog)throw Error("Contract catalog unavailable");
+  if(!state.catalog||!state.order)throw Error("Verified order summary unavailable");
   const claim_id=Number($("claim").value),access_token=$("access").value;
+  if(state.order.claimId!==claim_id||state.order.token!==access_token)throw Error("Order summary no longer matches claim");
   const consent={affirmative:$("affirmative").checked,termsAccepted:$("terms").checked,
    scheduleAccepted:$("schedule").checked,withdrawalNoticeAcknowledged:$("withdrawal").checked,
    privacyNoticeAcknowledged:$("privacy").checked,
