@@ -1,0 +1,46 @@
+{
+  "schema": "BXC_REVIEW_SNAPSHOT_v0.1",
+  "status": "REVIEW_ONLY_NOT_APPROVED_NOT_PUBLISHED",
+  "branch": "draft/bxc-legal-trust-v01",
+  "hashAlgorithm": "SHA-256",
+  "hashInput": "UTF-8 content returned by GitHub contents API; no normalization",
+  "immutableContractCatalog": false,
+  "checkoutEnabled": false,
+  "paymentEnabled": false,
+  "documents": [
+    {
+      "id": "terms",
+      "path": "docs/releases/candidates/BXC-001-v0.1-EN.md",
+      "sha256": "6d057ed05cf0dd1cee3c80ada68a7dd1ef1b10fe950b63e16c33522dae9b3884",
+      "gitBlobSha": "e000faa19842ebcfe2046c9788671c89f4b6d437",
+      "bytes": 5320,
+      "reviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/draft/bxc-legal-trust-v01/docs/releases/candidates/BXC-001-v0.1-EN.md"
+    },
+    {
+      "id": "schedule",
+      "path": "docs/releases/candidates/BXC-002-v0.1-EN.md",
+      "sha256": "328edf785023c55b9fa1f5846d79bf2532d5804c8955decad6f4a74b3223ce77",
+      "gitBlobSha": "1e8fa695c911ccbf732aa73b488b6102e2494db4",
+      "bytes": 3567,
+      "reviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/draft/bxc-legal-trust-v01/docs/releases/candidates/BXC-002-v0.1-EN.md"
+    },
+    {
+      "id": "withdrawal",
+      "path": "docs/releases/candidates/BXC-WD-001-v0.1-EN.md",
+      "sha256": "e7addd2fbc3a9626feef4afee33c401f973e7d2950040d0da8dbe66733429e41",
+      "gitBlobSha": "fa2e9c0b20281c64fd0a3bf70a0834368bf4a567",
+      "bytes": 2025,
+      "reviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/draft/bxc-legal-trust-v01/docs/releases/candidates/BXC-WD-001-v0.1-EN.md"
+    },
+    {
+      "id": "privacy",
+      "path": "docs/releases/candidates/BXC-PRIV-001-v0.1-EN.md",
+      "sha256": "137e6e11987e19c5d1f2565f1c98625f6cd5616f3b0316fe67410a380598f0f0",
+      "gitBlobSha": "d8073d2e0a517e0c96efbe0027029932a516867b",
+      "bytes": 3252,
+      "reviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/draft/bxc-legal-trust-v01/docs/releases/candidates/BXC-PRIV-001-v0.1-EN.md"
+    }
+  ],
+  "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON",
+  "note": "Candidate content can change. Recompute hashes after edits. Final release requires legal and owner approval plus immutable approved URLs."
+}
