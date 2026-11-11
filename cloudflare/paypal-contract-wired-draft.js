@@ -89,8 +89,14 @@ export async function handlePayment(request, env, url) {
       const latest = await env.DB.prepare(
         "SELECT status FROM paypal_orders WHERE claim_id = ? ORDER BY id DESC LIMIT 1"
       ).bind(claimId).first();
+      const formed = await env.DB.prepare(
+        "SELECT formed_at, snapshot_sha256, capture_id FROM bxc_contract_formations WHERE claim_id = ?"
+      ).bind(claimId).first();
       return reply({ claim_id: claimId, payment_status: claim.payment_status,
-        order_status: latest?.status || null });
+        order_status: latest?.status || null,
+        contract_status: formed ? "formed" : "not_confirmed",
+        contract_formed_at: formed?.formed_at || null,
+        performance_authorized: false });
     }
     if (claim.payment_status === "paid" && url.pathname === "/api/paypal/create-order") return reply({ error: "Already paid" }, 409);
     if (url.pathname === "/api/paypal/create-order") {
