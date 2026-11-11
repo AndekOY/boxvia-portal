@@ -50,3 +50,10 @@ C. Confirm statutory consumer-law checkout/button, early-performance and durable
 
 ## Decision
 HOLD for public B2C orders and PayPal live payments. No infrastructure expansion, no generalized VAT engine, no additional test suite. One synthetic sandbox end-to-end test after the release facts and immutable documents are approved.
+
+## Owner decision — 2026-11-11: skip separate accountant review
+- Owner explicitly directs that the **separate pre-launch accountant verification step be skipped** under MINIMAX.
+- This removes a workflow step only. It does **not** certify 23% as the legally applicable rate, prove place of supply, establish invoicing/fiscalization obligations, or create a legal exemption.
+- Treat 23% Polish VAT and supplier-place-of-supply as a **provisional internal operating assumption**, not a verified statement for public checkout. USD 20 remains the customer-facing final gross price inclusive of taxes BoxVia must charge.
+- Do not publish a false assertion that VAT classification has been legally validated. Preserve applicable mandatory tax and accounting duties; revisit classification if the service model changes or a transaction falls under an exception.
+- No extra VAT calculator, OSS engine, accountant workflow or generalized tax automation. Remaining work focuses on actual privacy processing and consumer contract flow. Existing live-release HOLD remains until mandatory checkout disclosures and other gates are addressed.
