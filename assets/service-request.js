@@ -19,7 +19,7 @@ form.addEventListener("submit", async event => {
   }
 
   submit.disabled = true;
-  message.textContent = "Sending your request…";
+  message.textContent = "Submitting your request…";
   let sent = false;
   try {
     const response = await fetch(form.action, {
@@ -34,7 +34,7 @@ form.addEventListener("submit", async event => {
     }
     sent = true;
     form.reset();
-    message.textContent = "Request received. BoxVia will follow up by email.";
+    message.textContent = "Request recorded. BoxVia will review it and reply manually by email.";
   } catch {
     message.textContent = "Your request could not be confirmed, so please try again or contact BoxVia.";
   } finally {
