@@ -32,3 +32,16 @@ These observations must not be presented as EU-only residency or production depl
 - Verify current Cloudflare subprocessor list and relevant transfer mechanism/certification as of release.
 - Confirm actual BXC production data categories, retention/deletion practice and provider inventory.
 - Do not publish legal text or enable payments without explicit owner GO.
+
+
+## Cloudflare subprocessor register — owner-provided text, reviewed 2026-11-11
+Source URL stated in DPA §4.4: https://www.cloudflare.com/gdpr/subprocessors/
+The owner supplied the page text headed "Cloudflare Subprocessors", last updated **2025-10-01**. This is an owner-provided snapshot, not independently re-fetched or verified as the latest version.
+- Third parties listed: Slack Technologies, Zendesk, Salesforce (support/account management); Google LLC (Cloudflare Developer Platform, Zero Trust, AI Gateway); Oracle America (Developer Platform, cache reserve); AWS (Email Security); CoreWeave and Nebius (Workers AI); Anthropic, OpenAI, xAI and Groq (AI Gateway).
+- Locations listed include the United States, EEA and several other jurisdictions; Cloudflare group affiliates include entities inside and outside the EEA.
+- Inclusion in Cloudflare's overall register **does not establish that a particular subprocessor receives BXC data**. In particular do not infer AI Gateway, Workers AI or Email Security usage from the list.
+- DPA §4.4 describes notification at least 30 days before new/replacement subprocessors begin processing, and a 10-day objection window.
+- No EU-only residency representation is supportable.
+- Status: public register text examined; relevant BXC service-specific recipients and current live register still to be checked at release. Account-specific DPA incorporation remains unverified.
+
+Minimalist privacy disclosure principle: link to Cloudflare's current DPA and subprocessor register; describe possible international processing and GDPR Chapter V safeguards without enumerating every supplier or promising EU-only processing.
