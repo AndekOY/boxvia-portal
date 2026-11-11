@@ -42,6 +42,11 @@ All remain unpublished release candidates. The source map is NOT a deployable tr
 - No automatic start of work merely on payment; commencement requires legally effective conditions and any required durable-medium confirmation.
 - No additional regression suite; the next technical evidence is one synthetic sandbox walkthrough, not another collection of unit tests.
 
+## Owner decision — initial processing model confirmed 2026-11-11
+Cloudflare (website/checkout/records), PayPal (payments), Gmail (contract correspondence), and ChatGPT **only for genuinely anonymized analytical input**. No customer personal data to ChatGPT; no other external client-data providers approved for launch. Incorporated into BXC-PRIV-001 candidate and BXC-PRIV-003 inventory.
+
+This closes the **choice of intended providers**, not verification of live configurations, subprocessors, international transfers, retention, cookies, contractual terms or legal review. Do not mark GDPR release gate P-01 complete on this decision alone.
+
 ## Owner input needed to resolve factual release blockers
 These facts cannot be established from source code alone. Do not invent or mark complete:
 1. Confirm which real external services will process customer data on launch (Cloudflare, PayPal, Gmail, AI assistant, analytics if any), and whether any other services are enabled.
