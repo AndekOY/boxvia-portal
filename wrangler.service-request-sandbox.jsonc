@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-service-request-sandbox",
+  "main": "cloudflare/service-request-sandbox-worker.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": false,
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "boxvia-bxc-sandbox",
+    "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+  }],
+  "vars": {
+    "SERVICE_REQUEST_SANDBOX_ONLY": "true",
+    "PAYPAL_CHECKOUT_ENABLED": "false",
+    "CLAIM_INTAKE_ENABLED": "false"
+  }
+}
