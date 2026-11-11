@@ -1,0 +1,60 @@
+{
+  "schema": "BXC_REVIEW_SNAPSHOT_v0.2",
+  "status": "REVIEW_ONLY_NOT_APPROVED_NOT_PUBLISHED",
+  "sourceCommit": "81777c87088edcdcf7e02e36f2efe0c9302ccd00",
+  "hashAlgorithm": "SHA-256",
+  "hashInput": "UTF-8 bytes of GitHub file content, no normalization",
+  "documents": [
+    {
+      "id": "terms",
+      "version": "v0.2-EN-review",
+      "path": "docs/releases/candidates/BXC-001-v0.2-EN.md",
+      "sha256": "3982deb98f6336c105f52ed6eb763cf67ec09aaa0d842782a825c61c316726d8",
+      "gitBlobSha": "6a11229baf83dbeba9f599f154898a27175e6d73",
+      "utf8Bytes": 3646,
+      "immutableReviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-001-v0.2-EN.md",
+      "immutableRawReviewUrl": "https://raw.githubusercontent.com/AndekOY/boxvia-portal/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-001-v0.2-EN.md"
+    },
+    {
+      "id": "schedule",
+      "version": "v0.2-EN-review",
+      "path": "docs/releases/candidates/BXC-002-v0.2-EN.md",
+      "sha256": "473039e615324883380a63cfcbafef2362c6d52bb7d413d32e26915573f624ca",
+      "gitBlobSha": "c6af4a2de8e916817d41a396821df9e6edd5ca41",
+      "utf8Bytes": 2671,
+      "immutableReviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-002-v0.2-EN.md",
+      "immutableRawReviewUrl": "https://raw.githubusercontent.com/AndekOY/boxvia-portal/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-002-v0.2-EN.md"
+    },
+    {
+      "id": "withdrawal",
+      "version": "v0.2-EN-review",
+      "path": "docs/releases/candidates/BXC-WD-001-v0.2-EN.md",
+      "sha256": "5547f7ca7c28ea3b6faa3eb76266179756ae63ea73c1371d4e68324670ef96cb",
+      "gitBlobSha": "b9886aa1153463ed92a13bf23ca171bda849fecb",
+      "utf8Bytes": 2151,
+      "immutableReviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-WD-001-v0.2-EN.md",
+      "immutableRawReviewUrl": "https://raw.githubusercontent.com/AndekOY/boxvia-portal/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-WD-001-v0.2-EN.md"
+    },
+    {
+      "id": "privacy",
+      "version": "v0.2-EN-review",
+      "path": "docs/releases/candidates/BXC-PRIV-001-v0.2-EN.md",
+      "sha256": "ac0c8c33fa210f10e8dcc06c47f033e69725c2db74d6571e41935d73db0cb5d7",
+      "gitBlobSha": "8cceda7888b3ce93af8989cf77d5f29b4e76874b",
+      "utf8Bytes": 2954,
+      "immutableReviewUrl": "https://github.com/AndekOY/boxvia-portal/blob/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-PRIV-001-v0.2-EN.md",
+      "immutableRawReviewUrl": "https://raw.githubusercontent.com/AndekOY/boxvia-portal/81777c87088edcdcf7e02e36f2efe0c9302ccd00/docs/releases/candidates/BXC-PRIV-001-v0.2-EN.md"
+    }
+  ],
+  "checkoutEnabled": false,
+  "paymentEnabled": false,
+  "contractCatalogReady": false,
+  "activation": "DO_NOT_USE_AS_BXC_CONTRACT_CATALOG_JSON",
+  "openGates": [
+    "Consumer-law mandatory disclosure and payment button/contract-formation sequence review",
+    "Withdrawal notice classification and exact mandatory information review",
+    "GDPR Article 13 factual inventory and disclosure completion",
+    "Tax/VAT and customer-specific price information verification",
+    "Owner release authorization"
+  ]
+}
