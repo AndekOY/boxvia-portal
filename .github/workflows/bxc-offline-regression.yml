@@ -34,9 +34,9 @@ jobs:
         run: |
           if [ -f bxc-test-results.tap ]; then
             echo '## BXC offline regression' >> "$GITHUB_STEP_SUMMARY"
-            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
             tail -n 12 bxc-test-results.tap >> "$GITHUB_STEP_SUMMARY"
-            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           else
             echo 'BXC test runner did not produce a TAP result.' >> "$GITHUB_STEP_SUMMARY"
           fi
