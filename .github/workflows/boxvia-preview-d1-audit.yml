@@ -35,7 +35,7 @@ jobs:
           assert config['name']=='boxvia-service-preview'
           assert config['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
           print('Target verified: isolated boxvia-bxc-sandbox')
-          # Read-only audit; no personal data is queried.
+          # Read-only post-submission audit; no personal data is queried.
           PY
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name='service_requests';"
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "PRAGMA table_info(service_requests);"
