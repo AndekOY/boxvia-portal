@@ -1,0 +1,94 @@
+name: BoxVia Preview — diagnostics and deploy
+
+on:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - '.github/workflows/boxvia-preview.yml'
+      - 'cloudflare/**'
+      - 'services/**'
+      - 'assets/service-request.js'
+      - 'wrangler.service-preview.jsonc'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-preview-deploy
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    name: Check Preview configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Preview configuration and HTML sitekeys
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+          cfg = Path("wrangler.service-preview.jsonc").read_text()
+          assert '"name": "boxvia-service-preview"' in cfg, "Unexpected Worker target"
+          assert '"database_name": "boxvia-bxc-sandbox"' in cfg, "Unexpected D1 target"
+          assert '"main": "cloudflare/worker.js"' in cfg, "Unexpected entrypoint"
+          expected = "0x4AAAAAAAF9H9qiroFWGcniz"
+          forms = sorted(Path("services").glob("*/index.html"))
+          found = 0
+          for f in forms:
+              s = f.read_text()
+              keys = re.findall(r'data-sitekey="([^"]+)"', s)
+              if keys:
+                  assert keys == [expected], f"Unexpected sitekey in {f}"
+                  found += 1
+          assert found >= 5, f"Expected >=5 service forms, found {found}"
+          print(f"Preview config validated; {found} service forms use expected public sitekey.")
+          PY
+      - name: Inspect currently published Preview (no credentials)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, re
+          url = "https://boxvia-service-preview.andeks.workers.dev/services/technical-pilot/"
+          try:
+              with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent":"BoxVia-Preview-Audit/1.0"}), timeout=20) as response:
+                  body = response.read(500000).decode("utf-8", "replace")
+                  print("HTTP:", response.status)
+                  print("Published Turnstile sitekeys:", re.findall(r'data-sitekey="([^"]+)"', body))
+                  print("Form present:", 'id="service-request-form"' in body)
+          except Exception as exc:
+              print("Preview fetch unavailable:", type(exc).__name__, str(exc)[:180])
+              raise SystemExit(1)
+          PY
+
+  deploy-preview:
+    name: Deploy isolated Preview (requires configured credentials)
+    needs: inspect
+    if: ${{ vars.BOXVIA_PREVIEW_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Preview Worker only
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_PREVIEW }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'
+          command: deploy --config wrangler.service-preview.jsonc
+      - name: Verify Preview response after deploy
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, re
+          url = "https://boxvia-service-preview.andeks.workers.dev/services/technical-pilot/"
+          with urllib.request.urlopen(url, timeout=30) as r:
+              body = r.read(500000).decode("utf-8", "replace")
+              assert r.status == 200
+              keys = re.findall(r'data-sitekey="([^"]+)"', body)
+              assert keys == ["0x4AAAAAAAF9H9qiroFWGcniz"], f"Unexpected published sitekey: {keys}"
+              print("Preview HTTP 200 and expected sitekey verified")
+          PY
