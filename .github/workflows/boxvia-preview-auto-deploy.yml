@@ -5,6 +5,7 @@ on:
       - audit/service-forms-20261111
     paths:
       - .github/workflows/boxvia-preview-auto-deploy.yml
+      - cloudflare/service-request.js
   workflow_dispatch:
 permissions:
   contents: read
