@@ -1,0 +1,59 @@
+name: BoxVia Turnstile — read-only configuration audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/boxvia-turnstile-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  turnstile-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check Preview widget hostname (never print credentials)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_TURNSTILE_READ_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          token = os.environ.get("CF_TOKEN", "")
+          account = os.environ.get("CF_ACCOUNT", "")
+          if not token or not account:
+              print("NOT CONFIGURED: add CLOUDFLARE_TURNSTILE_READ_TOKEN and CLOUDFLARE_ACCOUNT_ID to Actions secrets.")
+              raise SystemExit(2)
+          sitekey = "0x4AAAAAAAF9H9qiroFWGcniz"
+          hostname = "boxvia-service-preview.andeks.workers.dev"
+          endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account}/challenges/widgets?filter=sitekey:{sitekey}"
+          request = urllib.request.Request(endpoint, headers={"Authorization":f"Bearer {token}", "Accept":"application/json"})
+          try:
+              with urllib.request.urlopen(request, timeout=25) as response:
+                  payload = json.load(response)
+          except urllib.error.HTTPError as exc:
+              print("Cloudflare API HTTP status:", exc.code)
+              raise SystemExit(1)
+          if not payload.get("success"):
+              print("Cloudflare API returned unsuccessful status (details suppressed).")
+              raise SystemExit(1)
+          widgets = [w for w in payload.get("result",[]) if w.get("sitekey") == sitekey]
+          if len(widgets) != 1:
+              print("UNESTABLISHED: expected exactly one Preview widget, found", len(widgets))
+              raise SystemExit(1)
+          widget = widgets[0]
+          domains = widget.get("domains",[])
+          print("Preview widget exists; name:", widget.get("name","(unnamed)"))
+          print("Widget mode:", widget.get("mode","(unknown)"))
+          print("Allowed hostnames:", json.dumps(domains))
+          matched = any(hostname == d or hostname.endswith("." + d) for d in domains)
+          print("Preview hostname authorized:", matched)
+          if not matched:
+              print("FAIL: Preview hostname is not allowed by the configured Turnstile widget.")
+              raise SystemExit(1)
+          print("PASS: hostname configuration is consistent. Browser E2E remains unverified.")
+          PY
