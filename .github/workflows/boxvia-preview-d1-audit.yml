@@ -40,4 +40,5 @@ jobs:
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name='service_requests';"
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "PRAGMA table_info(service_requests);"
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "SELECT sql FROM sqlite_master WHERE type='table' AND name='service_requests';"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "PRAGMA index_list(service_requests);"
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "SELECT COUNT(*) AS technical_pilot_total, MAX(id) AS latest_id FROM service_requests WHERE service_code='technical-pilot';"
