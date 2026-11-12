@@ -1,0 +1,42 @@
+name: BoxVia Preview — secret binding names audit
+on:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - .github/workflows/boxvia-preview-bindings-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bindings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated Preview secret binding names (never values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}" && test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          python3 - <<'PY'
+          import json
+          cfg=json.load(open("wrangler.service-preview.jsonc"))
+          assert cfg["name"]=="boxvia-service-preview"
+          assert cfg["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
+          PY
+          npx --yes wrangler@4 secret list --config wrangler.service-preview.jsonc --json > /tmp/boxvia-preview-secrets.json
+          python3 - <<'PY'
+          import json
+          names={item["name"] for item in json.load(open("/tmp/boxvia-preview-secrets.json"))}
+          for name in ("TURNSTILE_SECRET_KEY","OWNER_NOTIFICATION_TOKEN"):
+              print(f"{name}: {'PRESENT' if name in names else 'MISSING'}")
+          assert "TURNSTILE_SECRET_KEY" in names, "Turnstile secret binding missing in isolated Preview"
+          print("Secret binding names verified. This cannot validate the secret value or its matching widget.")
+          PY
