@@ -44,5 +44,6 @@ jobs:
           for name in ("TURNSTILE_SECRET_KEY","OWNER_NOTIFICATION_TOKEN"):
               print(f"{name}: {'PRESENT' if name in names else 'MISSING'}")
           assert "TURNSTILE_SECRET_KEY" in names, "Turnstile secret binding missing in isolated Preview"
+          assert "OWNER_NOTIFICATION_TOKEN" in names, "Owner notification secret binding missing in isolated Preview"
           print("Only binding names checked; secret values are not retrieved.")
           PY
