@@ -161,8 +161,8 @@ export async function handleServiceRequest(request, env, url) {
     // Persist the complete request in D1. No third-party mail dependency.
     // The owner notification endpoint exposes only id and service code.
     const stored = await env.DB.prepare(
-      "INSERT INTO service_requests (service_code, customer_email, request_body, status) VALUES (?, ?, ?, 'new')"
-    ).bind(data.service, email, lines.join("\n\n")).run();
+      "INSERT INTO service_requests (service_code, service_title, customer_email, request_json, status) VALUES (?, ?, ?, ?, 'new')"
+    ).bind(data.service, title, email, JSON.stringify({ summary: lines.join("\n\n") })).run();
     if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
         stored.meta.last_row_id <= 0) {
       console.error("service_request_d1_insert_unconfirmed");
