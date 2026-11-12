@@ -35,7 +35,7 @@ jobs:
           assert config["d1_databases"][0]["database_name"] == "boxvia-bxc-sandbox"
           assert config["assets"]["directory"] == "./"
           html = open("services/technical-pilot/index.html").read()
-          assert 'data-sitekey="0x4AAAAAF9H9qiroFWGcniz"' in html
+          assert 'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in html
           print("Preview-only target and canonical sitekey verified.")
           PY
           npx --yes wrangler@4 deploy --config wrangler.service-preview.jsonc --keep-vars
@@ -49,6 +49,6 @@ jobs:
               html = response.read().decode("utf-8","replace")
               print("Preview HTML HTTP:", response.status)
               assert response.status == 200
-              assert 'data-sitekey="0x4AAAAAF9H9qiroFWGcniz"' in html
+              assert 'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in html
           print("PASS: published Preview uses canonical Turnstile key.")
           PY
