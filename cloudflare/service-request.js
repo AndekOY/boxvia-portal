@@ -131,7 +131,13 @@ export async function handleServiceRequest(request, env, url) {
       } catch {
         // Non-JSON error responses must not prevent safe diagnostics.
       }
+      const failureKind = errorCodes.includes("invalid-input-secret")
+        ? "invalid_secret"
+        : errorCodes.includes("missing-input-secret")
+          ? "missing_secret"
+          : errorCodes.length ? "siteverify_rejected" : "upstream_http_failure";
       console.error("service_request_turnstile_transport_error", {
+        failure_kind: failureKind,
         status: verify.status,
         content_type: (verify.headers.get("content-type") || "").slice(0, 80),
         cf_ray_present: Boolean(verify.headers.get("cf-ray")),
