@@ -105,10 +105,17 @@ export async function handleServiceRequest(request, env, url) {
     lines.push("Requested review format: " + labels[reviewFormat]);
   }
 
-  const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
+  // Diagnostic metadata is returned only on the isolated Preview hostname.
+  // No secrets, tokens, submitted fields, or stack traces are exposed.
+  const preview = url.hostname === "boxvia-service-preview.andeks.workers.dev";
+  const diagnosticVersion = "preview-intake-diag-v2-20261112";
+  const unavailable = code => json({
+    error: "The form is temporarily unavailable, so please try again or contact BoxVia.",
+    ...(preview ? { diagnostic_code: code, diagnostic_version: diagnosticVersion } : {})
+  }, 503);
   if (!env.TURNSTILE_SECRET_KEY || !env.DB) {
     console.error("service_request_config_missing", { turnstile_secret: Boolean(env.TURNSTILE_SECRET_KEY), d1_binding: Boolean(env.DB) });
-    return unavailable();
+    return unavailable("CONFIG_MISSING");
   }
 
   try {
@@ -143,7 +150,7 @@ export async function handleServiceRequest(request, env, url) {
         cf_ray_present: Boolean(verify.headers.get("cf-ray")),
         error_codes: errorCodes
       });
-      return json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia.", diagnostic_code: failureKind === "invalid_secret" ? "TURNSTILE_SECRET_REJECTED" : failureKind === "missing_secret" ? "TURNSTILE_SECRET_MISSING" : "TURNSTILE_UPSTREAM_FAILURE" }, 503);
+      return unavailable(failureKind === "invalid_secret" ? "TURNSTILE_SECRET_REJECTED" : failureKind === "missing_secret" ? "TURNSTILE_SECRET_MISSING" : "TURNSTILE_UPSTREAM_FAILURE");
     }
     const result = await verify.json();
     if (result.success !== true || result.hostname !== url.hostname || result.action !== "service-request") {
@@ -159,11 +166,11 @@ export async function handleServiceRequest(request, env, url) {
     if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
         stored.meta.last_row_id <= 0) {
       console.error("service_request_d1_insert_unconfirmed");
-      return unavailable();
+      return unavailable("D1_INSERT_FAILED");
     }
     return json({ received: true, id: stored.meta.last_row_id }, 201);
   } catch (error) {
     console.error("service_request_processing_exception", { category: error instanceof TypeError ? "type_error" : "runtime_error" });
-    return unavailable();
+    return unavailable("PROCESSING_EXCEPTION");
   }
 }
