@@ -129,7 +129,8 @@ test("Turnstile valid response for wrong Preview hostname cannot write to D1", a
     success: true, hostname: "boxvia.andeks.workers.dev", action: "service-request"
   }, async () => {
     const previewUrl = new URL("https://boxvia-service-preview.andeks.workers.dev/api/service-request");
-    const response = await handleServiceRequest(request(body()), {
+    const previewRequest = new Request(previewUrl, { method: "POST", headers: { Origin: previewUrl.origin, "Content-Type": "application/json" }, body: JSON.stringify(body()) });
+    const response = await handleServiceRequest(previewRequest, {
       DB: db(state), TURNSTILE_SECRET_KEY: "synthetic-secret"
     }, previewUrl);
     assert.equal(response.status, 400);
