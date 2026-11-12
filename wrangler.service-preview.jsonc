@@ -17,5 +17,12 @@
       "database_name": "boxvia-bxc-sandbox",
       "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
     }
-  ]
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
 }
