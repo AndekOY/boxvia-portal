@@ -98,3 +98,41 @@ test("D1 write failure does not report successful receipt", async () => {
     assert.equal(response.status, 503);
   });
 });
+
+test("Turnstile invalid-input-secret fails closed without D1 write", async () => {
+  const state = { rows: [] };
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => Response.json(
+    { success: false, "error-codes": ["invalid-input-secret"] }, { status: 400 }
+  );
+  try {
+    const response = await handleServiceRequest(request(body()), {
+      DB: db(state), TURNSTILE_SECRET_KEY: "synthetic-invalid-secret"
+    }, url);
+    assert.equal(response.status, 503);
+    assert.equal(state.rows.length, 0);
+  } finally { globalThis.fetch = original; }
+});
+test("Turnstile expired token fails closed without D1 write", async () => {
+  const state = { rows: [] };
+  await withTurnstile({ success: false, "error-codes": ["timeout-or-duplicate"] }, async () => {
+    const response = await handleServiceRequest(request(body()), {
+      DB: db(state), TURNSTILE_SECRET_KEY: "synthetic-secret"
+    }, url);
+    assert.equal(response.status, 400);
+    assert.equal(state.rows.length, 0);
+  });
+});
+test("Turnstile valid response for wrong Preview hostname cannot write to D1", async () => {
+  const state = { rows: [] };
+  await withTurnstile({
+    success: true, hostname: "boxvia.andeks.workers.dev", action: "service-request"
+  }, async () => {
+    const previewUrl = new URL("https://boxvia-service-preview.andeks.workers.dev/api/service-request");
+    const response = await handleServiceRequest(request(body()), {
+      DB: db(state), TURNSTILE_SECRET_KEY: "synthetic-secret"
+    }, previewUrl);
+    assert.equal(response.status, 400);
+    assert.equal(state.rows.length, 0);
+  });
+});
