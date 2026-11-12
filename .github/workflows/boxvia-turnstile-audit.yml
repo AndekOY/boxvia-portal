@@ -28,7 +28,7 @@ jobs:
           if not token or not account:
               print("NOT CONFIGURED: add CLOUDFLARE_TURNSTILE_READ_TOKEN and CLOUDFLARE_ACCOUNT_ID to Actions secrets.")
               raise SystemExit(2)
-          sitekey = "0x4AAAAAAAF9H9qiroFWGcniz"
+          sitekey = "0x4AAAAAAF9H9qiroFWGcniz"
           hostname = "boxvia-service-preview.andeks.workers.dev"
           endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account}/challenges/widgets"
           request = urllib.request.Request(endpoint, headers={"Authorization":f"Bearer {token}", "Accept":"application/json"})
