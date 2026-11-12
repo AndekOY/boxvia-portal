@@ -24,7 +24,7 @@ function request(data, headers = {}) {
 }
 function db(state) {
   return { prepare(sql) {
-    assert.match(sql, /^INSERT INTO service_requests/);
+    assert.match(sql, /^INSERT INTO service_requests \(service_code, service_title, customer_email, request_json, status\)/);
     return { bind(...values) {
       state.rows.push(values);
       return { async run() { return { success: true, meta: { last_row_id: state.rows.length } }; } };
@@ -43,7 +43,10 @@ test("valid service request is stored once and returns ID", async () => {
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), { received: true, id: 1 });
     assert.equal(state.rows[0][0], "technical-pilot");
-    assert.equal(state.rows[0][1], "test@example.org");
+    assert.equal(state.rows[0][1], "Technical Pilot");
+    assert.equal(state.rows[0][2], "test@example.org");
+    assert.match(JSON.parse(state.rows[0][3]).summary, /Synthetic runtime/);
+    assert.doesNotMatch(state.rows[0][3], /test-token/);
   });
 });
 test("missing acknowledgement fails before persistence", async () => {
