@@ -31,12 +31,18 @@ jobs:
           assert cfg["name"]=="boxvia-service-preview"
           assert cfg["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
           PY
-          npx --yes wrangler@4 secret list --config wrangler.service-preview.jsonc --json > /tmp/boxvia-preview-secrets.json
           python3 - <<'PY'
-          import json
-          names={item["name"] for item in json.load(open("/tmp/boxvia-preview-secrets.json"))}
+          import json,os,urllib.request
+          account=os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token=os.environ["CLOUDFLARE_API_TOKEN"]
+          url=f"https://api.cloudflare.com/client/v4/accounts/{account}/workers/scripts/boxvia-service-preview/secrets"
+          req=urllib.request.Request(url,headers={"Authorization":"Bearer "+token,"Accept":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as response:
+              data=json.load(response)
+          if not data.get("success"): raise RuntimeError("Cloudflare API returned an unsuccessful response")
+          names={item["name"] for item in data.get("result",[])}
           for name in ("TURNSTILE_SECRET_KEY","OWNER_NOTIFICATION_TOKEN"):
               print(f"{name}: {'PRESENT' if name in names else 'MISSING'}")
           assert "TURNSTILE_SECRET_KEY" in names, "Turnstile secret binding missing in isolated Preview"
-          print("Secret binding names verified. This cannot validate the secret value or its matching widget.")
+          print("Only binding names checked; secret values are not retrieved.")
           PY
