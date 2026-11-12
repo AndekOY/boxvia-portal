@@ -16,6 +16,27 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Check API rejection paths without storing a request
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error
+          base = "https://boxvia-service-preview.andeks.workers.dev/api/service-request"
+          cases = [
+            ("wrong-origin", "https://example.invalid", {}, 403),
+            ("invalid-body", "https://boxvia-service-preview.andeks.workers.dev", {"service":"technical-pilot"}, 400),
+          ]
+          for name, origin, data, expected in cases:
+              request = urllib.request.Request(base, data=json.dumps(data).encode(), headers={"Origin":origin,"Content-Type":"application/json"}, method="POST")
+              try:
+                  with urllib.request.urlopen(request, timeout=25) as response:
+                      code = response.status
+              except urllib.error.HTTPError as exc:
+                  code = exc.code
+              print(f"{name}: HTTP {code}")
+              assert code == expected, f"{name}: expected {expected}, got {code}"
+          print("Negative API checks passed; no valid Turnstile token supplied; no D1 insert expected.")
+          PY
       - name: Inspect deployed Preview without credentials
         shell: bash
         run: |
