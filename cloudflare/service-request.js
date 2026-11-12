@@ -114,6 +114,7 @@ export async function handleServiceRequest(request, env, url) {
   try {
     const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
       body: new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token })
     });
     if (!verify.ok) {
@@ -132,6 +133,8 @@ export async function handleServiceRequest(request, env, url) {
       }
       console.error("service_request_turnstile_transport_error", {
         status: verify.status,
+        content_type: (verify.headers.get("content-type") || "").slice(0, 80),
+        cf_ray_present: Boolean(verify.headers.get("cf-ray")),
         error_codes: errorCodes
       });
       return unavailable();
