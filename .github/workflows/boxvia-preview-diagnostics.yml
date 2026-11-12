@@ -32,26 +32,40 @@ jobs:
               print(path, "HTTP", status, "content-type", headers.get("Content-Type"), "cf-ray-present", bool(headers.get("CF-Ray")), "server", headers.get("Server"))
               print("Body prefix:", body[:180].decode("utf-8", "replace").replace("\\n", " "))
           PY
-      - name: Check API rejection paths without storing a request
+      - name: Diagnose API rejection stage without storing a request
         shell: bash
         run: |
           python3 - <<'PY'
           import json, urllib.request, urllib.error
-          base = "https://boxvia-service-preview.andeks.workers.dev/api/service-request"
+          origin = "https://boxvia-service-preview.andeks.workers.dev"
+          endpoint = origin + "/api/service-request"
           cases = [
-            ("wrong-origin", "https://example.invalid", {}, 403),
-            ("invalid-body", "https://boxvia-service-preview.andeks.workers.dev", {"service":"technical-pilot"}, 400),
+              ("wrong-origin", "https://example.invalid", {}, 403),
+              ("invalid-body", origin, {"service":"technical-pilot"}, 400),
           ]
-          for name, origin, data, expected in cases:
-              request = urllib.request.Request(base, data=json.dumps(data).encode(), headers={"Origin":origin,"Content-Type":"application/json"}, method="POST")
+          inconclusive = []
+          for name, request_origin, data, expected in cases:
+              request = urllib.request.Request(
+                  endpoint, data=json.dumps(data).encode("utf-8"), method="POST",
+                  headers={"Origin":request_origin,"Content-Type":"application/json",
+                           "Accept":"application/json","User-Agent":"Mozilla/5.0 (compatible; BoxViaDiagnostics/1.0)"})
               try:
                   with urllib.request.urlopen(request, timeout=25) as response:
-                      code = response.status
-              except urllib.error.HTTPError as exc:
-                  code = exc.code
-              print(f"{name}: HTTP {code}")
-              assert code == expected, f"{name}: expected {expected}, got {code}"
-          print("Negative API checks passed; no valid Turnstile token supplied; no D1 insert expected.")
+                      status, headers, body = response.status, response.headers, response.read(1024)
+              except urllib.error.HTTPError as error:
+                  status, headers, body = error.code, error.headers, error.read(1024)
+              content_type = headers.get("Content-Type", "")
+              preview = body[:240].decode("utf-8","replace").replace("\\n"," ")
+              print(f"{name}: HTTP {status}; type={content_type}; server={headers.get('Server')}; cf-ray-present={bool(headers.get('CF-Ray'))}; body={preview}")
+              if status == expected:
+                  continue
+              if status == 403 and expected == 400 and "application/json" not in content_type.lower():
+                  inconclusive.append(f"{name}: upstream 403 challenge/block, application validation not reached")
+              else:
+                  raise AssertionError(f"{name}: expected {expected}, got {status}; inspect safe response metadata above")
+          if inconclusive:
+              raise RuntimeError("; ".join(inconclusive))
+          print("PASS: negative API checks; no valid Turnstile token and no D1 write.")
           PY
       - name: Inspect deployed Preview without credentials
         shell: bash
