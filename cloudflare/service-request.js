@@ -143,7 +143,7 @@ export async function handleServiceRequest(request, env, url) {
         cf_ray_present: Boolean(verify.headers.get("cf-ray")),
         error_codes: errorCodes
       });
-      return unavailable();
+      return json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia.", diagnostic_code: failureKind === "invalid_secret" ? "TURNSTILE_SECRET_REJECTED" : failureKind === "missing_secret" ? "TURNSTILE_SECRET_MISSING" : "TURNSTILE_UPSTREAM_FAILURE" }, 503);
     }
     const result = await verify.json();
     if (result.success !== true || result.hostname !== url.hostname || result.action !== "service-request") {
