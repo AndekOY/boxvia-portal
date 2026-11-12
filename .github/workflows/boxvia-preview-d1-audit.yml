@@ -2,6 +2,11 @@ name: BoxVia Preview — D1 service intake audit (read-only)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - .github/workflows/boxvia-preview-d1-audit.yml
 
 permissions:
   contents: read
