@@ -117,7 +117,23 @@ export async function handleServiceRequest(request, env, url) {
       body: new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token })
     });
     if (!verify.ok) {
-      console.error("service_request_turnstile_transport_error", { status: verify.status });
+      // Siteverify can return structured diagnostic codes even for non-2xx HTTP responses.
+      // Never log the submitted response token, secret, or raw response body.
+      let errorCodes = [];
+      try {
+        const diagnostic = await verify.json();
+        if (Array.isArray(diagnostic?.["error-codes"])) {
+          errorCodes = diagnostic["error-codes"]
+            .filter(code => typeof code === "string" && /^[a-z0-9-]{1,64}$/.test(code))
+            .slice(0, 5);
+        }
+      } catch {
+        // Non-JSON error responses must not prevent safe diagnostics.
+      }
+      console.error("service_request_turnstile_transport_error", {
+        status: verify.status,
+        error_codes: errorCodes
+      });
       return unavailable();
     }
     const result = await verify.json();
