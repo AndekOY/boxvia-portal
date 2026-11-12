@@ -73,7 +73,7 @@ jobs:
           python3 - <<'PY'
           import json, re, urllib.request
           base = "https://boxvia-service-preview.andeks.workers.dev"
-          expected = "0x4AAAAAAF9H9qiroFWGcniz"
+          expected = "0x4AAAAAF9H9qiroFWGcniz"
           urls = ["/api/health", "/services/technical-pilot/"]
           for path in urls:
               request = urllib.request.Request(base + path, headers={"User-Agent":"BoxVia-Preview-Diagnostics/1.0"})
