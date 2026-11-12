@@ -37,7 +37,7 @@ jobs:
           assert cfg["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
           assert cfg["d1_databases"][0]["database_id"]=="baf79e93-cbea-4786-8779-974f3b3afbcc"
           assert cfg["observability"]["logs"]["enabled"] is True
-          assert 'data-sitekey="0x4AAAAAAAF9H9qiroFWGcniz"' in Path("services/technical-pilot/index.html").read_text()
+          assert 'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in Path("services/technical-pilot/index.html").read_text()
           print("Isolated Preview deployment target verified.")
           PY
           npx --yes wrangler@4 deploy --config wrangler.service-preview.jsonc --keep-vars
