@@ -1,0 +1,42 @@
+name: BoxVia Preview — read-only diagnostics
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/boxvia-preview-diagnostics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect deployed Preview without credentials
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request
+          base = "https://boxvia-service-preview.andeks.workers.dev"
+          expected = "0x4AAAAAAAF9H9qiroFWGcniz"
+          urls = ["/api/health", "/services/technical-pilot/"]
+          for path in urls:
+              request = urllib.request.Request(base + path, headers={"User-Agent":"BoxVia-Preview-Diagnostics/1.0"})
+              with urllib.request.urlopen(request, timeout=25) as response:
+                  body = response.read(500000).decode("utf-8", "replace")
+                  print(f"{path}: HTTP {response.status}")
+                  assert response.status == 200
+                  if path == "/api/health":
+                      data = json.loads(body)
+                      assert data.get("status") == "ok", "Preview health unexpected"
+                  else:
+                      keys = re.findall(r'data-sitekey="([^"]+)"', body)
+                      print("Published sitekeys:", keys)
+                      assert keys == [expected], "Published Preview sitekey differs"
+                      assert 'id="service-request-form"' in body, "Form missing"
+          print("Read-only Preview checks passed; no deploy or secrets used.")
+          PY
