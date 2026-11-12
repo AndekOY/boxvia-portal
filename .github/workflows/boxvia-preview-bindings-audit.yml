@@ -1,0 +1,49 @@
+name: BoxVia Preview — secret binding names audit
+on:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - .github/workflows/boxvia-preview-bindings-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bindings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated Preview secret binding names (never values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}" && test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          python3 - <<'PY'
+          import json
+          cfg=json.load(open("wrangler.service-preview.jsonc"))
+          assert cfg["name"]=="boxvia-service-preview"
+          assert cfg["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
+          PY
+          python3 - <<'PY'
+          import json,os,urllib.request
+          account=os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          token=os.environ["CLOUDFLARE_API_TOKEN"]
+          url=f"https://api.cloudflare.com/client/v4/accounts/{account}/workers/scripts/boxvia-service-preview/secrets"
+          req=urllib.request.Request(url,headers={"Authorization":"Bearer "+token,"Accept":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as response:
+              data=json.load(response)
+          if not data.get("success"): raise RuntimeError("Cloudflare API returned an unsuccessful response")
+          names={item["name"] for item in data.get("result",[])}
+          for name in ("TURNSTILE_SECRET_KEY","OWNER_NOTIFICATION_TOKEN"):
+              print(f"{name}: {'PRESENT' if name in names else 'MISSING'}")
+          assert "TURNSTILE_SECRET_KEY" in names, "Turnstile secret binding missing in isolated Preview"
+          assert "OWNER_NOTIFICATION_TOKEN" in names, "Owner notification secret binding missing in isolated Preview"
+          print("Only binding names checked; secret values are not retrieved.")
+          PY

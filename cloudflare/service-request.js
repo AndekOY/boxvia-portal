@@ -78,6 +78,10 @@ export async function handleServiceRequest(request, env, url) {
     return json({ error: "Please check your email address and complete the security check." }, 400);
   }
 
+  if (data.public_material_confirmation !== "yes" || data.terms_acknowledgement !== "yes") {
+    return json({ error: "Please confirm the required statements." }, 400);
+  }
+
   const [title, fields] = service;
   const lines = ["Service: " + title, "Customer email: " + email];
   for (const [name, label, max, required] of fields) {
@@ -101,35 +105,72 @@ export async function handleServiceRequest(request, env, url) {
     lines.push("Requested review format: " + labels[reviewFormat]);
   }
 
-  const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
-  if (!env.TURNSTILE_SECRET_KEY || !env.RESEND_API_KEY || !env.NOTIFICATION_FROM || !env.NOTIFICATION_TO) {
-    return unavailable();
+  // Diagnostic metadata is returned only on the isolated Preview hostname.
+  // No secrets, tokens, submitted fields, or stack traces are exposed.
+  const preview = url.hostname === "boxvia-service-preview.andeks.workers.dev";
+  const diagnosticVersion = "preview-intake-diag-v2-20261112";
+  const unavailable = code => json({
+    error: "The form is temporarily unavailable, so please try again or contact BoxVia.",
+    ...(preview ? { diagnostic_code: code, diagnostic_version: diagnosticVersion } : {})
+  }, 503);
+  if (!env.TURNSTILE_SECRET_KEY || !env.DB) {
+    console.error("service_request_config_missing", { turnstile_secret: Boolean(env.TURNSTILE_SECRET_KEY), d1_binding: Boolean(env.DB) });
+    return unavailable("CONFIG_MISSING");
   }
 
   try {
     const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
       body: new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token })
     });
-    if (!verify.ok) return unavailable();
+    if (!verify.ok) {
+      // Siteverify can return structured diagnostic codes even for non-2xx HTTP responses.
+      // Never log the submitted response token, secret, or raw response body.
+      let errorCodes = [];
+      try {
+        const diagnostic = await verify.json();
+        if (Array.isArray(diagnostic?.["error-codes"])) {
+          errorCodes = diagnostic["error-codes"]
+            .filter(code => typeof code === "string" && /^[a-z0-9-]{1,64}$/.test(code))
+            .slice(0, 5);
+        }
+      } catch {
+        // Non-JSON error responses must not prevent safe diagnostics.
+      }
+      const failureKind = errorCodes.includes("invalid-input-secret")
+        ? "invalid_secret"
+        : errorCodes.includes("missing-input-secret")
+          ? "missing_secret"
+          : errorCodes.length ? "siteverify_rejected" : "upstream_http_failure";
+      console.error("service_request_turnstile_transport_error", {
+        failure_kind: failureKind,
+        status: verify.status,
+        content_type: (verify.headers.get("content-type") || "").slice(0, 80),
+        cf_ray_present: Boolean(verify.headers.get("cf-ray")),
+        error_codes: errorCodes
+      });
+      return unavailable(failureKind === "invalid_secret" ? "TURNSTILE_SECRET_REJECTED" : failureKind === "missing_secret" ? "TURNSTILE_SECRET_MISSING" : "TURNSTILE_UPSTREAM_FAILURE");
+    }
     const result = await verify.json();
     if (result.success !== true || result.hostname !== url.hostname || result.action !== "service-request") {
+      console.warn("service_request_turnstile_rejected", { verified: result.success === true, hostname_matches: result.hostname === url.hostname, action_matches: result.action === "service-request", error_codes: Array.isArray(result["error-codes"]) ? result["error-codes"].filter(code => /^[a-z0-9-]{1,64}$/.test(code)).slice(0, 5) : [] });
       return json({ error: "Please complete the security check again." }, 400);
     }
 
-    const delivery = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + env.RESEND_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: env.NOTIFICATION_FROM,
-        to: [env.NOTIFICATION_TO],
-        subject: "BoxVia service request - " + title,
-        text: lines.join("\n\n")
-      })
-    });
-    if (!delivery.ok || !(await delivery.json())?.id) return unavailable();
-    return json({ received: true });
-  } catch {
-    return unavailable();
+    // Persist the complete request in D1. No third-party mail dependency.
+    // The owner notification endpoint exposes only id and service code.
+    const stored = await env.DB.prepare(
+      "INSERT INTO service_requests (service_code, service_title, customer_email, request_json, status) VALUES (?, ?, ?, ?, 'new')"
+    ).bind(data.service, title, email, JSON.stringify({ summary: lines.join("\n\n") })).run();
+    if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
+        stored.meta.last_row_id <= 0) {
+      console.error("service_request_d1_insert_unconfirmed");
+      return unavailable("D1_INSERT_FAILED");
+    }
+    return json({ received: true, id: stored.meta.last_row_id }, 201);
+  } catch (error) {
+    console.error("service_request_processing_exception", { category: error instanceof TypeError ? "type_error" : "runtime_error" });
+    return unavailable("PROCESSING_EXCEPTION");
   }
 }

@@ -1,0 +1,45 @@
+name: BoxVia Preview — isolated auto deploy
+on:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - .github/workflows/boxvia-preview-auto-deploy.yml
+      - cloudflare/service-request.js
+      - assets/service-request.js
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: boxvia-preview-isolated-deploy
+  cancel-in-progress: false
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify Preview-only target and deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}" && test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cfg=json.loads(Path("wrangler.service-preview.jsonc").read_text())
+          assert cfg["name"]=="boxvia-service-preview"
+          assert cfg["main"]=="cloudflare/worker.js"
+          assert cfg["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
+          assert cfg["d1_databases"][0]["database_id"]=="baf79e93-cbea-4786-8779-974f3b3afbcc"
+          assert cfg["observability"]["logs"]["enabled"] is True
+          assert 'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in Path("services/technical-pilot/index.html").read_text()
+          print("Isolated Preview deployment target verified.")
+          PY
+          npx --yes wrangler@4 deploy --config wrangler.service-preview.jsonc --keep-vars

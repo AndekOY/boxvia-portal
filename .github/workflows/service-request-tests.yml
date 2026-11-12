@@ -1,0 +1,41 @@
+name: Service request tests
+on:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - 'cloudflare/migrations/0001_service_requests.sql'
+      - 'cloudflare/service-request.js'
+      - 'tests/service-request.test.mjs'
+      - 'tests/verify-service-request-schema.py'
+      - '.github/workflows/service-request-tests.yml'
+  pull_request:
+    paths:
+      - 'cloudflare/migrations/0001_service_requests.sql'
+      - 'cloudflare/service-request.js'
+      - 'tests/service-request.test.mjs'
+      - 'tests/verify-service-request-schema.py'
+      - '.github/workflows/service-request-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit-and-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fresh D1-compatible schema with SQLite
+        run: python3 tests/verify-service-request-schema.py
+      - name: Verify migration in fresh local Wrangler D1
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/boxvia-d1-fresh
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --file cloudflare/migrations/0001_service_requests.sql
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --command "INSERT INTO service_requests (service_code, service_title, customer_email, request_json, status) VALUES ('technical-pilot', 'Synthetic title', 'synthetic@example.org', '{}', 'new');"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --command "SELECT id, service_code FROM service_requests;"
+      - name: Run service request unit tests
+        run: node --experimental-default-type=module --test tests/service-request.test.mjs

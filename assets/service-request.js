@@ -29,7 +29,9 @@ form.addEventListener("submit", async event => {
     });
     const result = await response.json();
     if (!response.ok || result.received !== true) {
-      message.textContent = result.error || "Your request could not be sent.";
+      const diagnostic = location.hostname === "boxvia-service-preview.andeks.workers.dev" && /^[A-Z_]{4,48}$/.test(result.diagnostic_code || "") ? " [Preview: " + result.diagnostic_code + "]" : "";
+      const version = diagnostic && /^[a-z0-9-]{4,80}$/.test(result.diagnostic_version || "") ? " (" + result.diagnostic_version + ")" : "";
+      message.textContent = (result.error || "Your request could not be sent.") + diagnostic + version;
       return;
     }
     sent = true;

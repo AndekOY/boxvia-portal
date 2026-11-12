@@ -50,10 +50,12 @@ export default {
         const claims = await env.DB.prepare(
           "SELECT id FROM claims WHERE id > ? ORDER BY id ASC LIMIT 100"
         ).bind(claimsAfter).all();
+        const services = await env.DB.prepare(
+          "SELECT id, service_code FROM service_requests WHERE id > ? ORDER BY id ASC LIMIT 100"
+        ).bind(servicesAfter).all();
         return reply({
           claims: (claims.results || []).map(row => ({ id: row.id })),
-          // Other service forms currently use email delivery, not a D1 service queue.
-          services: []
+          services: (services.results || []).map(row => ({ id: row.id, code: row.service_code }))
         });
       } catch (error) {
         console.error("Owner notification query failed");
