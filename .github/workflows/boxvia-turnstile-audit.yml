@@ -46,6 +46,10 @@ jobs:
           for idx, item in enumerate(all_widgets, 1):
               key = item.get("sitekey", "")
               print(f"Widget {idx}: name={item.get('name', '(unnamed)')!r}; sitekey_suffix={key[-6:]!r}; sitekey_length={len(key)}; expected_length={len(sitekey)}; exact_match={key == sitekey}; mode={item.get('mode', 'unknown')!r}; domains={item.get('domains', [])!r}")
+              if item.get("name") == "boxvia-service-preview" and len(sitekey) == len(key) + 1:
+                  candidates = [i for i in range(len(sitekey)) if sitekey[:i] + sitekey[i+1:] == key]
+                  print("Preview HTML extra character positions (zero-based):", candidates)
+                  print("Preview HTML extra character codes:", [ord(sitekey[i]) for i in candidates])
           widgets = [w for w in all_widgets if w.get("sitekey") == sitekey]
           if len(widgets) != 1:
               print("UNESTABLISHED: expected exactly one Preview widget, found", len(widgets))
