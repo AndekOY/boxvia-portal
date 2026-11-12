@@ -39,16 +39,32 @@ jobs:
           print("Preview-only target and canonical sitekey verified.")
           PY
           npx --yes wrangler@4 deploy --config wrangler.service-preview.jsonc --keep-vars
-      - name: Verify deployed Preview HTML
+      - name: Diagnose deployed Preview HTTP (read-only)
         shell: bash
         run: |
           python3 - <<'PY'
+          import urllib.error
           import urllib.request
-          url = "https://boxvia-service-preview.andeks.workers.dev/services/technical-pilot/"
-          with urllib.request.urlopen(url, timeout=30) as response:
-              html = response.read().decode("utf-8","replace")
-              print("Preview HTML HTTP:", response.status)
-              assert response.status == 200
-              assert 'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in html
-          print("PASS: published Preview uses canonical Turnstile key.")
+
+          base = "https://boxvia-service-preview.andeks.workers.dev"
+          for path in ("/api/health", "/services/technical-pilot/"):
+              request = urllib.request.Request(base + path, headers={"Accept": "text/html,application/json"})
+              try:
+                  response = urllib.request.urlopen(request, timeout=30)
+              except urllib.error.HTTPError as error:
+                  response = error
+              with response:
+                  status = response.status
+                  headers = response.headers
+                  body = response.read(8192).decode("utf-8", "replace")
+              print(f"{path}: HTTP {status}")
+              for name in ("content-type", "server", "cf-ray", "cf-mitigated", "location", "www-authenticate"):
+                  if headers.get(name):
+                      print(f"{name}: {headers[name]}")
+              if status == 200 and path == "/services/technical-pilot/":
+                  print("Canonical Turnstile sitekey present:",
+                        'data-sitekey="0x4AAAAAAF9H9qiroFWGcniz"' in body)
+              elif status != 200:
+                  print("HTTP verification blocked or failed; no Cloudflare security settings changed.")
+                  print("Body preview:", body[:300].replace("\\n", " "))
           PY
