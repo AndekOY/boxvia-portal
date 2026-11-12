@@ -16,6 +16,22 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Diagnose Preview HTTP 403 without secrets
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          base = "https://boxvia-service-preview.andeks.workers.dev"
+          for path in ["/api/health", "/services/technical-pilot/"]:
+              req = urllib.request.Request(base + path, headers={"User-Agent":"Mozilla/5.0 (compatible; BoxViaDiagnostics/1.0)","Accept":"text/html,application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=25) as resp:
+                      status, headers, body = resp.status, resp.headers, resp.read(500)
+              except urllib.error.HTTPError as err:
+                  status, headers, body = err.code, err.headers, err.read(500)
+              print(path, "HTTP", status, "content-type", headers.get("Content-Type"), "cf-ray-present", bool(headers.get("CF-Ray")), "server", headers.get("Server"))
+              print("Body prefix:", body[:180].decode("utf-8", "replace").replace("\\n", " "))
+          PY
       - name: Check API rejection paths without storing a request
         shell: bash
         run: |
