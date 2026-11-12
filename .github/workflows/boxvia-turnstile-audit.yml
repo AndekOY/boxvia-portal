@@ -43,6 +43,9 @@ jobs:
               raise SystemExit(1)
           all_widgets = payload.get("result", [])
           print("Visible widget count:", len(all_widgets))
+          for idx, item in enumerate(all_widgets, 1):
+              key = item.get("sitekey", "")
+              print(f"Widget {idx}: name={item.get('name', '(unnamed)')!r}; sitekey_suffix={key[-6:]!r}; mode={item.get('mode', 'unknown')!r}; domains={item.get('domains', [])!r}")
           widgets = [w for w in all_widgets if w.get("sitekey") == sitekey]
           if len(widgets) != 1:
               print("UNESTABLISHED: expected exactly one Preview widget, found", len(widgets))
