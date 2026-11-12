@@ -107,6 +107,7 @@ export async function handleServiceRequest(request, env, url) {
 
   const unavailable = () => json({ error: "The form is temporarily unavailable, so please try again or contact BoxVia." }, 503);
   if (!env.TURNSTILE_SECRET_KEY || !env.DB) {
+    console.error("service_request_config_missing", { turnstile_secret: Boolean(env.TURNSTILE_SECRET_KEY), d1_binding: Boolean(env.DB) });
     return unavailable();
   }
 
@@ -115,9 +116,13 @@ export async function handleServiceRequest(request, env, url) {
       method: "POST",
       body: new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token })
     });
-    if (!verify.ok) return unavailable();
+    if (!verify.ok) {
+      console.error("service_request_turnstile_transport_error", { status: verify.status });
+      return unavailable();
+    }
     const result = await verify.json();
     if (result.success !== true || result.hostname !== url.hostname || result.action !== "service-request") {
+      console.warn("service_request_turnstile_rejected", { verified: result.success === true, hostname_matches: result.hostname === url.hostname, action_matches: result.action === "service-request", error_codes: Array.isArray(result["error-codes"]) ? result["error-codes"].filter(code => /^[a-z0-9-]{1,64}$/.test(code)).slice(0, 5) : [] });
       return json({ error: "Please complete the security check again." }, 400);
     }
 
@@ -127,9 +132,13 @@ export async function handleServiceRequest(request, env, url) {
       "INSERT INTO service_requests (service_code, customer_email, request_body, status) VALUES (?, ?, ?, 'new')"
     ).bind(data.service, email, lines.join("\n\n")).run();
     if (!stored.success || !Number.isSafeInteger(stored.meta?.last_row_id) ||
-        stored.meta.last_row_id <= 0) return unavailable();
+        stored.meta.last_row_id <= 0) {
+      console.error("service_request_d1_insert_unconfirmed");
+      return unavailable();
+    }
     return json({ received: true, id: stored.meta.last_row_id }, 201);
-  } catch {
+  } catch (error) {
+    console.error("service_request_processing_exception", { category: error instanceof TypeError ? "type_error" : "runtime_error" });
     return unavailable();
   }
 }
