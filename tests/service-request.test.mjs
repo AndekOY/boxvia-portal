@@ -249,3 +249,33 @@ test("missing or malformed request UUID is rejected before Turnstile", async () 
   assert.equal(response.status, 400);
   assert.equal(state.rows.length, 0);
 });
+
+test("Preview retries with distinct valid Turnstile tokens preserve the same request ID", async () => {
+  const state = { rows: [] }, database = db(state);
+  const tokens = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_endpoint, options) => {
+    const params = new URLSearchParams(options.body);
+    tokens.push(params.get("response"));
+    return Response.json({
+      success: true,
+      hostname: previewUrlForDiagnostics.hostname,
+      action: "service-request"
+    });
+  };
+  try {
+    const firstData = { ...body(), "cf-turnstile-response": "valid-token-first" };
+    const secondData = { ...body(), "cf-turnstile-response": "valid-token-second" };
+    const env = { DB: database, TURNSTILE_SECRET_KEY: "synthetic-secret" };
+    const first = await handleServiceRequest(previewRequestForDiagnostics(firstData), env, previewUrlForDiagnostics);
+    const second = await handleServiceRequest(previewRequestForDiagnostics(secondData), env, previewUrlForDiagnostics);
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 200);
+    assert.deepEqual(await second.json(), await first.json());
+    assert.deepEqual(tokens, ["valid-token-first", "valid-token-second"]);
+    assert.equal(state.rows.length, 1);
+    assert.equal(state.keys.size, 1);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
