@@ -29,3 +29,21 @@ The workflow uses existing `boxvia-preview` GitHub environment credentials to av
 Existing prior audit `docs/audits/production-release-readiness-2026-11-12.md` documents architectural differences: Production Resend notification vs Preview D1 + Apps Script. It also reported an earlier migration mismatch; the current `0001_service_requests.sql` was subsequently revised to use `request_json` and `service_title`. Fresh schema tests passed, but Production migration has not been authorized or executed.
 
 **Decision:** hold deployment and any D1 migration until Production metadata results and an explicit architecture/release approval.
+
+
+## Verified remote Production D1 audit — 2026-11-13
+
+**Evidence:** [GitHub Actions run 43402379515](https://github.com/AndekOY/boxvia-portal/actions/runs/43402379515), job `audit-production-metadata`, completed successfully. Job logs inspected.
+
+- Target assertion passed: `boxvia-claims` Production D1 is distinct from Preview.
+- `sqlite_master` returned both `claims` and `service_requests`.
+- Production `service_requests` columns: `id`, `service_code`, `service_title`, `customer_email`, `request_json`, `status`, `created_at`, `updated_at`.
+- **Missing compared with Preview:** `request_key` and `request_digest`.
+- `PRAGMA index_list(service_requests)` returned `idx_service_requests_review` in this observation; no unique UUID index.
+- All D1 queries reported `changed_db=false` and `rows_written=0`.
+
+**Decision:** Production D1 schema is **not ready** for Preview idempotency logic. Do not deploy Preview service-request Worker until a reviewed additive migration and rollback/backup plan are explicitly approved.
+
+**Minimal proposed sequence (not executed):** capture schema and backup/recovery prerequisites; review additive `ALTER TABLE` for nullable UUID/digest columns; add unique index on UUID; test exact migration on disposable Preview-equivalent schema; separately approve Production D1 write; deploy code only after migration verified. Existing Production records must not be overwritten or deleted.
+
+**Important:** current Production D1 table metadata alone does not establish row count, triggers, data retention, or compatibility of notification architecture. These remain open.
