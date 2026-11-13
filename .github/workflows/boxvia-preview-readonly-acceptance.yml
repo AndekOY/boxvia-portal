@@ -51,3 +51,47 @@ jobs:
           echo "=== Technical Pilot #4 evidence (no email, text or request UUID) ==="
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "SELECT id, service_code, status, CASE WHEN request_key IS NULL THEN 0 ELSE 1 END AS has_request_key, CASE WHEN request_digest IS NULL THEN 0 ELSE 1 END AS has_request_digest FROM service_requests WHERE id = 4 AND service_code = 'technical-pilot';"
           echo "Read-only audit finished. No D1 modifications performed."
+
+  audit-production-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/service-forms-20261111
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert exact Production D1 target (not Preview)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          prod=json.load(open('wrangler.jsonc'))
+          preview=json.load(open('wrangler.service-preview.jsonc'))
+          db=prod['d1_databases'][0]
+          assert prod['name']=='boxvia'
+          assert db['binding']=='DB'
+          assert db['database_name']=='boxvia-claims'
+          assert db['database_id']=='9e860945-027b-4fe9-8a43-c02206b88617'
+          assert db['database_id'] != preview['d1_databases'][0]['database_id']
+          print('PASS: distinct Production D1 target; read-only metadata queries only')
+          PY
+      - name: Inspect Production D1 table and index metadata only
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          echo "=== Production table names (no rows) ==="
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('claims','service_requests') ORDER BY name;"
+          echo "=== Production service_requests schema (no rows) ==="
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA table_info(service_requests);"
+          echo "=== Production service_requests indexes (no rows) ==="
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA index_list(service_requests);"
+          echo "Read-only Production metadata audit complete. No writes."
