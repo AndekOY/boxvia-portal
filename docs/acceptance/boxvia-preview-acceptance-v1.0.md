@@ -66,3 +66,12 @@
 **Acceptance update:** remote Preview D1 integrity = **PASS at the observed snapshot**. This does **not** establish correct HTTP 201/200/409 handling under live retries, nor exactly-once Gmail delivery. Those remain open release gates.
 
 **Production release authorization:** still **NOT GRANTED**.
+
+
+## Closure note — MINIMAX decision (2026-11-13)
+
+**Preview acceptance closed as CONDITIONAL PASS, not full PASS.** The owner accepted deferral of live same-UUID HTTP retry/concurrency testing to avoid additional browser tooling and infrastructure. A10 remains **NOT FULLY VERIFIED**; this is a documented evidence limitation, not a successful test result.
+
+The Production readiness assessment is a separate phase and is **not approved for deployment**. See [Production Readiness Gate v0.1](./boxvia-production-readiness-gate-v0.1.md). Production schema, configuration, privacy/abuse controls, notifications, and rollback must be assessed before a GO/NO-GO decision.
+
+**No Production changes authorized.**
