@@ -168,14 +168,14 @@ export async function handleServiceRequest(request, env, url) {
     ).bind(data.service, title, email, JSON.stringify({ summary: lines.join("\n\n") }), requestKey, requestDigest).run();
     if (!stored.success) {
       console.error("service_request_d1_insert_unconfirmed");
-      return unavailable("D1_INSERT_FAILED");
+      return unavailable();
     }
     const record = await env.DB.prepare(
       "SELECT id, request_digest FROM service_requests WHERE request_key = ?"
     ).bind(requestKey).first();
     if (!Number.isSafeInteger(record?.id) || record.id <= 0) {
       console.error("service_request_d1_key_lookup_failed");
-      return unavailable("D1_INSERT_FAILED");
+      return unavailable();
     }
     if (record.request_digest !== requestDigest) {
       return json({ error: "This request identifier was already used for different details. Please start a new request." }, 409);
