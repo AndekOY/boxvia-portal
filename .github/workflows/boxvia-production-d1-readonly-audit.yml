@@ -1,0 +1,46 @@
+name: BoxVia Production — D1 schema audit (READ ONLY, manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  production-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/service-forms-20261111
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Production target and read-only command allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          p=json.load(open('wrangler.jsonc'))
+          q=json.load(open('wrangler.service-preview.jsonc'))
+          assert p['name']=='boxvia'
+          assert p['d1_databases'][0]['binding']=='DB'
+          assert p['d1_databases'][0]['database_name']=='boxvia-claims'
+          assert p['d1_databases'][0]['database_id']=='9e860945-027b-4fe9-8a43-c02206b88617'
+          assert p['d1_databases'][0]['database_id'] != q['d1_databases'][0]['database_id']
+          print('PASS: Production target distinct from Preview')
+          PY
+      - name: Read-only remote Production D1 metadata (no row content)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          # Explicit remote target; never use --file, migrations, or writes.
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('claims','service_requests') ORDER BY name;"
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA table_info(service_requests);"
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA index_list(service_requests);"
+          echo "Read-only metadata inspection complete; no Production D1 writes requested."
