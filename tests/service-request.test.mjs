@@ -13,7 +13,8 @@ const body = () => ({
   review_format: "not-sure",
   public_material_confirmation: "yes",
   terms_acknowledgement: "yes",
-  "cf-turnstile-response": "test-token"
+  "cf-turnstile-response": "test-token",
+  request_key: "123e4567-e89b-42d3-a456-426614174000"
 });
 function request(data, headers = {}) {
   return new Request(url, {
@@ -23,12 +24,23 @@ function request(data, headers = {}) {
   });
 }
 function db(state) {
+  state.keys ||= new Map();
   return { prepare(sql) {
-    assert.match(sql, /^INSERT INTO service_requests \(service_code, service_title, customer_email, request_json, status\)/);
-    return { bind(...values) {
-      state.rows.push(values);
-      return { async run() { return { success: true, meta: { last_row_id: state.rows.length } }; } };
-    } };
+    if (sql.startsWith("INSERT OR IGNORE INTO service_requests")) {
+      return { bind(...values) {
+        return { async run() {
+          const key = values[4], digest = values[5];
+          if (state.keys.has(key)) return { success: true, meta: { changes: 0 } };
+          state.rows.push(values);
+          state.keys.set(key, { id: state.rows.length, request_digest: digest });
+          return { success: true, meta: { changes: 1, last_row_id: state.rows.length } };
+        } };
+      } };
+    }
+    if (sql.startsWith("SELECT id, request_digest FROM service_requests")) {
+      return { bind(key) { return { async first() { return state.keys.get(key) || null; } }; } };
+    }
+    throw new Error("Unexpected SQL: " + sql);
   } };
 }
 async function withTurnstile(verify, run) {
@@ -206,4 +218,34 @@ test("Production 503 does not expose Preview diagnostics", async () => {
   const result = await response.json();
   assert.equal(Object.hasOwn(result, "diagnostic_code"), false);
   assert.equal(Object.hasOwn(result, "diagnostic_version"), false);
+});
+
+test("same request UUID and payload creates only one row", async () => {
+  const state = { rows: [] }, database = db(state);
+  await withTurnstile({ success: true, hostname: url.hostname, action: "service-request" }, async () => {
+    const first = await handleServiceRequest(request(body()), { DB: database, TURNSTILE_SECRET_KEY: "synthetic" }, url);
+    const second = await handleServiceRequest(request(body()), { DB: database, TURNSTILE_SECRET_KEY: "synthetic" }, url);
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 200);
+    assert.deepEqual(await first.json(), await second.json());
+    assert.equal(state.rows.length, 1);
+  });
+});
+test("same request UUID with changed payload is rejected", async () => {
+  const state = { rows: [] }, database = db(state);
+  await withTurnstile({ success: true, hostname: url.hostname, action: "service-request" }, async () => {
+    const first = await handleServiceRequest(request(body()), { DB: database, TURNSTILE_SECRET_KEY: "synthetic" }, url);
+    const changed = { ...body(), scenario: "Different scenario" };
+    const second = await handleServiceRequest(request(changed), { DB: database, TURNSTILE_SECRET_KEY: "synthetic" }, url);
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 409);
+    assert.equal(state.rows.length, 1);
+  });
+});
+test("missing or malformed request UUID is rejected before Turnstile", async () => {
+  const state = { rows: [] };
+  const invalid = { ...body(), request_key: "not-a-uuid" };
+  const response = await handleServiceRequest(request(invalid), { DB: db(state), TURNSTILE_SECRET_KEY: "synthetic" }, url);
+  assert.equal(response.status, 400);
+  assert.equal(state.rows.length, 0);
 });
