@@ -1,0 +1,40 @@
+name: Sandbox EDC-004 PDF
+on:
+  push:
+    branches:
+      - sandbox/edc-004-chatgpt-free-20261113
+    paths:
+      - 'scripts/build_edc004.py'
+      - '.github/workflows/edc004-pdf.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install reportlab pypdf
+      - run: python scripts/build_edc004.py
+      - run: |
+          python - <<'PY'
+          from pypdf import PdfReader
+          p='assets/reports/everyday-claims/EDC-004_ChatGPT_Free_SUPPORTED_EN.pdf'
+          d=PdfReader(p)
+          assert len(d.pages)==2, f'Expected 2 pages, got {len(d.pages)}'
+          for page in d.pages:
+              assert abs(float(page.mediabox.width)-595.276)<2
+          print('PDF validation: two A4 pages')
+          PY
+      - name: Commit PDF only to sandbox
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/reports/everyday-claims/EDC-004_ChatGPT_Free_SUPPORTED_EN.pdf
+          if ! git diff --cached --quiet; then
+            git commit -m "docs(sandbox): generate EDC-004 two-page English PDF"
+            git push
+          fi
