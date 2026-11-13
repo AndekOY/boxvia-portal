@@ -5,6 +5,7 @@ on:
       - audit/service-forms-20261111
     paths:
       - 'cloudflare/migrations/0001_service_requests.sql'
+      - 'cloudflare/migrations/0002_service_request_idempotency.sql'
       - 'cloudflare/service-request.js'
       - 'tests/service-request.test.mjs'
       - 'tests/verify-service-request-schema.py'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'cloudflare/migrations/0001_service_requests.sql'
+      - 'cloudflare/migrations/0002_service_request_idempotency.sql'
       - 'cloudflare/service-request.js'
       - 'tests/service-request.test.mjs'
       - 'tests/verify-service-request-schema.py'
@@ -35,6 +37,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/boxvia-d1-fresh
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --file cloudflare/migrations/0001_service_requests.sql
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --file cloudflare/migrations/0002_service_request_idempotency.sql
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --command "INSERT INTO service_requests (service_code, service_title, customer_email, request_json, status) VALUES ('technical-pilot', 'Synthetic title', 'synthetic@example.org', '{}', 'new');"
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --local --persist-to /tmp/boxvia-d1-fresh --config wrangler.service-preview.jsonc --command "SELECT id, service_code FROM service_requests;"
       - name: Run service request unit tests
