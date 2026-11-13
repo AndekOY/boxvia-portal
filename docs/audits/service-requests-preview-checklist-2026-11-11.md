@@ -19,9 +19,13 @@ Branch: `audit/service-forms-20261111`. No production deployment or migration pe
 8. Approve retention and deletion workflow for personal data in `service_requests` (proposed unpaid/inquiry retention: 30 days, subject to policy approval). No automated deletion is installed.
 9. Validate build and runtime in Preview; **do not merge** before gates are passed.
 
+## Status update — 2026-11-13
+
+Technical Pilot Preview E2E is now observed as successful: form acknowledgement and Gmail notification for Preview request #4. Idempotency migration has been applied to isolated Preview D1 and Preview Worker redeployed. See [E2E evidence and outstanding gates](technical-pilot-preview-e2e-2026-11-13.md). Other service forms, independent D1 row verification, live retry behavior, retention and owner-only detail access remain pending. The historical checklist below is preserved for traceability.
+
 ## Current limitations
 - No authenticated owner detail endpoint; full data currently requires authorized Cloudflare D1 console access.
 - No automated retention cleanup.
 - D1 migration is not automatically executed by a Workers build.
 - No payment confirmation or paid service launch implied.
-- No live Preview integration test has been performed.
+- Historical note (2026-11-11): no live Preview integration test had been performed at that time. Technical Pilot E2E was observed on 2026-11-13; see the status update above.
