@@ -279,3 +279,57 @@ test("Preview retries with distinct valid Turnstile tokens preserve the same req
     globalThis.fetch = original;
   }
 });
+
+
+test("concurrent Preview submissions with one UUID create exactly one D1 record", async () => {
+  const state = { rows: [] }, database = db(state);
+  const original = globalThis.fetch;
+  let siteverifyCalls = 0;
+  globalThis.fetch = async (_endpoint, options) => {
+    const token = new URLSearchParams(options.body).get("response");
+    assert.match(token, /^fresh-token-[12]$/);
+    siteverifyCalls += 1;
+    return Response.json({
+      success: true,
+      hostname: previewUrlForDiagnostics.hostname,
+      action: "service-request"
+    });
+  };
+  try {
+    const env = { DB: database, TURNSTILE_SECRET_KEY: "synthetic-secret" };
+    const responses = await Promise.all([
+      handleServiceRequest(previewRequestForDiagnostics({
+        ...body(), "cf-turnstile-response": "fresh-token-1"
+      }), env, previewUrlForDiagnostics),
+      handleServiceRequest(previewRequestForDiagnostics({
+        ...body(), "cf-turnstile-response": "fresh-token-2"
+      }), env, previewUrlForDiagnostics)
+    ]);
+    assert.deepEqual(responses.map(response => response.status).sort(), [200, 201]);
+    const results = await Promise.all(responses.map(response => response.json()));
+    assert.deepEqual(results[0], results[1]);
+    assert.deepEqual(results[0], { received: true, id: 1 });
+    assert.equal(state.rows.length, 1);
+    assert.equal(state.keys.size, 1);
+    assert.equal(siteverifyCalls, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("Preview retry cannot overwrite an existing UUID with different details", async () => {
+  const state = { rows: [] }, database = db(state);
+  await withTurnstile({
+    success: true, hostname: previewUrlForDiagnostics.hostname, action: "service-request"
+  }, async () => {
+    const env = { DB: database, TURNSTILE_SECRET_KEY: "synthetic-secret" };
+    const first = await handleServiceRequest(previewRequestForDiagnostics(body()), env, previewUrlForDiagnostics);
+    const second = await handleServiceRequest(previewRequestForDiagnostics({
+      ...body(), expected: "Different expected outcome", "cf-turnstile-response": "fresh-token"
+    }), env, previewUrlForDiagnostics);
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 409);
+    assert.equal(state.rows.length, 1);
+    assert.equal(state.keys.size, 1);
+  });
+});
