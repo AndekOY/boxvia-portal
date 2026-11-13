@@ -1,6 +1,8 @@
 const form = document.querySelector("#service-request-form");
 const submit = form.querySelector("button[type=submit]");
 const message = document.querySelector("#service-request-status");
+// Retain the same key across network retries; rotate only after a user edit or success.
+let pendingRequestKey = null;
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
@@ -18,6 +20,8 @@ form.addEventListener("submit", async event => {
     return;
   }
 
+  if (!pendingRequestKey) pendingRequestKey = crypto.randomUUID();
+  data.set("request_key", pendingRequestKey);
   submit.disabled = true;
   message.textContent = "Sending your request…";
   let sent = false;
@@ -35,6 +39,7 @@ form.addEventListener("submit", async event => {
       return;
     }
     sent = true;
+    pendingRequestKey = null;
     form.reset();
     message.textContent = "Request received. BoxVia will follow up by email.";
   } catch {
@@ -46,6 +51,7 @@ form.addEventListener("submit", async event => {
 });
 
 form.addEventListener("input", event => {
+  if (event.isTrusted && event.target.matches("input:not([type=hidden]), textarea, select")) pendingRequestKey = null;
   if (event.isTrusted && event.target.matches("input:not([type=hidden]), textarea") && message.textContent.startsWith("Request received")) {
     submit.disabled = false;
     message.textContent = "";
