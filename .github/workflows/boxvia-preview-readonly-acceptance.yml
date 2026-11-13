@@ -94,4 +94,8 @@ jobs:
           npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA table_info(service_requests);"
           echo "=== Production service_requests indexes (no rows) ==="
           npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "PRAGMA index_list(service_requests);"
+          echo "=== Production service_requests count (aggregate only) ==="
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "SELECT COUNT(*) AS request_count FROM service_requests;"
+          echo "=== Production UUID integrity (aggregate only) ==="
+          npx --yes wrangler@4 d1 execute boxvia-claims --remote --config wrangler.jsonc --command "SELECT COUNT(*) AS duplicate_groups FROM (SELECT request_key FROM service_requests WHERE request_key IS NOT NULL GROUP BY request_key HAVING COUNT(*) > 1);"
           echo "Read-only Production metadata audit complete. No writes."
