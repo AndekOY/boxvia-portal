@@ -1,6 +1,11 @@
 name: BoxVia Preview — apply D1 idempotency migration (isolated)
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - audit/service-forms-20261111
+    paths:
+      - .github/workflows/boxvia-preview-d1-idempotency-migrate.yml
 permissions:
   contents: read
 jobs:
