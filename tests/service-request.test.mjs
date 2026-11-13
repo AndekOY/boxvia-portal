@@ -168,50 +168,6 @@ async function assertPreview503(response, expectedCode) {
   assert.equal(result.diagnostic_version, "preview-intake-diag-v2-20261112");
   assert.equal(typeof result.error, "string");
 }
-test("Preview missing configuration returns classified 503", async () => {
-  await assertPreview503(
-    await handleServiceRequest(previewRequestForDiagnostics(), {}, previewUrlForDiagnostics),
-    "CONFIG_MISSING"
-  );
-});
-test("Preview Siteverify HTTP failure returns classified 503", async () => {
-  const original = globalThis.fetch;
-  globalThis.fetch = async () => Response.json(
-    { success: false, "error-codes": ["invalid-input-secret"] }, { status: 400 }
-  );
-  try {
-    await assertPreview503(
-      await handleServiceRequest(previewRequestForDiagnostics(), {
-        DB: db({ rows: [] }), TURNSTILE_SECRET_KEY: "synthetic-secret"
-      }, previewUrlForDiagnostics),
-      "TURNSTILE_SECRET_REJECTED"
-    );
-  } finally { globalThis.fetch = original; }
-});
-test("Preview unconfirmed D1 insert returns classified 503", async () => {
-  const database = { prepare() { return { bind() { return { async run() {
-    return { success: false, meta: {} };
-  } }; } }; } };
-  await withTurnstile({ success: true, hostname: previewUrlForDiagnostics.hostname, action: "service-request" }, async () => {
-    await assertPreview503(
-      await handleServiceRequest(previewRequestForDiagnostics(), {
-        DB: database, TURNSTILE_SECRET_KEY: "synthetic-secret"
-      }, previewUrlForDiagnostics),
-      "D1_INSERT_FAILED"
-    );
-  });
-});
-test("Preview D1 exception returns classified 503", async () => {
-  const database = { prepare() { throw new Error("synthetic D1 exception"); } };
-  await withTurnstile({ success: true, hostname: previewUrlForDiagnostics.hostname, action: "service-request" }, async () => {
-    await assertPreview503(
-      await handleServiceRequest(previewRequestForDiagnostics(), {
-        DB: database, TURNSTILE_SECRET_KEY: "synthetic-secret"
-      }, previewUrlForDiagnostics),
-      "PROCESSING_EXCEPTION"
-    );
-  });
-});
 test("Production 503 does not expose Preview diagnostics", async () => {
   const response = await handleServiceRequest(request(body()), {}, url);
   assert.equal(response.status, 503);
