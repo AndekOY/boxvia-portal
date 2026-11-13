@@ -8,8 +8,9 @@ import sqlite3
 
 migration = Path("cloudflare/migrations/0001_service_requests.sql").read_text()
 worker = Path("cloudflare/service-request.js").read_text()
+upgrade = Path("cloudflare/migrations/0002_service_request_idempotency.sql").read_text()
 insert = "INSERT INTO service_requests (service_code, service_title, customer_email, request_json, status) VALUES (?, ?, ?, ?, 'new')"
-assert insert in worker, "Worker INSERT changed; update schema contract test"
+assert "INSERT OR IGNORE INTO service_requests" in worker, "Worker INSERT changed; update schema contract test"
 
 with sqlite3.connect(":memory:") as db:
     db.executescript(migration)
@@ -53,4 +54,17 @@ with sqlite3.connect(":memory:") as db:
     db.executescript(migration)
     assert db.execute("SELECT COUNT(*) FROM service_requests").fetchone()[0] == 7
 
-print("PASS: fresh SQLite schema matches audited Preview columns/statuses/index names and Worker INSERT.")
+
+    db.executescript(upgrade)
+    upgraded = {row[1] for row in db.execute("PRAGMA table_info(service_requests)")}
+    assert {"request_key", "request_digest"} <= upgraded
+    assert db.execute("SELECT COUNT(*) FROM service_requests").fetchone()[0] == 7
+    sql = """INSERT OR IGNORE INTO service_requests
+        (service_code, service_title, customer_email, request_json, status, request_key, request_digest)
+        VALUES (?, ?, ?, ?, 'new', ?, ?)"""
+    args = ("technical-pilot", "Synthetic", "synthetic@example.org", "{}", "123e4567-e89b-42d3-a456-426614174000", "abc123")
+    db.execute(sql, args)
+    db.execute(sql, args)
+    assert db.execute("SELECT COUNT(*) FROM service_requests WHERE request_key=?", (args[4],)).fetchone()[0] == 1
+
+print("PASS: schema, Preview idempotency migration and unique request key.")
