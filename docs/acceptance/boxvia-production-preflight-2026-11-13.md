@@ -62,3 +62,17 @@ Owner supplied Cloudflare D1 Console screenshots showing successful execution ag
 **Evidence classification:** owner-supplied Cloudflare Console screenshots; successful SQL responses shown. No backup was requested for test data. `claims` was not targeted by the executed SQL. Independent remote metadata re-audit remains recommended before any Worker release.
 
 **Gate update:** Production D1 clean reset = **PASS (owner-executed)**; Production Worker release = **HOLD** pending code diff, secrets/notification architecture and deployment authorization.
+
+
+## Independent post-reset Production D1 audit — PASS
+
+[Actions run 43406931146](https://github.com/AndekOY/boxvia-portal/actions/runs/43406931146), both `audit-preview` and `audit-production-metadata` completed successfully. Production job logs independently verified:
+- `claims` and `service_requests` exist.
+- All 10 expected `service_requests` columns exist, including `request_key` and `request_digest`.
+- Three expected indexes exist; `idx_service_requests_request_key` reports `unique: 1`.
+- `request_count: 0`; `duplicate_groups: 0`.
+- Every query reported `changed_db: false`, `rows_written: 0`.
+
+## Release boundary — not yet approved
+
+Direct GitHub file comparison confirms `main` and `audit/service-forms-20261111` differ in `cloudflare/worker.js`, `cloudflare/service-request.js` and `assets/service-request.js`; `wrangler.jsonc` is identical. Production database schema readiness does not verify live Turnstile secret/site-key hostname matching, owner notification token and polling, deployment controls, or successful Production E2E. Keep Production Worker unchanged until these are independently checked and explicit release authorization is obtained.
