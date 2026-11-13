@@ -5,6 +5,7 @@ on:
       - sandbox/edc-004-chatgpt-free-20261113
     paths:
       - 'scripts/build_edc004.py'
+      - 'scripts/qa_edc004_pdf.py'
       - '.github/workflows/edc004-pdf.yml'
   workflow_dispatch:
 permissions:
@@ -17,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install reportlab pypdf
+      - run: pip install reportlab pypdf pymupdf
       - run: python scripts/build_edc004.py
       - run: |
           python - <<'PY'
@@ -29,6 +30,7 @@ jobs:
               assert abs(float(page.mediabox.width)-595.276)<2
           print('PDF validation: two A4 pages')
           PY
+      - run: python scripts/qa_edc004_pdf.py
       - name: Commit PDF only to sandbox
         run: |
           git config user.name "github-actions[bot]"
