@@ -1,4 +1,5 @@
 name: BoxVia Preview — isolated auto deploy
+# Redeploy after successful isolated D1 idempotency migration run #1 (2026-11-13).
 on:
   push:
     branches:
