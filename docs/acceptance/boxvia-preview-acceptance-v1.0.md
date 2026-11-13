@@ -50,3 +50,19 @@
 - Next formal artifact: Production readiness checklist and deployment/rollback plan, **only after** outstanding gates are assessed.
 
 **Prepared for:** BoxVia / ANDEKS internal technical acceptance.
+
+
+## Addendum — remote D1 integrity evidence (2026-11-13)
+
+**Source:** GitHub Actions run [43398556565](https://github.com/AndekOY/boxvia-portal/actions/runs/43398556565), job `integrity`, conclusion `success`. Actual job log was inspected.
+
+- `duplicate_groups=0` — no duplicate non-NULL request UUIDs found.
+- `malformed_digests=0` — no malformed non-NULL SHA-256 digests found.
+- `missing_digest_for_key=0` — no populated UUID without a digest.
+- `total_rows=5`, `keyed_rows=2`, `digested_rows=2`.
+- Three historical rows have no UUID/digest; this is compatible with the nullable-column migration and is not, by itself, a migration failure.
+- Read-only audit, no data mutations.
+
+**Acceptance update:** remote Preview D1 integrity = **PASS at the observed snapshot**. This does **not** establish correct HTTP 201/200/409 handling under live retries, nor exactly-once Gmail delivery. Those remain open release gates.
+
+**Production release authorization:** still **NOT GRANTED**.
