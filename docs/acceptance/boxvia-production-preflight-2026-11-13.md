@@ -47,3 +47,18 @@ Existing prior audit `docs/audits/production-release-readiness-2026-11-12.md` do
 **Minimal proposed sequence (not executed):** capture schema and backup/recovery prerequisites; review additive `ALTER TABLE` for nullable UUID/digest columns; add unique index on UUID; test exact migration on disposable Preview-equivalent schema; separately approve Production D1 write; deploy code only after migration verified. Existing Production records must not be overwritten or deleted.
 
 **Important:** current Production D1 table metadata alone does not establish row count, triggers, data retention, or compatibility of notification architecture. These remain open.
+
+
+## Owner-executed Production D1 clean reset — 2026-11-13
+
+Owner supplied Cloudflare D1 Console screenshots showing successful execution against `boxvia-claims` of:
+1. `DROP TABLE IF EXISTS service_requests;`
+2. `CREATE TABLE service_requests` with 10 columns including nullable `request_key` and `request_digest`, plus the status constraint.
+3. `CREATE INDEX idx_service_requests_created_at ON service_requests(created_at);`
+4. `CREATE INDEX idx_service_requests_review ON service_requests(status, created_at);`
+5. `CREATE UNIQUE INDEX idx_service_requests_request_key ON service_requests(request_key);`
+6. `SELECT COUNT(*) AS request_count FROM service_requests;` returned **0**.
+
+**Evidence classification:** owner-supplied Cloudflare Console screenshots; successful SQL responses shown. No backup was requested for test data. `claims` was not targeted by the executed SQL. Independent remote metadata re-audit remains recommended before any Worker release.
+
+**Gate update:** Production D1 clean reset = **PASS (owner-executed)**; Production Worker release = **HOLD** pending code diff, secrets/notification architecture and deployment authorization.
