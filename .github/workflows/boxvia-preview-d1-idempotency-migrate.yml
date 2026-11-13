@@ -1,0 +1,50 @@
+name: BoxVia Preview — apply D1 idempotency migration (isolated)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  migrate-sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: boxvia-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/service-forms-20261111
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check isolated database target and migration file
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.service-preview.jsonc'))
+          assert c['name']=='boxvia-service-preview'
+          assert c['d1_databases'][0]['binding']=='DB'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          m=open('cloudflare/migrations/0002_service_request_idempotency.sql').read()
+          assert 'DROP ' not in m.upper() and 'DELETE ' not in m.upper()
+          print('Verified isolated Preview D1 target')
+          PY
+      - name: Run local schema and intake tests before remote changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/verify-service-request-schema.py
+          node --experimental-default-type=module --test tests/service-request.test.mjs
+      - name: Apply Preview-only D1 migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${CLOUDFLARE_API_TOKEN}" && test -n "${CLOUDFLARE_ACCOUNT_ID}"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --file cloudflare/migrations/0002_service_request_idempotency.sql
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "PRAGMA table_info(service_requests);"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --config wrangler.service-preview.jsonc --command "PRAGMA index_list(service_requests);"
