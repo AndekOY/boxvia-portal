@@ -57,6 +57,14 @@ jobs:
           ID=$(( 600000000 + GITHUB_RUN_ID % 100000000 ))
           TOKEN=$(cat /tmp/hitl-preview-token)
           echo "Synthetic service request ID: $ID"
+          ready=0
+          for attempt in $(seq 1 25); do
+            status=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$URL/api/owner/hitl" || true)
+            if [[ "$status" == 400 ]]; then ready=1; break; fi
+            sleep 2
+          done
+          test "$ready" = 1 || { echo "FAIL preview secret propagation"; exit 1; }
+          echo "PASS preview owner token propagated"
           SQL="INSERT INTO service_requests(id,service_code,service_title,customer_email,request_json,status) VALUES($ID,'technical-pilot','SYNTHETIC HITL TEST','synthetic@invalid.example','{}','new');"
           npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "$SQL" > /tmp/hitl-create-source.log 2>&1 || { cat /tmp/hitl-create-source.log; exit 1; }
           call() {
