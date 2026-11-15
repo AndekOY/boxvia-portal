@@ -44,6 +44,7 @@ jobs:
             "vars":{"HITL_REGISTRY_ENABLED":"true"}
           }
           EOF
+          npx wrangler deploy --config .hitl-preview-wrangler.json > /tmp/hitl-positive-deploy.log 2>&1 || { cat /tmp/hitl-positive-deploy.log; exit 1; }
           TOKEN=$(openssl rand -hex 32)
           echo "::add-mask::$TOKEN"
           printf '%s' "$TOKEN" | npx wrangler secret put HITL_OWNER_TOKEN --config .hitl-preview-wrangler.json >/dev/null
@@ -61,7 +62,7 @@ jobs:
           call() {
             local method="$1" payload="$2" expected="$3"
             local status
-            status=$(curl --retry 2 --retry-delay 1 -sS -o /tmp/hitl-response.json -w '%{http_code}' -X "$method" -H "Authorization: Bearer $TOKEN" -H "Origin: $URL" -H 'Content-Type: application/json' --data "$payload" "$URL/api/owner/hitl")
+            status=$(curl -sS -o /tmp/hitl-response.json -w '%{http_code}' -X "$method" -H "Authorization: Bearer $TOKEN" -H "Origin: $URL" -H 'Content-Type: application/json' --data "$payload" "$URL/api/owner/hitl")
             if [[ "$status" != "$expected" ]]; then echo "FAIL HTTP $method expected $expected got $status"; cat /tmp/hitl-response.json; exit 1; fi
             echo "PASS HTTP $method $status"
           }
