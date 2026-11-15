@@ -71,7 +71,7 @@ export async function handleHitlRegistry(request,env,url) {
       const inserted = await env.DB.prepare(
         "INSERT INTO hitl_events (case_id,gate,decision,evidence_ref,note,actor) VALUES (?,?,?,?,?,?)"
       ).bind(record.id,body.gate,body.decision,body.evidence_ref.trim(),body.note || null,record.assessor).run();
-      if (!inserted.success || inserted.meta?.changes !== 1) throw new Error("Event not confirmed");
+      if (!inserted.success || !Number.isInteger(inserted.meta?.changes) || inserted.meta.changes < 1) throw new Error("Event not confirmed");
     }
     const current = await env.DB.prepare("SELECT id,source_type,source_id,assessor,status,created_at,updated_at FROM hitl_cases WHERE id = ?").bind(record.id).first();
     const events = await latestEvents(env,record.id);
