@@ -1,0 +1,22 @@
+name: HITL registry local SQLite tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - 'cloudflare/hitl-registry-migration.sql'
+      - 'tests/test_hitl_sqlite.py'
+      - '.github/workflows/hitl-registry-tests.yml'
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate HITL migration and gate invariants
+        run: python tests/test_hitl_sqlite.py
