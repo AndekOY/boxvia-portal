@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/hitl-preview-wrangler.json <<'EOF'
+          cat > .hitl-preview-wrangler.json <<'EOF'
           {
             "name":"boxvia-hitl-preview-test",
             "main":"cloudflare/hitl-preview-worker.js",
@@ -39,12 +39,12 @@ jobs:
             "vars":{"HITL_REGISTRY_ENABLED":"true"}
           }
           EOF
-          npx wrangler deploy --config /tmp/hitl-preview-wrangler.json > /tmp/hitl-deploy.log 2>&1 || { cat /tmp/hitl-deploy.log; exit 1; }
+          npx wrangler deploy --config .hitl-preview-wrangler.json > /tmp/hitl-deploy.log 2>&1 || { cat /tmp/hitl-deploy.log; exit 1; }
           URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' /tmp/hitl-deploy.log | head -n 1)
           test -n "$URL" || { cat /tmp/hitl-deploy.log; exit 1; }
           echo "Preview Worker deployed: $URL"
           TOKEN=$(openssl rand -hex 32)
-          printf '%s' "$TOKEN" | npx wrangler secret put HITL_OWNER_TOKEN --config /tmp/hitl-preview-wrangler.json > /dev/null
+          printf '%s' "$TOKEN" | npx wrangler secret put HITL_OWNER_TOKEN --config .hitl-preview-wrangler.json > /dev/null
           # Test no-token rejection, invalid-token rejection, no source, wrong Origin,
           # nonexistent synthetic source. Never use a real customer case.
           for attempt in $(seq 1 12); do
