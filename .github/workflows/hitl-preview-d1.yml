@@ -6,6 +6,7 @@ on:
       - draft/hitl-site-alignment-20261115
     paths:
       - '.github/workflows/hitl-preview-d1.yml'
+      - 'tests/hitl-preview-d1.sh'
 jobs:
   preview-d1:
     runs-on: ubuntu-latest
@@ -46,9 +47,6 @@ jobs:
         run: |
           set -euo pipefail
           npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'hitl_%' ORDER BY name;"
-      - name: Execute isolated preview test transaction
+      - name: Execute remote D1 gate and audit regression tests
         shell: bash
-        run: |
-          set -euo pipefail
-          echo 'Schema and trigger inspection completed. No synthetic customer records created.'
-          echo 'Full D1 integration and concurrency tests remain pending.'
+        run: bash tests/hitl-preview-d1.sh
