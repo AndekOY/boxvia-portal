@@ -18,3 +18,13 @@ HISTORICAL / ARCHIVED NAME ONLY: `AndekOY/boxfintech-landing`. It was renamed an
 
 For Technical Pilot, use `/services/technical-pilot/` and `services/technical-pilot/index.html`, not `/technical-pilot/`.
 
+## Approved human-accountable assessment policy (2026-11-15)
+
+Mandatory source: `docs/governance/HITL_POLICY_v1.0.md`.
+Implementation gates: `docs/governance/HITL_EXECUTION_PROTOCOL_v1.0.md`.
+Public wording and RU technical translation: `docs/governance/HITL_PUBLIC_LANGUAGE_v1.0.md`.
+
+Positioning: **BoxVia - Human-Accountable Independent Assessment.**
+Tagline: **AI-assisted. Human-assessed. Evidence-based.**
+
+For website copy, service descriptions, report templates and automation changes, preserve human authority over scope, evidence verification, findings and release. Do not represent an automated result as human-reviewed without an actual recorded review. Do not treat this policy as approval of draft BCAF or an amendment to ANDEKS normative releases.
