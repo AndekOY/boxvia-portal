@@ -1,0 +1,21 @@
+name: HITL WebAuthn verifier unit tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-webauthn-verify.yml'
+      - 'tests/hitl-webauthn-verify.mjs'
+      - 'cloudflare/hitl-webauthn-verify.js'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/hitl-webauthn-verify.mjs
