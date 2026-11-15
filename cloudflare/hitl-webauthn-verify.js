@@ -7,7 +7,9 @@ export function decodeBase64url(s) {
   if (typeof s !== "string" || !/^[A-Za-z0-9_-]+$/.test(s)) throw new Error("invalid_base64url");
   const padded=s.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-s.length%4)%4);
   const binary=atob(padded);
-  return Uint8Array.from(binary,c=>c.charCodeAt(0));
+  const decoded=Uint8Array.from(binary,c=>c.charCodeAt(0));
+  if (encodeBase64url(decoded)!==s) throw new Error("noncanonical_base64url");
+  return decoded;
 }
 export function encodeBase64url(bytes) {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
@@ -43,7 +45,16 @@ export async function verifyWebAuthnAssertion({assertion, expected, credential})
   const response=assertion.response;
   if (!response || typeof response!=="object") throw new Error("missing_response");
   const clientBytes=decodeBase64url(response.clientDataJSON);
-  const client=JSON.parse(decoder.decode(clientBytes));
+  const clientText=decoder.decode(clientBytes);
+  // Reject duplicate security-critical JSON keys before JSON.parse (which otherwise uses last value).
+  // WebAuthn clientDataJSON is a flat object for these fields; reject duplicate occurrences
+  // rather than interpreting ambiguous signed data.
+  for (const field of ["type","challenge","origin","crossOrigin"]) {
+    const matches=clientText.match(new RegExp('"' + field + '"\\\\s*:', "g")) || [];
+    if (matches.length!==1 && field!=="crossOrigin" || matches.length>1) throw new Error("ambiguous_client_data");
+  }
+  const client=JSON.parse(clientText);
+  if (!client || typeof client!=="object" || Array.isArray(client)) throw new Error("invalid_client_data");
   if (client.type!=="webauthn.get" || client.origin!==expected.origin || client.crossOrigin===true ||
       client.challenge!==expected.challenge) throw new Error("client_data_mismatch");
   const auth=decodeBase64url(response.authenticatorData);
