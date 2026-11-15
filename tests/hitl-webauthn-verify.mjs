@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {generateKeyPairSync, sign, createHash, randomBytes, webcrypto} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
-globalThis.crypto=webcrypto;
 const code=readFileSync(new URL('../cloudflare/hitl-webauthn-verify.js',import.meta.url),'utf8');
 const {verifyWebAuthnAssertion,encodeBase64url}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const rpId='boxvia-hitl-identity-hold-test.andeks.workers.dev';
