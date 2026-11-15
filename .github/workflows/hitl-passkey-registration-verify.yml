@@ -1,0 +1,23 @@
+name: HITL passkey registration verifier preview
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - 'cloudflare/hitl-passkey-registration-verify.js'
+      - 'cloudflare/hitl-passkey-enrollment-preview.js'
+      - 'cloudflare/hitl-passkey-registration-guard-preview.sql'
+      - 'tests/hitl-passkey-registration-verify.mjs'
+      - '.github/workflows/hitl-passkey-registration-verify.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/hitl-passkey-registration-verify.mjs
