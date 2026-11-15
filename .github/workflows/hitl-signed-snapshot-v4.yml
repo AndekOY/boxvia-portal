@@ -1,0 +1,18 @@
+name: HITL signed snapshot v4 minimax
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - 'cloudflare/hitl-signed-snapshot-v4-preview.sql'
+      - 'tests/test_hitl_signed_snapshot_v4.py'
+      - '.github/workflows/hitl-signed-snapshot-v4.yml'
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/test_hitl_signed_snapshot_v4.py
