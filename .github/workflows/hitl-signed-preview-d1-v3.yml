@@ -1,0 +1,55 @@
+name: HITL signed schema v3 Preview D1 acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-signed-preview-d1-v3.yml'
+jobs:
+  signed-preview-d1:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PREVIEW_DB_ID: baf79e93-cbea-4786-8779-974f3b3afbcc
+      PROD_DB_ID: 9e860945-027b-4fe9-8a43-c02206b88617
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Local regression before remote schema
+        run: |
+          set -euo pipefail
+          python3 tests/test_hitl_signed_guard.py
+          python3 tests/test_hitl_signed_atomic.py
+          python3 tests/test_hitl_explicit_intent_v2.py
+          python3 tests/test_hitl_evidence_v3.py
+      - name: Enforce preview-only allowlist
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test "$PREVIEW_DB_ID" = "baf79e93-cbea-4786-8779-974f3b3afbcc"
+          test "$PREVIEW_DB_ID" != "$PROD_DB_ID"
+      - run: npm install --no-save --no-package-lock wrangler@4
+      - name: Inspect preview database baseline
+        run: |
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('hitl_cases','hitl_events','hitl_auth_challenges','hitl_auth_proofs') ORDER BY name;"
+      - name: Apply signed v1-v3 migrations to allowlisted Preview D1
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-signed-commit-guard-preview.sql
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-signed-atomic-preview.sql
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-signed-explicit-intent-v2-preview.sql
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-signed-evidence-v3-preview.sql
+      - name: Verify exact schema and fail-closed guard on Preview D1
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('hitl_signed_event_guard_v3','hitl_signed_event_consume_v2') ORDER BY name;"
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM pragma_table_info('hitl_events') WHERE name='signed_intent_id';"
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM pragma_table_info('hitl_verified_commit_intents') WHERE name='evidence_ref';"
+          echo 'SCHEMA ONLY: no owner enrolled; no authenticated WebAuthn approval; production HOLD'
