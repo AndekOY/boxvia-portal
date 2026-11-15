@@ -23,3 +23,36 @@ CREATE TABLE IF NOT EXISTS hitl_events (
 CREATE INDEX IF NOT EXISTS idx_hitl_events_case_gate ON hitl_events(case_id,gate,id);
 CREATE INDEX IF NOT EXISTS idx_hitl_cases_status ON hitl_cases(status,created_at);
 -- No client email, claim text, credentials, source URL or raw evidence stored in this registry.
+
+-- Atomic gate checks live in SQLite, not in a read-then-write API sequence.
+CREATE TRIGGER IF NOT EXISTS hitl_event_validate BEFORE INSERT ON hitl_events
+BEGIN
+ SELECT CASE WHEN (SELECT status FROM hitl_cases WHERE id=NEW.case_id) <> 'HOLD'
+   THEN RAISE(ABORT,'hitl_case_closed') END;
+ SELECT CASE WHEN NEW.actor <> (SELECT assessor FROM hitl_cases WHERE id=NEW.case_id)
+   THEN RAISE(ABORT,'hitl_actor_mismatch') END;
+ SELECT CASE WHEN NEW.decision='PASS' AND NEW.gate IN ('H2','H3','H4','H5')
+   AND (SELECT decision FROM hitl_events WHERE case_id=NEW.case_id AND gate='H1' ORDER BY id DESC LIMIT 1) IS NOT 'PASS'
+   THEN RAISE(ABORT,'hitl_prior_gate_missing') END;
+ SELECT CASE WHEN NEW.decision='PASS' AND NEW.gate IN ('H3','H4','H5')
+   AND (SELECT decision FROM hitl_events WHERE case_id=NEW.case_id AND gate='H2' ORDER BY id DESC LIMIT 1) IS NOT 'PASS'
+   THEN RAISE(ABORT,'hitl_prior_gate_missing') END;
+ SELECT CASE WHEN NEW.decision='PASS' AND NEW.gate IN ('H4','H5')
+   AND (SELECT decision FROM hitl_events WHERE case_id=NEW.case_id AND gate='H3' ORDER BY id DESC LIMIT 1) IS NOT 'PASS'
+   THEN RAISE(ABORT,'hitl_prior_gate_missing') END;
+ SELECT CASE WHEN NEW.decision='PASS' AND NEW.gate='H5'
+   AND (SELECT decision FROM hitl_events WHERE case_id=NEW.case_id AND gate='H4' ORDER BY id DESC LIMIT 1) IS NOT 'PASS'
+   THEN RAISE(ABORT,'hitl_prior_gate_missing') END;
+END;
+CREATE TRIGGER IF NOT EXISTS hitl_event_status AFTER INSERT ON hitl_events
+BEGIN
+ UPDATE hitl_cases SET
+   status=CASE WHEN NEW.decision='STOP' THEN 'STOP'
+               WHEN NEW.gate='H5' AND NEW.decision='PASS' THEN 'PASS'
+               ELSE 'HOLD' END,
+   updated_at=CURRENT_TIMESTAMP WHERE id=NEW.case_id;
+END;
+CREATE TRIGGER IF NOT EXISTS hitl_event_immutable_update BEFORE UPDATE ON hitl_events
+BEGIN SELECT RAISE(ABORT,'hitl_event_immutable'); END;
+CREATE TRIGGER IF NOT EXISTS hitl_event_immutable_delete BEFORE DELETE ON hitl_events
+BEGIN SELECT RAISE(ABORT,'hitl_event_immutable'); END;
