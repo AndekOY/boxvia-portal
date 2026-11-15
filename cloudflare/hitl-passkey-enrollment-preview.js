@@ -2,6 +2,7 @@
 // Requires cryptographically verified Cloudflare Access JWT and configured owner email.
 // Enrollment finish deliberately remains disabled until audited attestation validation exists.
 import {encodeBase64url,decodeBase64url} from "./hitl-webauthn-verify.js";
+import {verifyHitlRegistration} from "./hitl-passkey-registration-verify.js";
 const reply=(obj,status=200)=>Response.json(obj,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 const utf8=new TextDecoder("utf-8",{fatal:true}),enc=new TextEncoder();
 const sha=async value=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",enc.encode(value))),b=>b.toString(16).padStart(2,"0")).join("");
@@ -35,7 +36,7 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
   if(!owner)return reply({error:"Verified owner Access session required"},401);
   const base="/api/owner/hitl/passkey/";
   if(url.pathname===base+"status"&&request.method==="GET")
-    return reply({ready:false,ownerVerified:true,previewOnly:true,reason:"attestation_verifier_pending"});
+    return reply({ready:true,ownerVerified:true,previewOnly:true});
   if(url.pathname===base+"begin"&&request.method==="POST"){
     if(request.headers.get("Origin")!==url.origin)return reply({error:"Origin mismatch"},403);
     const challenge=encodeBase64url(crypto.getRandomValues(new Uint8Array(32)));
@@ -49,8 +50,28 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
     }catch{return reply({error:"Storage unavailable"},503)}
     return reply({enrollmentId:id,publicKey:{challenge,rp:{id:url.hostname,name:"BoxVia HITL Preview"},user:{id:ownerId,name:owner.email,displayName:"BoxVia HITL Owner"},pubKeyCredParams:[{type:"public-key",alg:-7}],authenticatorSelection:{userVerification:"required",residentKey:"preferred"},attestation:"none",timeout:120000}});
   }
-  // A raw attestation is not proof of enrollment without verified CBOR, COSE,
-  // RP hash, origin, challenge, UV, unique credential and atomic consumption.
-  if(url.pathname===base+"finish"&&request.method==="POST")return reply({error:"Attestation verifier not yet enabled; no credential registered"},501);
+  if(url.pathname===base+"finish"&&request.method==="POST"){
+    if(request.headers.get("Origin")!==url.origin)return reply({error:"Origin mismatch"},403);
+    let body;try{const raw=await request.text();if(raw.length>30000)throw Error("large");body=JSON.parse(raw)}catch{return reply({error:"Invalid request"},400)}
+    if(typeof body?.enrollmentId!=="string"||body.enrollmentId.length>128)return reply({error:"Invalid enrollment"},400);
+    try{
+      const record=await env.DB.prepare("SELECT * FROM hitl_passkey_enrollments WHERE id=? AND owner_id=?")
+        .bind(body.enrollmentId,owner.id).first();
+      if(!record||record.state!=="PENDING"||record.expires_at<=Math.floor(Date.now()/1000)||
+         record.rp_id!==url.hostname||record.origin!==url.origin)return reply({error:"Enrollment expired or unavailable"},409);
+      const client=JSON.parse(utf8.decode(decodeBase64url(body.credential?.response?.clientDataJSON)));
+      if(typeof client.challenge!=="string"||await sha(client.challenge)!==record.challenge_sha256)
+        return reply({error:"Challenge mismatch"},403);
+      const verified=await verifyHitlRegistration({credential:body.credential,expectedChallenge:client.challenge,origin:url.origin,rpId:url.hostname});
+      const consumed=env.DB.prepare("UPDATE hitl_passkey_enrollments SET state='CONSUMED',consumed_at=CURRENT_TIMESTAMP WHERE id=? AND owner_id=? AND state='PENDING' AND expires_at>CAST(strftime('%s','now') AS INTEGER)")
+        .bind(body.enrollmentId,owner.id);
+      const pending=env.DB.prepare("INSERT INTO hitl_authenticators(credential_id,owner_id,public_key_cose,public_key_spki,rp_id,sign_count,state,enrollment_ref) VALUES(?,?,?,?,?,?,'PENDING',?)")
+        .bind(verified.credentialId,owner.id,verified.publicKeyCose,verified.publicKeySpki,url.hostname,verified.signCount,body.enrollmentId);
+      const results=await env.DB.batch([consumed,pending]);
+      if(results.length!==2||results.some(x=>x.success!==true)||results[0].meta?.changes!==1)
+        throw Error("atomic_enrollment_unconfirmed");
+      return reply({state:"PENDING",credentialId:verified.credentialId});
+    }catch{return reply({error:"Registration verification or storage failed"},409)}
+  }
   return reply({error:"Not found"},404);
 }
