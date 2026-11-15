@@ -1,6 +1,7 @@
 import { handlePayment, generateAccessToken, saveClaimAccess } from "./paypal.js";
 import { handleServiceRequest } from "./service-request.js";
 import { deliverNotifications } from "./notifications.js";
+import { handleHitlRegistry } from "./hitl-registry.js";
 
 // BoxVia site Worker. Keep static assets available while adding server-side routes.
 // Claim intake stays disabled until notification, privacy and abuse controls are verified.
@@ -10,6 +11,9 @@ export default {
   },
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/owner/hitl") {
+      return handleHitlRegistry(request, env, url);
+    }
     if (url.pathname === "/api/service-request" && request.method === "POST") {
       return handleServiceRequest(request, env, url);
     }
