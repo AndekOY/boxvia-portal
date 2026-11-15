@@ -1,0 +1,87 @@
+name: HITL Preview HTTP positive H1-H5 acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-preview-http-positive.yml'
+jobs:
+  positive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PREVIEW_DB_ID: baf79e93-cbea-4786-8779-974f3b3afbcc
+      PROD_DB_ID: 9e860945-027b-4fe9-8a43-c02206b88617
+      URL: https://boxvia-hitl-preview-test.andeks.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Wrangler and verify isolation
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test "$PREVIEW_DB_ID" != "$PROD_DB_ID"
+          test "$PREVIEW_DB_ID" = "baf79e93-cbea-4786-8779-974f3b3afbcc"
+          npm install --no-save --no-package-lock wrangler@4
+      - name: Provision fresh preview-only owner token
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > .hitl-preview-wrangler.json <<'EOF'
+          {
+            "name":"boxvia-hitl-preview-test",
+            "main":"cloudflare/hitl-preview-worker.js",
+            "compatibility_date":"2026-11-02",
+            "workers_dev":true,
+            "d1_databases":[{"binding":"DB","database_name":"boxvia-hitl-preview","database_id":"baf79e93-cbea-4786-8779-974f3b3afbcc"}],
+            "vars":{"HITL_REGISTRY_ENABLED":"true"}
+          }
+          EOF
+          TOKEN=$(openssl rand -hex 32)
+          echo "::add-mask::$TOKEN"
+          printf '%s' "$TOKEN" | npx wrangler secret put HITL_OWNER_TOKEN --config .hitl-preview-wrangler.json >/dev/null
+          printf '%s' "$TOKEN" > /tmp/hitl-preview-token
+          chmod 600 /tmp/hitl-preview-token
+      - name: Test authenticated HTTP H1-H5 with synthetic service request
+        shell: bash
+        run: |
+          set -euo pipefail
+          ID=$(( 600000000 + GITHUB_RUN_ID % 100000000 ))
+          TOKEN=$(cat /tmp/hitl-preview-token)
+          echo "Synthetic service request ID: $ID"
+          SQL="INSERT INTO service_requests(id,service_code,service_title,customer_email,request_json,status) VALUES($ID,'technical-pilot','SYNTHETIC HITL TEST','synthetic@invalid.example','{}','new');"
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "$SQL" > /tmp/hitl-create-source.log 2>&1 || { cat /tmp/hitl-create-source.log; exit 1; }
+          call() {
+            local method="$1" payload="$2" expected="$3"
+            local status
+            status=$(curl --retry 2 --retry-delay 1 -sS -o /tmp/hitl-response.json -w '%{http_code}' -X "$method" -H "Authorization: Bearer $TOKEN" -H "Origin: $URL" -H 'Content-Type: application/json' --data "$payload" "$URL/api/owner/hitl")
+            if [[ "$status" != "$expected" ]]; then echo "FAIL HTTP $method expected $expected got $status"; cat /tmp/hitl-response.json; exit 1; fi
+            echo "PASS HTTP $method $status"
+          }
+          payload() { printf '{"source_type":"service","source_id":%s,"gate":"%s","decision":"%s","evidence_ref":"synthetic/http-positive"}' "$ID" "$1" "$2"; }
+          call POST "$(payload H5 PASS)" 409
+          for gate in H1 H2 H3 H4 H5; do
+            call POST "$(payload "$gate" PASS)" 200
+          done
+          call POST "$(payload H5 PASS)" 409
+          status=$(curl -sS -o /tmp/hitl-final.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$URL/api/owner/hitl?source_type=service&source_id=$ID")
+          test "$status" = 200 || { echo "FAIL GET status $status"; exit 1; }
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/hitl-final.json'))
+          assert data['case']['status']=='PASS', data['case']
+          history=data['history']
+          assert len(history)==5, history
+          assert [e['gate'] for e in history]==['H1','H2','H3','H4','H5'], history
+          assert all(e['decision']=='PASS' for e in history)
+          print('PASS authenticated GET: final PASS and exactly five ordered events')
+          PY
+          echo 'PASS end-to-end HTTP positive and negative gate checks on preview D1'
+          echo 'Synthetic source retained as isolated test evidence; production untouched.'
