@@ -6,6 +6,7 @@ on:
       - draft/hitl-site-alignment-20261115
     paths:
       - '.github/workflows/hitl-minimax-consolidated.yml'
+      - 'tests/hitl-preview-signed-v4-remote.sh'
 jobs:
   consolidated:
     runs-on: ubuntu-latest
