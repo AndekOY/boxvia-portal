@@ -1,0 +1,18 @@
+name: HITL signed evidence binding v3
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-evidence-v3.yml'
+      - 'cloudflare/hitl-signed-evidence-v3-preview.sql'
+      - 'tests/test_hitl_evidence_v3.py'
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/test_hitl_evidence_v3.py
