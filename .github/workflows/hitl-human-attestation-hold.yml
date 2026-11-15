@@ -51,7 +51,8 @@ jobs:
           echo "PASS owner token configured on isolated hold Worker"
           # Existing synthetic case with H1 and H2 already passed in preview D1.
           # If it does not exist, do not mutate customer data; fail instead.
-          SOURCE=608655067
+          SOURCE=$(( 500000000 + GITHUB_RUN_ID % 100000000 ))
+          npx wrangler d1 execute baf79e93-cbea-4786-8779-974f3b3afbcc --remote --command "INSERT INTO service_requests(id,service_code,service_title,customer_email,request_json,status) VALUES($SOURCE,'technical-pilot','SYNTHETIC IDENTITY HOLD TEST','synthetic@invalid.example','{}','new');" >/dev/null
           for gate in H3 H4 H5; do
             code=$(curl -sS -o /tmp/hitl-hold-response.json -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H "Origin: $URL" -H "Content-Type: application/json" --data "{\"source_type\":\"service\",\"source_id\":$SOURCE,\"gate\":\"$gate\",\"decision\":\"PASS\",\"evidence_ref\":\"synthetic/identity-hold\"}" "$URL/api/owner/hitl")
             test "$code" = 423 || { echo "FAIL expected 423 got $code"; cat /tmp/hitl-hold-response.json; exit 1; }
