@@ -1,0 +1,72 @@
+name: HITL isolated preview Worker HTTP acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-preview-http.yml'
+jobs:
+  preview-http:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify preview configuration and install Wrangler
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npm install --no-save --no-package-lock wrangler@4
+      - name: Deploy separate HITL-only preview Worker and test HTTP access
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/hitl-preview-wrangler.json <<'EOF'
+          {
+            "name":"boxvia-hitl-preview-test",
+            "main":"cloudflare/hitl-preview-worker.js",
+            "compatibility_date":"2026-11-02",
+            "workers_dev":true,
+            "d1_databases":[{"binding":"DB","database_name":"boxvia-hitl-preview","database_id":"baf79e93-cbea-4786-8779-974f3b3afbcc"}],
+            "vars":{"HITL_REGISTRY_ENABLED":"true"}
+          }
+          EOF
+          npx wrangler deploy --config /tmp/hitl-preview-wrangler.json > /tmp/hitl-deploy.log 2>&1 || { cat /tmp/hitl-deploy.log; exit 1; }
+          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' /tmp/hitl-deploy.log | head -n 1)
+          test -n "$URL" || { cat /tmp/hitl-deploy.log; exit 1; }
+          echo "Preview Worker deployed: $URL"
+          TOKEN=$(openssl rand -hex 32)
+          printf '%s' "$TOKEN" | npx wrangler secret put HITL_OWNER_TOKEN --config /tmp/hitl-preview-wrangler.json > /dev/null
+          # Test no-token rejection, invalid-token rejection, no source, wrong Origin,
+          # nonexistent synthetic source. Never use a real customer case.
+          for attempt in $(seq 1 12); do
+            code=$(curl -sS -o /tmp/hitl-health.json -w '%{http_code}' "$URL/api/owner/hitl" || true)
+            if [ "$code" = 401 ]; then break; fi
+            sleep 2
+          done
+          test "$code" = 401 || { echo "FAIL unauthorized status $code"; cat /tmp/hitl-health.json; exit 1; }
+          echo 'PASS unauthenticated request -> 401'
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer invalid' "$URL/api/owner/hitl")
+          test "$code" = 401
+          echo 'PASS invalid token -> 401'
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$URL/api/owner/hitl")
+          test "$code" = 400
+          echo 'PASS authenticated missing source -> 400'
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -H 'Origin: https://invalid.example' --data '{}' "$URL/api/owner/hitl")
+          test "$code" = 403
+          echo 'PASS wrong Origin -> 403'
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$URL/api/owner/hitl?source_type=claim&source_id=999999999")
+          test "$code" = 404
+          echo 'PASS nonexistent source -> 404'
+          code=$(curl -sS -o /dev/null -w '%{http_code}' "$URL/not-an-api")
+          test "$code" = 404
+          echo 'PASS unrelated path -> 404'
+          echo 'PASS 6 HTTP acceptance checks. No customer data or HITL records modified.'
