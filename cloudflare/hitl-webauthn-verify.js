@@ -57,7 +57,7 @@ export async function verifyWebAuthnAssertion({assertion, expected, credential})
   if (counter!==0 && credential.signCount!==0 && counter<=credential.signCount) throw new Error("counter_replay");
   const clientHash=await sha256(clientBytes);
   const signed=new Uint8Array(auth.length+clientHash.length);signed.set(auth);signed.set(clientHash,auth.length);
-  const key=await crypto.subtle.importKey("spki",decodeBase64url(credential.publicKeySpki),"ECDSA",false,["verify"]);
+  const key=await crypto.subtle.importKey("spki",decodeBase64url(credential.publicKeySpki),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
   const verified=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,derToRaw(decodeBase64url(response.signature)),signed);
   if (!verified) throw new Error("invalid_signature");
   return {credentialId:credential.credentialId, signCount:counter, userVerified:true};
