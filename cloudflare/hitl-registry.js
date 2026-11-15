@@ -51,7 +51,7 @@ export async function handleHitlRegistry(request,env,url) {
     if (!record) return json({error:"No HITL record"},404);
     if (request.method === "POST") {
       if (!gates.includes(body.gate) || !["PASS","HOLD","STOP"].includes(body.decision) ||
-          !validText(body.evidence_ref,500) || !validText(body.actor,120) ||
+          !validText(body.evidence_ref,500) ||
           (body.note !== undefined && body.note !== null && (typeof body.note !== "string" || body.note.length > 1000))) {
         return json({error:"Invalid gate event"},400);
       }
@@ -66,14 +66,12 @@ export async function handleHitlRegistry(request,env,url) {
           gates.slice(0,4).some(g => before.latest[g]?.decision !== "PASS")) {
         return json({error:"H1-H4 must pass before release"},409);
       }
-      const nextStatus = body.decision === "STOP" ? "STOP" : body.gate === "H5" && body.decision === "PASS" ? "PASS" : "HOLD";
-      const results = await env.DB.batch([
-        env.DB.prepare("INSERT INTO hitl_events (case_id,gate,decision,evidence_ref,note,actor) VALUES (?,?,?,?,?,?)")
-          .bind(record.id,body.gate,body.decision,body.evidence_ref.trim(),body.note || null,body.actor.trim()),
-        env.DB.prepare("UPDATE hitl_cases SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'HOLD'")
-          .bind(nextStatus,record.id)
-      ]);
-      if (!results.every(x=>x.success)) throw new Error("Event not confirmed");
+      // SQLite BEFORE/AFTER triggers enforce gate ordering, immutability and case status atomically.
+      // The actor is assigned server-side from the controlled case, never accepted from the request.
+      const inserted = await env.DB.prepare(
+        "INSERT INTO hitl_events (case_id,gate,decision,evidence_ref,note,actor) VALUES (?,?,?,?,?,?)"
+      ).bind(record.id,body.gate,body.decision,body.evidence_ref.trim(),body.note || null,record.assessor).run();
+      if (!inserted.success || inserted.meta?.changes !== 1) throw new Error("Event not confirmed");
     }
     const current = await env.DB.prepare("SELECT id,source_type,source_id,assessor,status,created_at,updated_at FROM hitl_cases WHERE id = ?").bind(record.id).first();
     const events = await latestEvents(env,record.id);
