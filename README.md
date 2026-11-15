@@ -3,6 +3,14 @@
 Public website: https://boxvia.andeks.workers.dev/  
 Repository: https://github.com/AndekOY/boxvia-portal
 
+## Canonical repository identity (IMPORTANT)
+
+- **ACTIVE / PRODUCTION SOURCE:** `AndekOY/boxvia-portal` (`main`), repository ID `1128955917`.
+- **HISTORICAL NAME / ARCHIVED REFERENCE ONLY:** `AndekOY/boxfintech-landing`. This is a previous name of **the same repository**, not a separate repository to edit, deploy, or archive. GitHub resolves the old URL to `AndekOY/boxvia-portal`.
+- Always use the canonical repository name for GitHub searches, file reads, commits and website work. Do not use the old name as a tool argument or documentation source.
+- Public Technical Pilot: `/services/technical-pilot/`; source: `services/technical-pilot/index.html`. `/technical-pilot/` is not the canonical path.
+- GitHub repository archival is **not applicable** to the old name alone: archiving this repository would also archive the active production source. Preserve the old name only as a historical alias.
+
 ## Architecture and deployment
 
 - Static HTML, CSS and JavaScript pages are served through Cloudflare Workers static assets.
