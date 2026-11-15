@@ -1,0 +1,18 @@
+name: HITL signed event guard local tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-signed-guard.yml'
+      - 'cloudflare/hitl-signed-commit-guard-preview.sql'
+      - 'tests/test_hitl_signed_guard.py'
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/test_hitl_signed_guard.py
