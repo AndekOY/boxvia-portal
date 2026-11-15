@@ -17,7 +17,7 @@ BEGIN
     AND i.expected_last_event_id IS NOT NULL
     AND i.expected_last_event_id=COALESCE((SELECT MAX(id) FROM hitl_events WHERE case_id=NEW.case_id),0)
     AND i.verified_sign_count IS NOT NULL AND i.verified_sign_count>=0
-    AND (i.verified_sign_count=0 OR a.sign_count=0 OR i.verified_sign_count>a.sign_count)
+    AND ((i.verified_sign_count=0 AND a.sign_count=0) OR (i.verified_sign_count>0 AND (a.sign_count=0 OR i.verified_sign_count>a.sign_count)))
     AND c.state='PENDING' AND c.expires_at>CAST(strftime('%s','now') AS INTEGER)
     AND c.case_id=NEW.case_id AND c.gate=NEW.gate
     AND c.credential_id=i.credential_id AND c.payload_sha256=i.payload_sha256
@@ -28,13 +28,11 @@ CREATE TRIGGER hitl_signed_counter_v4 AFTER INSERT ON hitl_events
 WHEN NEW.gate IN ('H3','H4','H5') AND NEW.decision='PASS'
 BEGIN
  UPDATE hitl_authenticators
- SET sign_count=CASE WHEN sign_count=0 AND
-  (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)=0
-  THEN 0 ELSE (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id) END
+ SET sign_count=(SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)
  WHERE credential_id=(SELECT credential_id FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)
    AND state='ACTIVE'
-   AND (sign_count=0 OR (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)=0
-        OR (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)>sign_count);
+   AND ((sign_count=0 AND (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)=0)
+     OR (SELECT verified_sign_count FROM hitl_verified_commit_intents WHERE id=NEW.signed_intent_id)>sign_count);
  SELECT CASE WHEN changes()!=1 THEN RAISE(ABORT,'hitl_sign_counter_update_failed') END;
 END;
 -- This event-ID snapshot rejects intervening append operations but does not
