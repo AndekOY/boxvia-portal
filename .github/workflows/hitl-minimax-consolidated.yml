@@ -1,0 +1,54 @@
+name: HITL minimax consolidated preview acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-minimax-consolidated.yml'
+jobs:
+  consolidated:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PREVIEW_DB_ID: baf79e93-cbea-4786-8779-974f3b3afbcc
+      PROD_DB_ID: 9e860945-027b-4fe9-8a43-c02206b88617
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Complete component regression
+        run: |
+          set -euo pipefail
+          node --test tests/hitl-webauthn-verify.mjs tests/hitl-decision-binding.mjs tests/hitl-challenge-prepare.mjs tests/hitl-signed-preflight.mjs tests/hitl-signed-commit-preview.mjs
+          python3 tests/test_hitl_signed_snapshot_v4.py
+      - name: Strict preview D1 allowlist
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test "$PREVIEW_DB_ID" = "baf79e93-cbea-4786-8779-974f3b3afbcc"
+          test "$PREVIEW_DB_ID" != "$PROD_DB_ID"
+      - run: npm install --no-save --no-package-lock wrangler@4
+      - name: Apply SPKI and signed v4 to isolated Preview D1 only
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-authenticator-spki-preview.sql
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --file cloudflare/hitl-signed-snapshot-v4-preview.sql
+      - name: Assert remote schema and guard present
+        run: |
+          set -euo pipefail
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN ('hitl_signed_event_guard_v4','hitl_signed_counter_v4','hitl_signed_event_consume_v2') ORDER BY name;"
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM pragma_table_info('hitl_authenticators') WHERE name='public_key_spki';"
+          npx wrangler d1 execute "$PREVIEW_DB_ID" --remote --command "SELECT name FROM pragma_table_info('hitl_verified_commit_intents') WHERE name IN ('expected_last_event_id','verified_sign_count') ORDER BY name;"
+      - name: Remote synthetic replay and parallel write acceptance
+        run: bash tests/hitl-preview-signed-v4-remote.sh
+      - name: Release remains HOLD
+        run: |
+          echo 'Synthetic signed SQL + local cryptographic preflight only.'
+          echo 'Real owner enrollment requires owner-controlled passkey ceremony.'
+          echo 'No human approval established; no production deployment authorized.'
