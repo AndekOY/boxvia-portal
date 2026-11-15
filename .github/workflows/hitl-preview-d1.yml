@@ -1,6 +1,11 @@
 name: HITL Preview D1 acceptance (isolated)
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-preview-d1.yml'
 jobs:
   preview-d1:
     runs-on: ubuntu-latest
