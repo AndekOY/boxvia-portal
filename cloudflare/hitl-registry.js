@@ -56,6 +56,14 @@ export async function handleHitlRegistry(request,env,url) {
         return json({error:"Invalid gate event"},400);
       }
       if (record.status === "STOP" || record.status === "PASS") return json({error:"Case closed; no further events"},409);
+      // Fail-closed bridge for identity assurance. Until a verified, case-bound
+      // WebAuthn approval flow is implemented, never treat bearer possession as
+      // sufficient evidence of human H3/H4/H5 approval.
+      if (env.HITL_HUMAN_ATTESTATION_REQUIRED === "true" &&
+          body.decision === "PASS" && ["H3","H4","H5"].includes(body.gate)) {
+        return json({error:"Verified human attestation required; release on HOLD"},423);
+      }
+
       const before = await latestEvents(env,record.id);
       const gateIndex = gates.indexOf(body.gate);
       if (body.decision === "PASS" && gateIndex > 0 &&
