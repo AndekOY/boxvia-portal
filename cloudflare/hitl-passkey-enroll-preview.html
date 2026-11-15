@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoxVia HITL — регистрация passkey (Preview)</title>
+<style>body{font:16px system-ui;max-width:640px;margin:5vh auto;padding:20px;line-height:1.5}button{padding:12px 20px}pre{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#666}</style>
+<h1>BoxVia HITL — регистрация passkey</h1>
+<p>Только изолированная Preview-среда. Регистрация не является решением H3, H4 или H5.</p>
+<p><small>Страница должна обслуживаться тем же origin, что и защищенные API регистрации. Требуется HTTPS, подтверждение владельца и проверка регистрации на сервере.</small></p>
+<button id="enroll" disabled>Зарегистрировать passkey</button>
+<pre id="status" role="status">Ожидание готовности защищенного сервера регистрации. Кнопка заблокирована.</pre>
+<script type="module">
+const status=document.querySelector('#status'),button=document.querySelector('#enroll');
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const bytes=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-s.length%4)%4)),c=>c.charCodeAt(0));
+const post=async(path,body)=>{const r=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw Error('Сервер отклонил запрос: HTTP '+r.status);return r.json()};
+const base='/api/owner/hitl/passkey';
+try{
+ if(!window.isSecureContext||!window.PublicKeyCredential)throw Error('WebAuthn недоступен в этом браузере');
+ const r=await fetch(base+'/status',{credentials:'same-origin',cache:'no-store'});
+ if(!r.ok)throw Error('Сервер регистрации не готов: HTTP '+r.status);
+ const ready=await r.json();
+ if(ready.ready!==true||ready.ownerVerified!==true||ready.previewOnly!==true)throw Error('Регистрация не разрешена: владелец или Preview не подтверждены');
+ button.disabled=false;status.textContent='Готово к регистрации в Preview. Требуется твое физическое подтверждение.';
+ button.onclick=async()=>{
+   button.disabled=true;
+   try{
+     const p=await post(base+'/begin',{});
+     if(p.publicKey?.rp?.id!==location.hostname)throw Error('RP ID не совпадает с origin Preview');
+     const pk={...p.publicKey,challenge:bytes(p.publicKey.challenge),user:{...p.publicKey.user,id:bytes(p.publicKey.user.id)},excludeCredentials:(p.publicKey.excludeCredentials||[]).map(x=>({...x,id:bytes(x.id)}))};
+     const c=await navigator.credentials.create({publicKey:pk});
+     if(!c)throw Error('Создание ключа отменено');
+     const response={id:c.id,rawId:b64(c.rawId),type:c.type,response:{clientDataJSON:b64(c.response.clientDataJSON),attestationObject:b64(c.response.attestationObject)},clientExtensionResults:c.getClientExtensionResults()};
+     const done=await post(base+'/finish',{enrollmentId:p.enrollmentId,credential:response});
+     status.textContent=done.state==='PENDING'?'Ключ получен сервером. Ожидается независимая проверка и активация.':'Сервер вернул неожиданный статус; активация не подтверждена.';
+   }catch(e){status.textContent='Регистрация не завершена: '+e.message}
+   finally{button.disabled=false}
+ };
+}catch(e){status.textContent=e.message+'; регистрация заблокирована.'}
+</script>
