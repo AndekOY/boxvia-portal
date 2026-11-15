@@ -35,7 +35,7 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
   if(!owner)return reply({error:"Verified owner Access session required"},401);
   const base="/api/owner/hitl/passkey/";
   if(url.pathname===base+"status"&&request.method==="GET")
-    return reply({ready:true,ownerVerified:true,previewOnly:true});
+    return reply({ready:false,ownerVerified:true,previewOnly:true,reason:"attestation_verifier_pending"});
   if(url.pathname===base+"begin"&&request.method==="POST"){
     if(request.headers.get("Origin")!==url.origin)return reply({error:"Origin mismatch"},403);
     const challenge=encodeBase64url(crypto.getRandomValues(new Uint8Array(32)));
