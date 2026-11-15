@@ -1,0 +1,22 @@
+name: HITL signed commit coordinator preview
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - 'cloudflare/hitl-signed-commit-preview.js'
+      - 'tests/hitl-signed-commit-preview.mjs'
+      - '.github/workflows/hitl-signed-commit-preview.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/hitl-signed-commit-preview.mjs
+      - run: python3 tests/test_hitl_signed_snapshot_v4.py
