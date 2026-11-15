@@ -1,0 +1,21 @@
+name: HITL WebAuthn decision binding tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-decision-binding.yml'
+      - 'cloudflare/hitl-decision-binding.js'
+      - 'tests/hitl-decision-binding.mjs'
+jobs:
+  binding:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/hitl-decision-binding.mjs tests/hitl-webauthn-verify.mjs
