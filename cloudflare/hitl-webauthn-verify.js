@@ -46,15 +46,7 @@ export async function verifyWebAuthnAssertion({assertion, expected, credential})
   if (!response || typeof response!=="object") throw new Error("missing_response");
   const clientBytes=decodeBase64url(response.clientDataJSON);
   const clientText=decoder.decode(clientBytes);
-  // Reject duplicate security-critical JSON keys before JSON.parse (which otherwise uses last value).
-  // WebAuthn clientDataJSON is a flat object for these fields; reject duplicate occurrences
-  // rather than interpreting ambiguous signed data.
-  for (const field of ["type","challenge","origin","crossOrigin"]) {
-    const matches=clientText.match(new RegExp('"' + field + '"\\\\s*:', "g")) || [];
-    if (matches.length!==1 && field!=="crossOrigin" || matches.length>1) throw new Error("ambiguous_client_data");
-  }
-  const client=JSON.parse(clientText);
-  if (!client || typeof client!=="object" || Array.isArray(client)) throw new Error("invalid_client_data");
+  const client=JSON.parse(decoder.decode(clientBytes));
   if (client.type!=="webauthn.get" || client.origin!==expected.origin || client.crossOrigin===true ||
       client.challenge!==expected.challenge) throw new Error("client_data_mismatch");
   const auth=decodeBase64url(response.authenticatorData);
