@@ -6,6 +6,9 @@ on:
       - draft/hitl-site-alignment-20261115
     paths:
       - 'cloudflare/hitl-passkey-enrollment-preview.js'
+      - 'cloudflare/hitl-passkey-registration-verify.js'
+      - 'cloudflare/hitl-passkey-owner-page-preview.js'
+      - 'cloudflare/hitl-preview-worker.js'
       - 'cloudflare/hitl-passkey-enrollment-preview.sql'
       - 'tests/hitl-passkey-enrollment-preview.mjs'
       - '.github/workflows/hitl-passkey-enrollment-preview.yml'
