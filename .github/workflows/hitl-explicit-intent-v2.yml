@@ -1,0 +1,18 @@
+name: HITL exact signed intent v2 SQL tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - draft/hitl-site-alignment-20261115
+    paths:
+      - '.github/workflows/hitl-explicit-intent-v2.yml'
+      - 'cloudflare/hitl-signed-explicit-intent-v2-preview.sql'
+      - 'tests/test_hitl_explicit_intent_v2.py'
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/test_hitl_explicit_intent_v2.py
