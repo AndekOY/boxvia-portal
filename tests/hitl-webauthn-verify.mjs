@@ -33,3 +33,10 @@ for (const [name,override] of [
 test('expired challenge',async()=>assert.rejects(()=>verifyWebAuthnAssertion({assertion:make(),expected:{...expected,expiresAtMs:Date.now()-1},credential})));
 test('revoked credential',async()=>assert.rejects(()=>verifyWebAuthnAssertion({assertion:make(),expected,credential:{...credential,state:'REVOKED'}})));
 test('wrong credential ID',async()=>assert.rejects(()=>verifyWebAuthnAssertion({assertion:{...make(),id:'other'},expected,credential})));
+
+test('noncanonical base64url encoding rejected',async()=>{
+ const a=make();
+ // One-byte encoding /w has unused trailing bits; /x decodes to same byte but is noncanonical.
+ const bad={...a,response:{...a.response,signature:'_x'}};
+ await assert.rejects(()=>verifyWebAuthnAssertion({assertion:bad,expected,credential}));
+});
