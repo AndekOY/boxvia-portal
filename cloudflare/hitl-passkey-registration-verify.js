@@ -40,7 +40,7 @@ export async function verifyHitlRegistration({credential,expectedChallenge,origi
  if(len<16||len>1024||i+len>auth.length)throw Error("credential_length");
  const credentialBytes=auth.slice(i,i+len);i+=len;
  if(!equal(credentialBytes,rawId))throw Error("attested_credential_mismatch");
- const parsed=cbor(auth,i);i=parsed.end;
+ const coseStart=i;const parsed=cbor(auth,i);i=parsed.end;
  if(i!==auth.length)throw Error("extensions_or_trailing_data");
  const key=parsed.value;
  if(!(key instanceof Map)||key.size!==5||key.get(1)!==2||key.get(3)!==-7||key.get(-1)!==1||
@@ -49,5 +49,5 @@ export async function verifyHitlRegistration({credential,expectedChallenge,origi
  const jwk={kty:"EC",crv:"P-256",x:encodeBase64url(key.get(-2)),y:encodeBase64url(key.get(-3)),ext:true};
  const imported=await crypto.subtle.importKey("jwk",jwk,{name:"ECDSA",namedCurve:"P-256"},true,["verify"]);
  const spki=encodeBase64url(new Uint8Array(await crypto.subtle.exportKey("spki",imported)));
- return {credentialId:credential.id,publicKeyCose:encodeBase64url(auth.slice(parsed.end-(parsed.end-(i-(parsed.end-i))),i)),publicKeySpki:spki,signCount:counter,userVerified:true};
+ return {credentialId:credential.id,publicKeyCose:encodeBase64url(auth.slice(coseStart,i)),publicKeySpki:spki,signCount:counter,userVerified:true};
 }
