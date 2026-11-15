@@ -104,3 +104,15 @@ ANDEKS, ARE, ERA and commercial BoxVia evidence checks have different scopes and
 ## Historical archive
 
 The original BoxFinTech website is preserved under `archive/boxfintech-before-portal-2026-10-31`. Do not delete the archive without verification.
+
+## Approved HITL governance baseline (2026-11-15)
+
+BoxVia positioning: **Human-Accountable Independent Assessment**.
+Public tagline: **AI-assisted. Human-assessed. Evidence-based.**
+
+Canonical operating documents:
+- [HITL Policy v1.0](docs/governance/HITL_POLICY_v1.0.md)
+- [HITL Execution Protocol v1.0](docs/governance/HITL_EXECUTION_PROTOCOL_v1.0.md)
+- [HITL Public Language v1.0](docs/governance/HITL_PUBLIC_LANGUAGE_v1.0.md)
+
+These documents establish the approved operating baseline. They do not, by themselves, verify implementation in every existing workflow or amend ANDEKS/BCAF normative documents.
