@@ -14,7 +14,9 @@ async function accessIdentity(request,env) {
   const token=request.headers.get("Cf-Access-Jwt-Assertion");
   if(!token||token.length>12000)return null;
   const parts=token.split(".");if(parts.length!==3)return null;
-  const header=JSON.parse(ascii(parts[0])),payload=JSON.parse(ascii(parts[1]));
+  let header,payload;
+  try{header=JSON.parse(ascii(parts[0]));payload=JSON.parse(ascii(parts[1]));}
+  catch{throw Error("JWT_PARSE");}
   if(header.alg!=="RS256"||typeof header.kid!=="string"||header.kid.length>256)return null;
   const now=Math.floor(Date.now()/1000);
   if(payload.iss!==issuer||!Array.isArray(payload.aud)||!payload.aud.includes(audience)||
@@ -28,8 +30,12 @@ async function accessIdentity(request,env) {
   const jwk=(keys.keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA"&&k.use==="sig"&&k.alg==="RS256");
   if(!jwk)return null;
 
-  const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
-  if(!await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decodeBase64url(parts[2]),enc.encode(parts[0]+"."+parts[1])))return null;
+  let verified;
+  try{
+    const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+    verified=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decodeBase64url(parts[2]),enc.encode(parts[0]+"."+parts[1]));
+  }catch{throw Error("SIGNATURE_CRYPTO");}
+  if(!verified)return null;
   return {id:payload.sub,email:payload.email};
 }
 export async function handleHitlPasskeyEnrollment(request,env,url) {
@@ -37,7 +43,8 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
   if(url.hostname!==env.HITL_PASSKEY_RP_ID||url.protocol!=="https:")return reply({error:"RP mismatch"},403);
   let owner;try{owner=await accessIdentity(request,env)}catch(error){
     // Diagnostic is deliberately non-sensitive: no JWT, owner email, key material or exception message.
-    const code=error instanceof SyntaxError?"JWT_OR_JWKS_PARSE":error instanceof TypeError?"IDENTITY_NETWORK_OR_CRYPTO":"IDENTITY_VERIFICATION_EXCEPTION";
+    const allowed=new Set(["JWT_PARSE","JWKS_FETCH","JWKS_HTTP","JWKS_PARSE","SIGNATURE_CRYPTO"]);
+    const code=allowed.has(error?.message)?error.message:"IDENTITY_VERIFICATION_EXCEPTION";
     console.error("HITL_ACCESS_IDENTITY_EXCEPTION",code);
     return reply({error:"Identity unavailable",diagnostic:code},503);
   }
