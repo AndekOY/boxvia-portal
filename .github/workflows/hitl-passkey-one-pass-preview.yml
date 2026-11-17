@@ -1,5 +1,7 @@
 name: HITL passkey single-pass isolated preview acceptance
 on:
+  schedule:
+    - cron: '23 7 * * *'
   workflow_dispatch:
   push:
     branches: [draft/hitl-site-alignment-20261115]
@@ -68,6 +70,21 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-passkey-enrollment-preview.sql > /tmp/hitl-schema.log
           npx wrangler d1 execute "$DB" --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('hitl_passkey_enrollments','hitl_authenticators','hitl_auth_challenges','hitl_auth_proofs');" --json > /tmp/hitl-schema.json
           node --input-type=module -e 'import fs from "node:fs";const data=JSON.parse(fs.readFileSync("/tmp/hitl-schema.json"));const names=new Set(data.flatMap(x=>(x.results||[]).map(y=>y.name)));for(const n of ["hitl_passkey_enrollments","hitl_authenticators","hitl_auth_challenges","hitl_auth_proofs"])if(!names.has(n))throw Error("Missing preview table: "+n);console.log("PASS four Preview D1 tables")'
+      - name: Retrieve and validate public Cloudflare Access signing keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 20 --retry 2 "$ACCESS_ISSUER/cdn-cgi/access/certs" -o /tmp/hitl-access-jwks.json
+          node --input-type=module <<'EOF'
+          import fs from "node:fs";
+          const jwks=JSON.parse(fs.readFileSync("/tmp/hitl-access-jwks.json","utf8"));
+          if(!Array.isArray(jwks.keys)||jwks.keys.length<1||jwks.keys.length>20)throw Error("Invalid Access JWKS");
+          const keys=jwks.keys.filter(k=>k&&k.kty==="RSA"&&typeof k.kid==="string"&&k.kid.length>0&&typeof k.n==="string"&&typeof k.e==="string"&&(k.use===undefined||k.use==="sig")&&(k.alg===undefined||k.alg==="RS256")).map(k=>({kty:"RSA",kid:k.kid,n:k.n,e:k.e,alg:"RS256",use:"sig"}));
+          if(keys.length<1||new Set(keys.map(k=>k.kid)).size!==keys.length)throw Error("No unique RSA signing keys");
+          const fetched_at=Math.floor(Date.now()/1000);
+          fs.writeFileSync("/tmp/hitl-access-public-pinned.json",JSON.stringify({keys,fetched_at}));
+          console.log("PASS pinned public RSA JWKS keys:",keys.length,"(contents withheld)");
+          EOF
       - name: Deploy isolated identity-HOLD Worker only
         shell: bash
         run: |
@@ -88,7 +105,8 @@ jobs:
               HITL_PASSKEY_RP_ID:"boxvia-hitl-identity-hold-test.andeks.workers.dev",
               HITL_ACCESS_ISSUER:issuer,
               HITL_ACCESS_AUD:process.env.ACCESS_AUD,
-              HITL_OWNER_EMAIL:process.env.OWNER_EMAIL
+              HITL_OWNER_EMAIL:process.env.OWNER_EMAIL,
+              HITL_ACCESS_JWKS_PUBLIC:fs.readFileSync("/tmp/hitl-access-public-pinned.json","utf8")
             }
           };
           fs.writeFileSync(".hitl-passkey-one-pass-wrangler.json",JSON.stringify(config));
