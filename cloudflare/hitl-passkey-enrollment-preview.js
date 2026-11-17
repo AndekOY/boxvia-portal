@@ -1,6 +1,6 @@
 // Isolated Preview-only passkey enrollment gateway.
 // Requires cryptographically verified Cloudflare Access JWT and configured owner email.
-// Enrollment finish deliberately remains disabled until audited attestation validation exists.
+// Registration requires strict WebAuthn verification; new credentials remain PENDING.
 import {encodeBase64url,decodeBase64url} from "./hitl-webauthn-verify.js";
 import {verifyHitlRegistration} from "./hitl-passkey-registration-verify.js";
 const reply=(obj,status=200)=>Response.json(obj,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
@@ -20,11 +20,14 @@ async function accessIdentity(request,env) {
   if(payload.iss!==issuer||!Array.isArray(payload.aud)||!payload.aud.includes(audience)||
      !Number.isSafeInteger(payload.exp)||payload.exp<=now||!Number.isSafeInteger(payload.iat)||payload.iat>now+60||
      !same(payload.email?.toLowerCase(),owner.toLowerCase())||typeof payload.sub!=="string")return null;
-  const response=await fetch(issuer+"/cdn-cgi/access/certs",{redirect:"error",cf:{cacheTtl:60,cacheEverything:true}});
+
+  const response=await fetch(issuer+"/cdn-cgi/access/certs",{redirect:"error"});
   if(!response.ok)return null;
+
   const keys=await response.json();
   const jwk=(keys.keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA"&&k.use==="sig"&&k.alg==="RS256");
   if(!jwk)return null;
+
   const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   if(!await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decodeBase64url(parts[2]),enc.encode(parts[0]+"."+parts[1])))return null;
   return {id:payload.sub,email:payload.email};
@@ -32,7 +35,12 @@ async function accessIdentity(request,env) {
 export async function handleHitlPasskeyEnrollment(request,env,url) {
   if(env.HITL_PASSKEY_ENROLLMENT_ENABLED!=="true"||env.HITL_HUMAN_ATTESTATION_REQUIRED!=="true"||!env.DB)return reply({error:"Enrollment disabled"},503);
   if(url.hostname!==env.HITL_PASSKEY_RP_ID||url.protocol!=="https:")return reply({error:"RP mismatch"},403);
-  let owner;try{owner=await accessIdentity(request,env)}catch{return reply({error:"Identity unavailable"},503)}
+  let owner;try{owner=await accessIdentity(request,env)}catch(error){
+    // Diagnostic is deliberately non-sensitive: no JWT, owner email, key material or exception message.
+    const code=error instanceof SyntaxError?"JWT_OR_JWKS_PARSE":error instanceof TypeError?"IDENTITY_NETWORK_OR_CRYPTO":"IDENTITY_VERIFICATION_EXCEPTION";
+    console.error("HITL_ACCESS_IDENTITY_EXCEPTION",code);
+    return reply({error:"Identity unavailable",diagnostic:code},503);
+  }
   if(!owner)return reply({error:"Verified owner Access session required"},401);
   const base="/api/owner/hitl/passkey/";
   if(url.pathname===base+"status"&&request.method==="GET")
