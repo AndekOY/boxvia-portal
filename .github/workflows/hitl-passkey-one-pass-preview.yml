@@ -30,6 +30,7 @@ on:
       - 'cloudflare/hitl-minimax-proof-verify.js'
       - 'tests/hitl-minimax-replay-preview.mjs'
       - 'tests/hitl-minimax-package-preview.mjs'
+      - 'tests/hitl-minimax-encrypt-archive.mjs'
 jobs:
   isolated-preview:
     runs-on: ubuntu-latest
@@ -42,6 +43,7 @@ jobs:
       ACCESS_AUD: ${{ secrets.HITL_ACCESS_AUD }}
       OWNER_EMAIL: ${{ secrets.HITL_OWNER_EMAIL }}
       APPROVER_EMAIL: ${{ secrets.HITL_INDEPENDENT_APPROVER_EMAIL }}
+      HITL_ARCHIVE_AES256_KEY_B64URL: ${{ secrets.HITL_ARCHIVE_AES256_KEY_B64URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -132,8 +134,21 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --command "SELECT s.* FROM hitl_minimax_snapshots s JOIN hitl_minimax_proofs p ON p.decision_id=s.decision_id AND p.decision_version=s.version WHERE p.id='$P';" --json > /tmp/hitl-snapshot-private.json
           node tests/hitl-minimax-replay-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
           node tests/hitl-minimax-package-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+          if [[ -n "$HITL_ARCHIVE_AES256_KEY_B64URL" ]]; then
+            node tests/hitl-minimax-encrypt-archive.mjs
+          else
+            echo 'HOLD durable archive: encryption key not configured; raw package never uploaded'
+          fi
           rm -f /tmp/hitl-minimax-portable-private.json
           rm -f /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+      - name: Store encrypted Preview proof archive (only with separately managed key)
+        if: ${{ env.HITL_ARCHIVE_AES256_KEY_B64URL != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hitl-minimax-encrypted-proof-preview
+          path: /tmp/hitl-minimax-encrypted-artifact.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Retrieve and validate public Cloudflare Access signing keys
         shell: bash
         run: |
