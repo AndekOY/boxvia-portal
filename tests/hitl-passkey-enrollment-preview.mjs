@@ -79,3 +79,20 @@ test('passkey authentication remains gated and cannot activate HITL',async()=>{
  const page=readFileSync('cloudflare/hitl-passkey-owner-page-preview.js','utf8');
  assert.match(page,/navigator.credentials.get/);
 });
+
+test('activation request is signed, audit-only, and never activates credential',()=>{
+ const login=readFileSync('cloudflare/hitl-passkey-authentication-preview.js','utf8');
+ const schema=readFileSync('cloudflare/hitl-passkey-lifecycle-preview.sql','utf8');
+ const page=readFileSync('cloudflare/hitl-passkey-owner-page-preview.js','utf8');
+ assert.match(login,/verifyWebAuthnAssertion/);
+ assert.match(login,/body.requestActivation===true/);
+ assert.match(login,/ACTIVATION_REQUESTED/);
+ assert.match(login,/await env.DB.batch\(operations\)/);
+ assert.match(login,/credentialState:"PENDING"/);
+ assert.match(login,/hitlAuthorization:false/);
+ assert.doesNotMatch(login,/SET state='ACTIVE'/);
+ assert.match(schema,/immutable_lifecycle/);
+ assert.match(schema,/INDEPENDENT_APPROVER/);
+ assert.match(page,/Запросить активацию/);
+ assert.match(page,/confirm\(/);
+});
