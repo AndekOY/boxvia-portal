@@ -48,3 +48,20 @@ test('validly structured but unsigned Access JWT is not accepted',async()=>{
  const response=await handleHitlPasskeyEnrollment(new Request(base+'status',{headers:{'Cf-Access-Jwt-Assertion':token}}),configured,new URL(base+'status'));
  assert.equal(response.status,401);
 });
+
+test('pinned Access JWKS is required, expired keys fail closed',async()=>{
+ const configured={...env,HITL_ACCESS_ISSUER:'https://broad-bonus-7bf4.cloudflareaccess.com',HITL_ACCESS_AUD:'test-aud',HITL_OWNER_EMAIL:'owner@example.test'};
+ const header={alg:'RS256',kid:'test-kid'};
+ const payload={iss:configured.HITL_ACCESS_ISSUER,aud:['test-aud'],exp:Math.floor(Date.now()/1000)+3600,iat:Math.floor(Date.now()/1000),email:'owner@example.test',sub:'test-owner'};
+ const token=[header,payload].map(x=>Buffer.from(JSON.stringify(x)).toString('base64url')).concat(['AQ']).join('.');
+ const check=async jwks=>{
+   const response=await handleHitlPasskeyEnrollment(new Request(base+'status',{headers:{'Cf-Access-Jwt-Assertion':token}}),{...configured,HITL_ACCESS_JWKS_PUBLIC:jwks},new URL(base+'status'));
+   return {status:response.status,body:await response.json()};
+ };
+ const missing=await check(undefined);
+ assert.equal(missing.status,503);assert.equal(missing.body.diagnostic,'JWKS_CONFIG');
+ const stale=await check(JSON.stringify({keys:[],fetched_at:Math.floor(Date.now()/1000)-172801}));
+ assert.equal(stale.status,503);assert.equal(stale.body.diagnostic,'JWKS_STALE_OR_INVALID');
+ const unknown=await check(JSON.stringify({keys:[],fetched_at:Math.floor(Date.now()/1000)}));
+ assert.equal(unknown.status,401);
+});
