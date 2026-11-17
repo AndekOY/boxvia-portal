@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const uri=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
+const canonical=uri(readFileSync('cloudflare/hitl-minimax-canonical.js','utf8'));
+const source=readFileSync('cloudflare/hitl-minimax-binding.js','utf8').replace('./hitl-minimax-canonical.js',canonical);
+const {prepareBoundDecision}=await import(uri(source));
+const row={case_id:'case-1',decision_id:'decision-1',version:1,gate:'H3',payload_sha256:'a'.repeat(64),chain_head_sha256:'b'.repeat(64)};
+const query={caseId:'case-1',decisionId:'decision-1',version:1,gate:'H3',action:'APPROVE'};
+const db=record=>({prepare(sql){assert.match(sql,/hitl_minimax_snapshots/);return {bind(...args){assert.deepEqual(args,['case-1','decision-1',1,'H3','READY']);return {first:async()=>record}}}}}});
+test('server snapshot binds action and digest',async()=>{const result=await prepareBoundDecision(db(row),query);assert.equal(result.snapshot.payloadSha256,row.payload_sha256);assert.match(result.snapshotSha256,/^[a-f0-9]{64}$/);assert.notEqual(result.snapshotSha256,(await prepareBoundDecision(db(row),{...query,action:'REJECT'})).snapshotSha256)});
+test('missing or malformed authoritative snapshot denied',async()=>{await assert.rejects(prepareBoundDecision(db(null),query),/snapshot_not_ready/);await assert.rejects(prepareBoundDecision(db({...row,payload_sha256:'bogus'}),query),/snapshot_not_ready/)});
+test('invalid client references rejected before database access',async()=>{await assert.rejects(prepareBoundDecision(null,{...query,caseId:'../escape'}),/invalid_decision_reference/)});
+test('schema prevents mutation and duplicate attestation',()=>{const sql=readFileSync('cloudflare/hitl-minimax-attestation-preview.sql','utf8');assert.match(sql,/hitl_minimax_snapshots_no_update/);assert.match(sql,/hitl_minimax_snapshots_no_delete/);assert.match(sql,/UNIQUE\(decision_id,decision_version\)/);assert.match(sql,/hitl_minimax_proofs_no_update/)});
