@@ -1,3 +1,18 @@
+-- Canonical decision snapshot must be provisioned by a trusted server-side process.
+-- Never accept arbitrary hashes from a browser as authoritative evidence.
+CREATE TABLE IF NOT EXISTS hitl_minimax_snapshots (
+ case_id TEXT NOT NULL,
+ decision_id TEXT NOT NULL,
+ version INTEGER NOT NULL CHECK(version>0),
+ gate TEXT NOT NULL CHECK(gate IN ('H1','H2','H3','H4','H5')),
+ payload_sha256 TEXT NOT NULL CHECK(length(payload_sha256)=64),
+ chain_head_sha256 TEXT NOT NULL CHECK(length(chain_head_sha256)=64),
+ state TEXT NOT NULL DEFAULT 'READY' CHECK(state='READY'),
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(decision_id,version)
+);
+CREATE TRIGGER IF NOT EXISTS hitl_minimax_snapshots_no_update BEFORE UPDATE ON hitl_minimax_snapshots BEGIN SELECT RAISE(ABORT,'immutable_snapshot'); END;
+CREATE TRIGGER IF NOT EXISTS hitl_minimax_snapshots_no_delete BEFORE DELETE ON hitl_minimax_snapshots BEGIN SELECT RAISE(ABORT,'immutable_snapshot'); END;
 -- HITL-Minimax v1.0: isolated Preview D1 only. No production migration.
 -- Evidence rows are immutable. This schema is NOT an authorization endpoint.
 CREATE TABLE IF NOT EXISTS hitl_minimax_challenges (
