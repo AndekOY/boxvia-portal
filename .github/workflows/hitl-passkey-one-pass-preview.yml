@@ -145,6 +145,8 @@ jobs:
               HITL_REGISTRY_ENABLED:"true",
               HITL_HUMAN_ATTESTATION_REQUIRED:"true",
               HITL_PASSKEY_ENROLLMENT_ENABLED:"true",
+              HITL_MINIMAX_ENABLED:"true",
+              HITL_MINIMAX_ACTIVATION_ENABLED:"true",
               HITL_PASSKEY_RP_ID:"boxvia-hitl-identity-hold-test.andeks.workers.dev",
               HITL_ACCESS_ISSUER:issuer,
               HITL_ACCESS_AUD:process.env.ACCESS_AUD,
@@ -155,13 +157,13 @@ jobs:
           fs.writeFileSync(".hitl-passkey-one-pass-wrangler.json",JSON.stringify(config));
           EOF
           npx wrangler deploy --config .hitl-passkey-one-pass-wrangler.json >/tmp/hitl-deploy.log 2>&1 || { sed -E 's/[[:alnum:]_-]{60,}/[REDACTED]/g' /tmp/hitl-deploy.log; exit 1; }
-          echo "PASS isolated identity-HOLD Worker deployed; Minimax activation and attestation remain disabled; production untouched"
+          echo "PASS isolated Preview Worker deployed with owner-only Minimax; legacy HITL human gates remain HOLD; production untouched"
       - name: Public HTTP denial and safe preview checks
         shell: bash
         run: |
           set -euo pipefail
           URL=https://boxvia-hitl-identity-hold-test.andeks.workers.dev
-          for path in /owner/hitl/passkey /api/owner/hitl/passkey/status /api/owner/hitl/passkey/begin /api/owner/hitl/passkey/finish; do
+          for path in /owner/hitl/passkey /api/owner/hitl/passkey/status /api/owner/hitl/passkey/begin /api/owner/hitl/passkey/finish /api/owner/hitl/passkey/activate/begin /api/owner/hitl/passkey/activate/finish /api/owner/hitl/passkey/attest/status /api/owner/hitl/passkey/attest/begin /api/owner/hitl/passkey/attest/finish; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' "$URL$path")
             case "$code" in
               302|303|307|401|403) echo "PASS unauthenticated denial or Access redirect: $path ($code)";;
