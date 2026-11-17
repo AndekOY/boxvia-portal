@@ -23,7 +23,7 @@ export async function handleHitlPasskeyLogin(request,env,url,owner) {
   if(url.pathname==="/api/owner/hitl/passkey/login/finish"){
     let body;
     try{const raw=await request.text();if(raw.length>30000)throw Error();body=JSON.parse(raw)}catch{return reply({error:"Invalid request"},400)}
-    if(typeof body?.loginId!=="string"||body.loginId.length>128)return reply({error:"Invalid login"},400);
+    if(typeof body?.loginId!=="string"||body.loginId.length>128||\n       (body.requestActivation!==undefined&&body.requestActivation!==true))return reply({error:"Invalid login"},400);
     try{
       const record=await env.DB.prepare("SELECT * FROM hitl_passkey_login_challenges WHERE id=? AND owner_id=?").bind(body.loginId,owner.id).first();
       if(!record||record.state!=="PENDING"||record.expires_at<=Math.floor(Date.now()/1000)||record.rp_id!==url.hostname||record.origin!==url.origin)return reply({error:"Challenge expired or consumed"},409);
