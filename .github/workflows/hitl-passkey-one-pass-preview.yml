@@ -25,6 +25,7 @@ jobs:
       ACCESS_ISSUER: ${{ secrets.HITL_ACCESS_ISSUER }}
       ACCESS_AUD: ${{ secrets.HITL_ACCESS_AUD }}
       OWNER_EMAIL: ${{ secrets.HITL_OWNER_EMAIL }}
+      APPROVER_EMAIL: ${{ secrets.HITL_INDEPENDENT_APPROVER_EMAIL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,6 +60,15 @@ jobs:
           if [[ "$OWNER_EMAIL" != *@* ]]; then
             echo "::error::HITL_OWNER_EMAIL must be a valid owner email"
             exit 1
+          fi
+          if [[ -n "$APPROVER_EMAIL" ]]; then
+            if [[ "$APPROVER_EMAIL" != *@* || "${APPROVER_EMAIL,,}" == "${OWNER_EMAIL,,}" ]]; then
+              echo "::error::Independent approver email invalid or equal to owner"
+              exit 1
+            fi
+            echo "PASS distinct reviewer email configured (value withheld); separate Access policy still required"
+          else
+            echo "HOLD reviewer not configured; owner Preview checks continue; approval disabled"
           fi
           echo "PASS configured Access issuer, audience and owner; values withheld"
       - name: Install Wrangler
