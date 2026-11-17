@@ -103,3 +103,5 @@ test('activation request is signed, audit-only, and never activates credential',
 
 test('Minimax activation is unavailable unless explicitly enabled',async()=>assert.equal((await run('activate/finish','POST')).status,401));
 test('owner activation requires WebAuthn and an atomic audited transition, never legacy gate PASS',()=>{const code=readFileSync('cloudflare/hitl-passkey-owner-activation-preview.js','utf8');assert.match(code,/verifyWebAuthnAssertion/);assert.match(code,/HITL_MINIMAX_ACTIVATION_ENABLED/);assert.match(code,/await env.DB.batch\(ops\)/);assert.match(code,/ACTIVATED/);assert.match(code,/legacyGateAuthorized:false/)});
+
+test('activation uses dedicated action-specific challenge and cannot consume login proof',()=>{const code=readFileSync('cloudflare/hitl-passkey-owner-activation-preview.js','utf8');assert.match(code,/OWNER_ACTIVATE_MINIMAX_V1/);assert.match(code,/hitl_minimax_activation_challenges/);assert.doesNotMatch(code,/hitl_passkey_login_challenges/);const page=readFileSync('cloudflare/hitl-passkey-owner-page-preview.js','utf8');assert.match(page,/activate\/begin/);});
