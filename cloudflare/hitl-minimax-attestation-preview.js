@@ -10,6 +10,12 @@ export async function handleMinimaxAttestation(request,env,url,owner) {
   if(request.method!=='POST'||request.headers.get('Origin')!==url.origin||url.protocol!=='https:'||url.hostname!==env.HITL_PASSKEY_RP_ID)return json({error:'Denied'},403);
   let body;
   try{const raw=await request.text();if(raw.length>30000)throw Error();body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error()}catch{return json({error:'Invalid request'},400)}
+  if(url.pathname.endsWith('/attest/status')){
+    try {
+      const credential=await env.DB.prepare("SELECT credential_id FROM hitl_authenticators WHERE owner_id=? AND state='ACTIVE' AND rp_id=? LIMIT 1").bind(owner.id,url.hostname).first();
+      return json({ready:!!credential,credentialState:credential?'ACTIVE':'NO_ACTIVE_CREDENTIAL',previewOnly:true});
+    } catch {return json({error:'Status unavailable'},503)}
+  }
   if(url.pathname.endsWith('/attest/begin')){
     let bound;
     try{bound=await prepareBoundDecision(env.DB,body)}catch{return json({error:'Snapshot not ready'},409)}
