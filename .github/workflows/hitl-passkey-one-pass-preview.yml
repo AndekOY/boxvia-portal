@@ -19,6 +19,7 @@ on:
       - 'cloudflare/hitl-minimax-attestation-preview.js'
       - 'cloudflare/hitl-passkey-owner-activation-preview.js'
       - 'cloudflare/hitl-minimax-activation-preview.sql'
+      - 'cloudflare/hitl-minimax-proof-bundle-preview.sql'
       - 'cloudflare/hitl-minimax-attestation-preview.sql'
       - 'tests/hitl-minimax-canonical.mjs'
       - 'tests/hitl-minimax-binding.mjs'
@@ -93,6 +94,7 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-passkey-lifecycle-preview.sql > /tmp/hitl-lifecycle-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-attestation-preview.sql > /tmp/hitl-minimax-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-activation-preview.sql > /tmp/hitl-activation-schema.log
+          npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-proof-bundle-preview.sql > /tmp/hitl-proof-bundle-schema.log
           npx wrangler d1 execute "$DB" --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('hitl_passkey_enrollments','hitl_authenticators','hitl_auth_challenges','hitl_auth_proofs','hitl_passkey_login_challenges','hitl_passkey_lifecycle_events');" --json > /tmp/hitl-schema.json
           node --input-type=module -e 'import fs from "node:fs";const data=JSON.parse(fs.readFileSync("/tmp/hitl-schema.json"));const names=new Set(data.flatMap(x=>(x.results||[]).map(y=>y.name)));for(const n of ["hitl_passkey_enrollments","hitl_authenticators","hitl_auth_challenges","hitl_auth_proofs","hitl_passkey_login_challenges","hitl_passkey_lifecycle_events"])if(!names.has(n))throw Error("Missing preview table: "+n);console.log("PASS required Preview D1 tables")'
       - name: Retrieve and validate public Cloudflare Access signing keys
