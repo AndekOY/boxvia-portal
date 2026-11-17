@@ -8,7 +8,8 @@ const login=asUrl(readFileSync('cloudflare/hitl-passkey-authentication-preview.j
 const canonical=asUrl(readFileSync('cloudflare/hitl-minimax-canonical.js','utf8'));
 const binding=asUrl(readFileSync('cloudflare/hitl-minimax-binding.js','utf8').replace('./hitl-minimax-canonical.js',canonical));
 const attestation=asUrl(readFileSync('cloudflare/hitl-minimax-attestation-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier).replace('./hitl-minimax-binding.js',binding));
-const moduleCode=readFileSync('cloudflare/hitl-passkey-enrollment-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier).replace('./hitl-passkey-registration-verify.js',registration).replace('./hitl-passkey-authentication-preview.js',login).replace('./hitl-minimax-attestation-preview.js',attestation);
+const activation=asUrl(readFileSync('cloudflare/hitl-passkey-owner-activation-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier));
+const moduleCode=readFileSync('cloudflare/hitl-passkey-enrollment-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier).replace('./hitl-passkey-registration-verify.js',registration).replace('./hitl-passkey-authentication-preview.js',login).replace('./hitl-minimax-attestation-preview.js',attestation).replace('./hitl-passkey-owner-activation-preview.js',activation);
 const {handleHitlPasskeyEnrollment}=await import(asUrl(moduleCode));
 const base='https://boxvia-hitl-identity-hold-test.andeks.workers.dev/api/owner/hitl/passkey/';
 const env={HITL_PASSKEY_ENROLLMENT_ENABLED:'true',HITL_HUMAN_ATTESTATION_REQUIRED:'true',HITL_PASSKEY_RP_ID:'boxvia-hitl-identity-hold-test.andeks.workers.dev',DB:{}};
@@ -99,3 +100,6 @@ test('activation request is signed, audit-only, and never activates credential',
  assert.match(page,/Запросить активацию/);
  assert.match(page,/confirm\(/);
 });
+
+test('Minimax activation is unavailable unless explicitly enabled',async()=>assert.equal((await run('activate/finish','POST')).status,401));
+test('owner activation requires WebAuthn and an atomic audited transition, never legacy gate PASS',()=>{const code=readFileSync('cloudflare/hitl-passkey-owner-activation-preview.js','utf8');assert.match(code,/verifyWebAuthnAssertion/);assert.match(code,/HITL_MINIMAX_ACTIVATION_ENABLED/);assert.match(code,/await env.DB.batch\(ops\)/);assert.match(code,/ACTIVATED/);assert.match(code,/legacyGateAuthorized:false/)});
