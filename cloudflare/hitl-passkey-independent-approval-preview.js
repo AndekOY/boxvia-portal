@@ -8,7 +8,14 @@ export function evaluateIndependentActivation(input) {
   if(!credential||credential.state!=="PENDING"||credential.credential_id!==request.credential_id||credential.owner_id!==request.owner_id)return deny("CREDENTIAL_MISMATCH");
   if(!owner||owner.id!==request.owner_id)return deny("OWNER_MISMATCH");
   if(!approver||approver.verified!==true||approver.role!=="INDEPENDENT_APPROVER"||typeof approver.id!=="string"||!approver.id)return deny("APPROVER_UNVERIFIED");
-  if(approver.id===owner.id||approver.email?.toLowerCase()===owner.email?.toLowerCase())return deny("SELF_APPROVAL");
+  if(typeof owner.email!=="string"||!owner.email.includes("@")||
+     typeof approver.email!=="string"||!approver.email.includes("@"))return deny("IDENTITY_EMAIL_MISSING");
+  if(approver.id===owner.id||approver.email.toLowerCase()===owner.email.toLowerCase())return deny("SELF_APPROVAL");
+  // Identity must come from a verified Access JWT, not from a caller-supplied role.
+  // Exact approver allowlisting is mandatory before any approval may be considered.
+  if(typeof input.configuredApproverEmail!=="string"||!input.configuredApproverEmail.includes("@")||
+     approver.email.toLowerCase()!==input.configuredApproverEmail.toLowerCase())return deny("APPROVER_NOT_ALLOWLISTED");
+  if(input.approverJwtVerified!==true)return deny("APPROVER_JWT_NOT_VERIFIED");
   if(!evidence||evidence.requestId!==request.id||evidence.credentialId!==credential.credential_id||typeof evidence.reference!=="string"||!evidence.reference.trim()||evidence.explicitDecision!=="APPROVE")return deny("EVIDENCE_MISMATCH");
   // Passing policy checks is NOT authority to change state; separate authorized transaction is required.
   return {decision:"REVIEW_READY",reason:"INDEPENDENT_REVIEW_REQUIREMENTS_MET",mayActivate:false,hitlAuthorization:false};
