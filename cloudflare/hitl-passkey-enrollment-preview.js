@@ -31,13 +31,13 @@ async function accessIdentity(request,env) {
      !Number.isSafeInteger(payload.iat)||payload.iat>now+60||
      typeof payload.email!=="string"||!same(payload.email.toLowerCase(),owner.toLowerCase())||
      typeof payload.sub!=="string")return null;
-  let response;
-  try {response=await fetch(issuer+"/cdn-cgi/access/certs",{redirect:"error"});}
-  catch {throw Error("JWKS_FETCH");}
-  if(!response.ok)throw Error("JWKS_HTTP");
+  // Public Access JWKS is fetched by the trusted deployment runner, never from a Worker request.
+  // Fail closed when absent, malformed, or older than 48h; CI refreshes daily for key rotation.
   let keys;
-  try {keys=await response.json();}catch {throw Error("JWKS_PARSE");}
-  if(!keys||!Array.isArray(keys.keys))throw Error("JWKS_STRUCTURE");
+  try {keys=JSON.parse(env.HITL_ACCESS_JWKS_PUBLIC||"");}
+  catch {throw Error("JWKS_CONFIG");}
+  if(!keys||!Array.isArray(keys.keys)||!Number.isSafeInteger(keys.fetched_at)||
+     keys.fetched_at>now+60||now-keys.fetched_at>172800)throw Error("JWKS_STALE_OR_INVALID");
   const jwk=keys.keys.find(k=>k&&k.kid===header.kid&&k.kty==="RSA"&&
     (k.use===undefined||k.use==="sig")&&(k.alg===undefined||k.alg==="RS256"));
   if(!jwk)return null;
@@ -54,7 +54,7 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
   if(url.hostname!==env.HITL_PASSKEY_RP_ID||url.protocol!=="https:")return reply({error:"RP mismatch"},403);
   let owner;try{owner=await accessIdentity(request,env)}catch(error){
     // Diagnostic is deliberately non-sensitive: no JWT, owner email, key material or exception message.
-    const allowed=new Set(["JWT_DECODE_OR_PARSE","JWT_STRUCTURE","JWKS_FETCH","JWKS_HTTP","JWKS_PARSE","JWKS_STRUCTURE","SIGNATURE_CRYPTO"]);
+    const allowed=new Set(["JWT_DECODE_OR_PARSE","JWT_STRUCTURE","JWKS_CONFIG","JWKS_STALE_OR_INVALID","SIGNATURE_CRYPTO"]);
     const code=allowed.has(error?.message)?error.message:"IDENTITY_VERIFICATION_EXCEPTION";
     console.error("HITL_ACCESS_IDENTITY_EXCEPTION",code);
     return reply({error:"Identity unavailable",diagnostic:code},503);
