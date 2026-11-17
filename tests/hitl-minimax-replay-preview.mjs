@@ -23,4 +23,18 @@ try {
  let denied=false;try{await verifyMinimaxProofBundle({proof,bundle:tampered,challengeRecord,snapshot})}catch{denied=true}
  if(!denied)throw Error('tampered_signature_accepted');
  console.log('PASS modified signature rejected');
+ // Negative controls for decision and server-side challenge binding.
+ for(const [label,changed] of [
+  ['decision action',{proof:{...proof,action:proof.action==='APPROVE'?'REJECT':'APPROVE'}}],
+  ['snapshot payload',{snapshot:{...snapshot,payloadSha256:'0'.repeat(64)}}],
+  ['challenge binding',{challengeRecord:{...challengeRecord,challenge_sha256:'0'.repeat(64)}}]
+ ]) {
+  let rejected=false;
+  try {await verifyMinimaxProofBundle({proof,bundle,challengeRecord,snapshot,...changed})}catch{rejected=true}
+  if(!rejected)throw Error('tampered_'+label.replaceAll(' ','_')+'_accepted');
+  console.log('PASS tampered '+label+' rejected');
+ }
+ // D1 is the source of the records. This does not establish independent provenance
+ // or prove that the snapshot payload hashes correspond to actual source artifacts.
+
 } finally {rmSync(dir,{recursive:true,force:true})}
