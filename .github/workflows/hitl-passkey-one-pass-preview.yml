@@ -30,13 +30,27 @@ jobs:
         run: |
           set -euo pipefail
           test "${{ github.ref_name }}" = "draft/hitl-site-alignment-20261115"
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test -n "$ACCESS_ISSUER"
-          test -n "$ACCESS_AUD"
-          test -n "$OWNER_EMAIL"
-          [[ "$ACCESS_ISSUER" =~ ^https://[a-z0-9-]+\.cloudflareaccess\.com$ ]]
-          [[ "$OWNER_EMAIL" == *@* ]]
+          missing=0
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ACCESS_ISSUER ACCESS_AUD OWNER_EMAIL; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error title=Missing Preview configuration::Required variable $name is not configured in GitHub Actions secrets"
+              missing=1
+            else
+              echo "PRESENT $name (value withheld)"
+            fi
+          done
+          if (( missing )); then
+            echo "::error::Preview deployment blocked until required secrets are configured; no production fallback"
+            exit 1
+          fi
+          if [[ ! "$ACCESS_ISSUER" =~ ^https://[a-z0-9-]+\.cloudflareaccess\.com/?$ ]]; then
+            echo "::error::HITL_ACCESS_ISSUER must be a Cloudflare Access team HTTPS origin"
+            exit 1
+          fi
+          if [[ "$OWNER_EMAIL" != *@* ]]; then
+            echo "::error::HITL_OWNER_EMAIL must be a valid owner email"
+            exit 1
+          fi
           echo "PASS configured Access issuer, audience and owner; values withheld"
       - name: Install Wrangler
         run: npm install --no-save --no-package-lock wrangler@4
