@@ -20,6 +20,7 @@ on:
       - 'cloudflare/hitl-passkey-owner-activation-preview.js'
       - 'cloudflare/hitl-minimax-activation-preview.sql'
       - 'cloudflare/hitl-minimax-proof-bundle-preview.sql'
+      - 'cloudflare/hitl-minimax-synthetic-fixture-preview.sql'
       - 'cloudflare/hitl-minimax-attestation-preview.sql'
       - 'tests/hitl-minimax-canonical.mjs'
       - 'tests/hitl-minimax-binding.mjs'
@@ -96,8 +97,22 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-attestation-preview.sql > /tmp/hitl-minimax-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-activation-preview.sql > /tmp/hitl-activation-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-proof-bundle-preview.sql > /tmp/hitl-proof-bundle-schema.log
+          npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-synthetic-fixture-preview.sql > /tmp/hitl-synthetic-fixture.log
           npx wrangler d1 execute "$DB" --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('hitl_passkey_enrollments','hitl_authenticators','hitl_auth_challenges','hitl_auth_proofs','hitl_passkey_login_challenges','hitl_passkey_lifecycle_events','hitl_minimax_snapshots','hitl_minimax_challenges','hitl_minimax_proofs','hitl_minimax_activation_challenges','hitl_minimax_proof_bundles');" --json > /tmp/hitl-schema.json
           node --input-type=module -e 'import fs from "node:fs";const data=JSON.parse(fs.readFileSync("/tmp/hitl-schema.json"));const names=new Set(data.flatMap(x=>(x.results||[]).map(y=>y.name)));for(const n of ["hitl_passkey_enrollments","hitl_authenticators","hitl_auth_challenges","hitl_auth_proofs","hitl_passkey_login_challenges","hitl_passkey_lifecycle_events","hitl_minimax_snapshots","hitl_minimax_challenges","hitl_minimax_proofs","hitl_minimax_activation_challenges","hitl_minimax_proof_bundles"])if(!names.has(n))throw Error("Missing preview table: "+n);console.log("PASS required Preview D1 tables")'
+      - name: Verify isolated synthetic snapshot and HOLD status
+        shell: bash
+        run: |
+          set -euo pipefail
+          DB=baf79e93-cbea-4786-8779-974f3b3afbcc
+          npx wrangler d1 execute "$DB" --remote --command "SELECT case_id,decision_id,version,gate,payload_sha256,chain_head_sha256 FROM hitl_minimax_snapshots WHERE decision_id='MINIMAX-SYNTH-DECISION-001' AND version=1;" --json > /tmp/hitl-fixture-check.json
+          node --input-type=module <<'EOF'
+          import fs from "node:fs";
+          const data=JSON.parse(fs.readFileSync("/tmp/hitl-fixture-check.json","utf8"));
+          const rows=data.flatMap(x=>x.results||[]);
+          if(rows.length!==1||rows[0].case_id!=="MINIMAX-SYNTH-20261117"||rows[0].gate!=="H3"||rows[0].payload_sha256!=="a".repeat(64)||rows[0].chain_head_sha256!=="b".repeat(64))throw Error("Synthetic fixture mismatch");
+          console.log("PASS synthetic decision snapshot persisted in isolated Preview D1");
+          EOF
       - name: Retrieve and validate public Cloudflare Access signing keys
         shell: bash
         run: |
