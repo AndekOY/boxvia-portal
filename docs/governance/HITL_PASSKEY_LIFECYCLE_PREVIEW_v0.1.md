@@ -34,3 +34,15 @@ Status: **DRAFT / HOLD**. Scope: isolated Preview only. No Production changes.
 - Bind an independently verified Access JWT to that reviewer identity and compare it to the configured reviewer email. A client-supplied role or email is not authority.
 - Reviewer can examine a specific immutable activation request and its evidence. Review does not automatically activate a key.
 - Keep approval HTTP endpoint, credential activation and revocation disabled until reviewer nomination, policy setup, acceptance tests and explicit approval to enable.
+
+## Reviewer nominated (2026-11-17)
+The project owner confirmed a real, distinct human reviewer who consents to this role. The nominated address is deliberately **not** committed to this repository. Store it as GitHub Actions secret `HITL_INDEPENDENT_APPROVER_EMAIL` on the repository's draft-preview deployment environment, not as source code or a public Worker variable.
+
+**Cloudflare Access operator setup (manual, not yet performed):**
+1. Create a **separate** Access self-hosted application for `/reviewer/hitl/*` (or a distinct reviewer-only hostname). Keep the existing `HITL-OWNER-ONLY` app and policy unchanged. Do not grant the reviewer owner enrollment privileges.
+2. Create an Allow policy restricted to the exact nominated reviewer email, with a supported identity provider and MFA. Deny all other identities; verify the app's actual path matching and policy precedence.
+3. Record the review application's Access AUD and issuer as distinct secrets, and pin its signing JWKS using the existing secure CI mechanism. Do not reuse the owner AUD as proof of reviewer authorization.
+4. Add an explicit reviewer-only endpoint and independent JWT verifier **only after** separate policy exists and can be tested. Require an immutable request ID, credential binding, signed explicit decision and durable evidence before any transition.
+5. Test reviewer allow, owner deny, anonymous deny, mismatched AUD deny, stale/replayed request deny and rollback behavior. Preserve `PENDING` until all tests and explicit activation authorization.
+
+**Current status:** nominated only. Neither Access policy nor reviewer session has been verified. Approval endpoint, activation and Production remain HOLD.
