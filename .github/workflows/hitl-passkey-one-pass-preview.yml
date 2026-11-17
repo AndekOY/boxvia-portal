@@ -17,6 +17,7 @@ on:
       - 'cloudflare/hitl-minimax-canonical.js'
       - 'cloudflare/hitl-minimax-binding.js'
       - 'cloudflare/hitl-minimax-attestation-preview.js'
+      - 'cloudflare/hitl-passkey-owner-activation-preview.js'
       - 'cloudflare/hitl-minimax-attestation-preview.sql'
       - 'tests/hitl-minimax-canonical.mjs'
       - 'tests/hitl-minimax-binding.mjs'
