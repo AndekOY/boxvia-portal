@@ -11,7 +11,7 @@ try {
  fs.writeFileSync(source,synthetic,{mode:0o600});
  const key=randomBytes(32).toString('base64url');
  const run=spawnSync(process.execPath,['tests/hitl-minimax-encrypt-archive.mjs'],{env:{...process.env,HITL_ARCHIVE_AES256_KEY_B64URL:key},encoding:'utf8'});
- if(run.status!==0)throw Error('archive_encryption_test_failed');
+ if(run.status!==0)throw Error('archive_encryption_test_failed: '+String(run.stderr||'').slice(0,1200));
  const data=JSON.parse(fs.readFileSync(archive,'utf8'));
  if(data.algorithm!=='AES-256-GCM'||data.format!=='BOXVIA-HITL-MINIMAX-ENCRYPTED-v1')throw Error('archive_format_invalid');
  const imported=await webcrypto.subtle.importKey('raw',Buffer.from(key,'base64url'),'AES-GCM',false,['decrypt']);
