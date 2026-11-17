@@ -28,6 +28,7 @@ on:
       - 'tests/hitl-minimax-activation-contract.mjs'
       - 'tests/hitl-minimax-proof-verify.mjs'
       - 'cloudflare/hitl-minimax-proof-verify.js'
+      - 'tests/hitl-minimax-replay-preview.mjs'
 jobs:
   isolated-preview:
     runs-on: ubuntu-latest
@@ -116,6 +117,20 @@ jobs:
           if(rows.length!==1||rows[0].case_id!=="MINIMAX-SYNTH-20261117"||rows[0].gate!=="H3"||rows[0].payload_sha256!=="a".repeat(64)||rows[0].chain_head_sha256!=="b".repeat(64))throw Error("Synthetic fixture mismatch");
           console.log("PASS synthetic decision snapshot persisted in isolated Preview D1");
           EOF
+      - name: Replay signed synthetic proof privately from Preview D1
+        shell: bash
+        env:
+          HITL_EXPECTED_PROOF_ID: 51cd4000-9a23-4aac-8d74-7d45a97f8188
+        run: |
+          set -euo pipefail
+          DB=baf79e93-cbea-4786-8779-974f3b3afbcc
+          P="$HITL_EXPECTED_PROOF_ID"
+          npx wrangler d1 execute "$DB" --remote --command "SELECT * FROM hitl_minimax_proofs WHERE id='$P';" --json > /tmp/hitl-proof-private.json
+          npx wrangler d1 execute "$DB" --remote --command "SELECT * FROM hitl_minimax_proof_bundles WHERE proof_id='$P';" --json > /tmp/hitl-bundle-private.json
+          npx wrangler d1 execute "$DB" --remote --command "SELECT c.* FROM hitl_minimax_challenges c JOIN hitl_minimax_proofs p ON p.challenge_id=c.id WHERE p.id='$P';" --json > /tmp/hitl-challenge-private.json
+          npx wrangler d1 execute "$DB" --remote --command "SELECT s.* FROM hitl_minimax_snapshots s JOIN hitl_minimax_proofs p ON p.decision_id=s.decision_id AND p.decision_version=s.version WHERE p.id='$P';" --json > /tmp/hitl-snapshot-private.json
+          node tests/hitl-minimax-replay-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+          rm -f /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
       - name: Retrieve and validate public Cloudflare Access signing keys
         shell: bash
         run: |
