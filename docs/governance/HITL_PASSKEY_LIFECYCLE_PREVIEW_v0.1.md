@@ -27,3 +27,10 @@ Status: **DRAFT / HOLD**. Scope: isolated Preview only. No Production changes.
 - Unit + integration tests for owner impersonation, replay, duplicate approval, cross-credential mismatch, concurrent updates, stale challenge, Access session expiry, revocation and recovery.
 - Remote **Preview D1 only** acceptance, negative and positive HTTP tests, independent approver identity, and explicit authorization for activation.
 - Production deployment remains outside scope.
+
+## Independent reviewer onboarding — blocked pending nomination
+- Obtain a real, distinct reviewer email address from the project owner; never invent an identity or assign the owner as reviewer.
+- Create a separate Cloudflare Access self-hosted application/policy for reviewer role. Do **not** add reviewer to the owner-only enrollment application. Require identity verification and exact email allowlist.
+- Bind an independently verified Access JWT to that reviewer identity and compare it to the configured reviewer email. A client-supplied role or email is not authority.
+- Reviewer can examine a specific immutable activation request and its evidence. Review does not automatically activate a key.
+- Keep approval HTTP endpoint, credential activation and revocation disabled until reviewer nomination, policy setup, acceptance tests and explicit approval to enable.
