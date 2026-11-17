@@ -21,7 +21,7 @@ export async function activateOwnerPasskey(request,env,url,owner){
  }
  if(!url.pathname.endsWith('/activate/finish'))return reply({error:'Not found'},404);
  let body;try{const raw=await request.text();if(raw.length>30000)throw Error();body=JSON.parse(raw)}catch{return reply({error:'Invalid body'},400)}
- if(typeof body?.loginId!=='string'||body.activationId.length>128||body.confirmActivation!==true)return reply({error:'Explicit confirmation required'},400);
+ if(typeof body?.activationId!=='string'||body.activationId.length>128||body.confirmActivation!==true)return reply({error:'Explicit confirmation required'},400);
  try{
   const challenge=await env.DB.prepare("SELECT * FROM hitl_minimax_activation_challenges WHERE id=? AND owner_id=?").bind(body.activationId,owner.id).first();
   if(!challenge||challenge.purpose!=='OWNER_ACTIVATE_MINIMAX_V1'||challenge.state!=='PENDING'||challenge.expires_at<=Math.floor(Date.now()/1000)||challenge.rp_id!==url.hostname||challenge.origin!==url.origin)return reply({error:'Challenge expired'},409);
