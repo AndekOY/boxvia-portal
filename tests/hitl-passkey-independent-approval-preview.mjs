@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {evaluateIndependentActivation as check} from "../cloudflare/hitl-passkey-independent-approval-preview.js";
 const good=()=>({
+ configuredApproverEmail:"approver@example.test",approverJwtVerified:true,
  request:{id:"request-1",action:"ACTIVATION_REQUESTED",from_state:"PENDING",to_state:"PENDING",credential_id:"cred-1",owner_id:"owner-1"},
  credential:{credential_id:"cred-1",owner_id:"owner-1",state:"PENDING"},
  owner:{id:"owner-1",email:"owner@example.test"},
@@ -17,6 +18,10 @@ for(const [name,mutate,reason] of [
  ["unverified approver",x=>{x.approver.verified=false},"APPROVER_UNVERIFIED"],
  ["owner self approval",x=>{x.approver.id="owner-1"},"SELF_APPROVAL"],
  ["same email different id",x=>{x.approver.email="OWNER@example.test"},"SELF_APPROVAL"],
+ ["unconfigured approver",x=>{delete x.configuredApproverEmail},"APPROVER_NOT_ALLOWLISTED"],
+ ["wrong approver allowlist",x=>{x.configuredApproverEmail="third@example.test"},"APPROVER_NOT_ALLOWLISTED"],
+ ["unverified Access JWT",x=>{x.approverJwtVerified=false},"APPROVER_JWT_NOT_VERIFIED"],
+ ["missing approver email",x=>{delete x.approver.email},"IDENTITY_EMAIL_MISSING"],
  ["missing evidence",x=>{x.evidence.reference=""},"EVIDENCE_MISMATCH"],
  ["wrong request binding",x=>{x.evidence.requestId="other"},"EVIDENCE_MISMATCH"],
  ["wrong credential binding",x=>{x.evidence.credentialId="other"},"EVIDENCE_MISMATCH"],
