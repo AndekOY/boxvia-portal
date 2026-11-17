@@ -34,7 +34,7 @@ export async function activateOwnerPasskey(request,env,url,owner){
   const verified=await verifyWebAuthnAssertion({assertion:body.assertion,expected:{challenge:client.challenge,origin:url.origin,rpId:url.hostname,expiresAtMs:challenge.expires_at*1000},credential:{state:'ACTIVE',credentialId:credential.credential_id,rpId:credential.rp_id,publicKeySpki:credential.public_key_spki,signCount:credential.sign_count}});
   const ops=[
    env.DB.prepare("UPDATE hitl_minimax_activation_challenges SET state='CONSUMED',consumed_at=CURRENT_TIMESTAMP WHERE id=? AND owner_id=? AND state='PENDING' AND expires_at>CAST(strftime('%s','now') AS INTEGER)").bind(challenge.id,owner.id),
-   env.DB.prepare("UPDATE hitl_authenticators SET state='ACTIVE',activated_at=CURRENT_TIMESTAMP,sign_count=? WHERE credential_id=? AND owner_id=? AND state='PENDING' AND sign_count=?").bind(verified.signCount,credential.credential_id,owner.id,credential.sign_count),
+   env.DB.prepare("UPDATE hitl_authenticators SET state='ACTIVE',sign_count=? WHERE credential_id=? AND owner_id=? AND state='PENDING' AND sign_count=?").bind(verified.signCount,credential.credential_id,owner.id,credential.sign_count),
    env.DB.prepare("INSERT INTO hitl_passkey_lifecycle_events(id,credential_id,owner_id,action,from_state,to_state,evidence_ref,actor_type) VALUES(?,?,?,'ACTIVATED','PENDING','ACTIVE',?,'VERIFIED_OWNER')").bind(crypto.randomUUID(),credential.credential_id,owner.id,challenge.id)
   ];
   const results=await env.DB.batch(ops);
