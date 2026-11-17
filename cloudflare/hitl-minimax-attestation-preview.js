@@ -2,6 +2,7 @@
 // This module never writes legacy H3/H4/H5 PASS or production data.
 import {encodeBase64url,decodeBase64url,verifyWebAuthnAssertion} from './hitl-webauthn-verify.js';
 import {prepareBoundDecision} from './hitl-minimax-binding.js';
+import {canonicalDecision} from './hitl-minimax-canonical.js';
 const enc=new TextEncoder();
 const digest=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(s))),b=>b.toString(16).padStart(2,'0')).join('');
 const json=(v,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
@@ -47,14 +48,17 @@ export async function handleMinimaxAttestation(request,env,url,owner) {
       const verified=await verifyWebAuthnAssertion({assertion:body.assertion,expected:{challenge:client.challenge,origin:url.origin,rpId:url.hostname,expiresAtMs:record.expires_at*1000},
         credential:{state:credential.state,credentialId:credential.credential_id,rpId:credential.rp_id,publicKeySpki:credential.public_key_spki,signCount:credential.sign_count}});
       const assertionHash=await digest(JSON.stringify(body.assertion));
+      const proofId=crypto.randomUUID();
       const changes=await env.DB.batch([
         env.DB.prepare("UPDATE hitl_minimax_challenges SET state='CONSUMED',consumed_at=CURRENT_TIMESTAMP WHERE id=? AND owner_id=? AND state='PENDING' AND expires_at>CAST(strftime('%s','now') AS INTEGER)").bind(record.id,owner.id),
         env.DB.prepare("UPDATE hitl_authenticators SET sign_count=? WHERE credential_id=? AND owner_id=? AND state='ACTIVE' AND sign_count=?").bind(verified.signCount,credential.credential_id,owner.id,credential.sign_count),
         env.DB.prepare("INSERT INTO hitl_minimax_proofs(id,challenge_id,owner_id,credential_id,case_id,decision_id,decision_version,action,snapshot_sha256,assertion_sha256,user_verified) VALUES(?,?,?,?,?,?,?,?,?,?,1)")
-          .bind(crypto.randomUUID(),record.id,owner.id,credential.credential_id,record.case_id,record.decision_id,record.decision_version,record.action,record.snapshot_sha256,assertionHash)
+          .bind(proofId,record.id,owner.id,credential.credential_id,record.case_id,record.decision_id,record.decision_version,record.action,record.snapshot_sha256,assertionHash),
+        env.DB.prepare("INSERT INTO hitl_minimax_proof_bundles(proof_id,canonical_decision,challenge,public_key_spki,client_data_json,authenticator_data,signature,rp_id,origin,sign_count_before,sign_count_after) VALUES(?,?,?,?,?,?,?,?,?,?,?)")
+          .bind(proofId,canonicalDecision(bound.snapshot,record.action),client.challenge,credential.public_key_spki,body.assertion.response.clientDataJSON,body.assertion.response.authenticatorData,body.assertion.response.signature,record.rp_id,record.origin,credential.sign_count,verified.signCount)
       ]);
-      if(changes.length!==3||changes.some(x=>!x.success||x.meta?.changes!==1))throw Error('not_committed');
-      return json({verified:true,action:record.action,decisionId:record.decision_id,version:record.decision_version,snapshotSha256:record.snapshot_sha256,legacyGateAuthorized:false});
+      if(changes.length!==4||changes.some(x=>!x.success||x.meta?.changes!==1))throw Error('not_committed');
+      return json({verified:true,proofId,action:record.action,decisionId:record.decision_id,version:record.decision_version,snapshotSha256:record.snapshot_sha256,legacyGateAuthorized:false});
     }catch{return json({error:'Verification or atomic commit failed'},409)}
   }
   return json({error:'Not found'},404);
