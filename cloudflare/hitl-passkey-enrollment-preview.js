@@ -4,6 +4,7 @@
 import {encodeBase64url,decodeBase64url} from "./hitl-webauthn-verify.js";
 import {verifyHitlRegistration} from "./hitl-passkey-registration-verify.js";
 import {handleHitlPasskeyLogin} from "./hitl-passkey-authentication-preview.js";
+import {handleMinimaxAttestation} from "./hitl-minimax-attestation-preview.js";
 const reply=(obj,status=200)=>Response.json(obj,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 const utf8=new TextDecoder("utf-8",{fatal:true}),enc=new TextEncoder();
 const sha=async value=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",enc.encode(value))),b=>b.toString(16).padStart(2,"0")).join("");
@@ -61,6 +62,7 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
     return reply({error:"Identity unavailable",diagnostic:code},503);
   }
   if(!owner)return reply({error:"Verified owner Access session required"},401);
+  if(url.pathname.startsWith("/api/owner/hitl/passkey/attest/"))return handleMinimaxAttestation(request,env,url,owner);
   if(url.pathname.startsWith("/api/owner/hitl/passkey/login/"))return handleHitlPasskeyLogin(request,env,url,owner);
   const base="/api/owner/hitl/passkey/";
   if(url.pathname===base+"status"&&request.method==="GET")
