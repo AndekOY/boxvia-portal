@@ -28,3 +28,23 @@ test('registration finish is cryptographically verified and stays PENDING',()=>{
  assert.match(moduleCode,/state:\"PENDING\"/);
  assert.doesNotMatch(moduleCode,/state:\"ACTIVE\"/);
 });
+
+test('malformed Access JWT is classified without exposing token',async()=>{
+ const configured={...env,HITL_ACCESS_ISSUER:'https://broad-bonus-7bf4.cloudflareaccess.com',HITL_ACCESS_AUD:'test-aud',HITL_OWNER_EMAIL:'owner@example.test'};
+ const response=await handleHitlPasskeyEnrollment(new Request(base+'status',{headers:{'Cf-Access-Jwt-Assertion':'bad.bad.bad'}}),configured,new URL(base+'status'));
+ assert.equal(response.status,503);
+ assert.deepEqual(await response.json(),{error:'Identity unavailable',diagnostic:'JWT_DECODE_OR_PARSE'});
+});
+test('non-object Access JWT is classified and rejected',async()=>{
+ const configured={...env,HITL_ACCESS_ISSUER:'https://broad-bonus-7bf4.cloudflareaccess.com',HITL_ACCESS_AUD:'test-aud',HITL_OWNER_EMAIL:'owner@example.test'};
+ const token=[Buffer.from('null').toString('base64url'),Buffer.from('{}').toString('base64url'),'abc'].join('.');
+ const response=await handleHitlPasskeyEnrollment(new Request(base+'status',{headers:{'Cf-Access-Jwt-Assertion':token}}),configured,new URL(base+'status'));
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).diagnostic,'JWT_STRUCTURE');
+});
+test('validly structured but unsigned Access JWT is not accepted',async()=>{
+ const configured={...env,HITL_ACCESS_ISSUER:'https://broad-bonus-7bf4.cloudflareaccess.com',HITL_ACCESS_AUD:'test-aud',HITL_OWNER_EMAIL:'owner@example.test'};
+ const token=[Buffer.from(JSON.stringify({alg:'none',kid:'test'})).toString('base64url'),Buffer.from('{}').toString('base64url'),'abc'].join('.');
+ const response=await handleHitlPasskeyEnrollment(new Request(base+'status',{headers:{'Cf-Access-Jwt-Assertion':token}}),configured,new URL(base+'status'));
+ assert.equal(response.status,401);
+});
