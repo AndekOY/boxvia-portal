@@ -16,6 +16,7 @@ on:
       - 'tests/hitl-passkey-enrollment-preview.mjs'
       - 'cloudflare/hitl-minimax-canonical.js'
       - 'cloudflare/hitl-minimax-binding.js'
+      - 'cloudflare/hitl-minimax-attestation-preview.js'
       - 'cloudflare/hitl-minimax-attestation-preview.sql'
       - 'tests/hitl-minimax-canonical.mjs'
       - 'tests/hitl-minimax-binding.mjs'
