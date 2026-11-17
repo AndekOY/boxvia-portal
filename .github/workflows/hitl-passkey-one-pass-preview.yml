@@ -1,7 +1,5 @@
 name: HITL passkey single-pass isolated preview acceptance
 on:
-  schedule:
-    - cron: '23 7 * * *'
   workflow_dispatch:
   push:
     branches: [draft/hitl-site-alignment-20261115]
