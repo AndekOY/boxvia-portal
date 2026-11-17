@@ -32,7 +32,7 @@ async function accessIdentity(request,env) {
      typeof payload.email!=="string"||!same(payload.email.toLowerCase(),owner.toLowerCase())||
      typeof payload.sub!=="string")return null;
   // Public Access JWKS is fetched by the trusted deployment runner, never from a Worker request.
-  // Fail closed when absent, malformed, or older than 48h; CI refreshes daily for key rotation.
+  // Fail closed when absent, malformed, or older than 48h; Refresh by rerunning the isolated Preview workflow before expiry or on rotation.
   let keys;
   try {keys=JSON.parse(env.HITL_ACCESS_JWKS_PUBLIC||"");}
   catch {throw Error("JWKS_CONFIG");}
