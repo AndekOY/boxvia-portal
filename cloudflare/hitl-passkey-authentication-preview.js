@@ -42,9 +42,15 @@ export async function handleHitlPasskeyLogin(request,env,url,owner) {
       const consumed=env.DB.prepare("UPDATE hitl_passkey_login_challenges SET state='CONSUMED',consumed_at=CURRENT_TIMESTAMP WHERE id=? AND owner_id=? AND state='PENDING' AND expires_at>CAST(strftime('%s','now') AS INTEGER)").bind(body.loginId,owner.id);
       const counter=env.DB.prepare("UPDATE hitl_authenticators SET sign_count=? WHERE credential_id=? AND owner_id=? AND state='PENDING' AND sign_count=?")
         .bind(verified.signCount,credential.credential_id,owner.id,credential.sign_count);
-      const results=await env.DB.batch([consumed,counter]);
-      if(results.length!==2||results.some(x=>!x.success)||results.some(x=>x.meta?.changes!==1))throw Error("unconfirmed");
-      return reply({verified:true,credentialState:"PENDING",hitlAuthorization:false});
+      const operations=[consumed,counter];
+      if(body.requestActivation===true){
+        operations.push(env.DB.prepare("INSERT INTO hitl_passkey_lifecycle_events(id,credential_id,owner_id,action,from_state,to_state,evidence_ref,actor_type) VALUES(?,?,?,'ACTIVATION_REQUESTED','PENDING','PENDING',?,'VERIFIED_OWNER')")
+          .bind(crypto.randomUUID(),credential.credential_id,owner.id,body.loginId));
+      }
+      const results=await env.DB.batch(operations);
+      if(results.length!==operations.length||results.some(x=>!x.success)||results.some(x=>x.meta?.changes!==1))throw Error("unconfirmed");
+      return reply({verified:true,credentialState:"PENDING",hitlAuthorization:false,
+        activationRequest:body.requestActivation===true?"RECORDED_AWAITING_INDEPENDENT_APPROVAL":"NOT_REQUESTED"});
     }catch{return reply({error:"Verification failed or challenge consumed"},409)}
   }
   return reply({error:"Not found"},404);
