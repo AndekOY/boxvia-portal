@@ -29,6 +29,7 @@ on:
       - 'tests/hitl-minimax-proof-verify.mjs'
       - 'cloudflare/hitl-minimax-proof-verify.js'
       - 'tests/hitl-minimax-replay-preview.mjs'
+      - 'tests/hitl-minimax-package-preview.mjs'
 jobs:
   isolated-preview:
     runs-on: ubuntu-latest
@@ -130,6 +131,8 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --command "SELECT c.* FROM hitl_minimax_challenges c JOIN hitl_minimax_proofs p ON p.challenge_id=c.id WHERE p.id='$P';" --json > /tmp/hitl-challenge-private.json
           npx wrangler d1 execute "$DB" --remote --command "SELECT s.* FROM hitl_minimax_snapshots s JOIN hitl_minimax_proofs p ON p.decision_id=s.decision_id AND p.decision_version=s.version WHERE p.id='$P';" --json > /tmp/hitl-snapshot-private.json
           node tests/hitl-minimax-replay-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+          node tests/hitl-minimax-package-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+          rm -f /tmp/hitl-minimax-portable-private.json
           rm -f /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
       - name: Retrieve and validate public Cloudflare Access signing keys
         shell: bash
