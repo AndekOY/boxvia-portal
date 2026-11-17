@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 const asUrl=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const verifier=asUrl(readFileSync('cloudflare/hitl-webauthn-verify.js','utf8'));
 const registration=asUrl(readFileSync('cloudflare/hitl-passkey-registration-verify.js','utf8').replace('./hitl-webauthn-verify.js',verifier));
-const moduleCode=readFileSync('cloudflare/hitl-passkey-enrollment-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier).replace('./hitl-passkey-registration-verify.js',registration);
+const login=asUrl(readFileSync('cloudflare/hitl-passkey-authentication-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier));
+const moduleCode=readFileSync('cloudflare/hitl-passkey-enrollment-preview.js','utf8').replace('./hitl-webauthn-verify.js',verifier).replace('./hitl-passkey-registration-verify.js',registration).replace('./hitl-passkey-authentication-preview.js',login);
 const {handleHitlPasskeyEnrollment}=await import(asUrl(moduleCode));
 const base='https://boxvia-hitl-identity-hold-test.andeks.workers.dev/api/owner/hitl/passkey/';
 const env={HITL_PASSKEY_ENROLLMENT_ENABLED:'true',HITL_HUMAN_ATTESTATION_REQUIRED:'true',HITL_PASSKEY_RP_ID:'boxvia-hitl-identity-hold-test.andeks.workers.dev',DB:{}};
@@ -64,4 +65,17 @@ test('pinned Access JWKS is required, expired keys fail closed',async()=>{
  assert.equal(stale.status,503);assert.equal(stale.body.diagnostic,'JWKS_STALE_OR_INVALID');
  const unknown=await check(JSON.stringify({keys:[],fetched_at:Math.floor(Date.now()/1000)}));
  assert.equal(unknown.status,401);
+});
+
+test('passkey authentication remains gated and cannot activate HITL',async()=>{
+ assert.equal((await run('login/begin','POST')).status,401);
+ assert.equal((await run('login/finish','POST')).status,401);
+ const code=readFileSync('cloudflare/hitl-passkey-authentication-preview.js','utf8');
+ assert.match(code,/verifyWebAuthnAssertion/);
+ assert.match(code,/hitl_passkey_login_challenges/);
+ assert.match(code,/state='PENDING'/);
+ assert.match(code,/hitlAuthorization:false/);
+ assert.doesNotMatch(code,/SET state='ACTIVE'/);
+ const page=readFileSync('cloudflare/hitl-passkey-owner-page-preview.js','utf8');
+ assert.match(page,/navigator.credentials.get/);
 });
