@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+const paths=process.argv.slice(2);
+if(paths.length!==4)throw Error('four_private_records_required');
+const read=p=>{const data=JSON.parse(fs.readFileSync(p,'utf8'));const rows=data.flatMap(x=>x.results||[]);if(rows.length!==1)throw Error('expected_one_row');return rows[0]};
+const [proof,bundle,challengeRecord,snapshotRow]=paths.map(read);
+if(proof.id!==process.env.HITL_EXPECTED_PROOF_ID||bundle.proof_id!==proof.id||challengeRecord.id!==proof.challenge_id||snapshotRow.decision_id!==proof.decision_id)throw Error('record_binding_failed');
+const packageText=JSON.stringify({format:'BOXVIA-HITL-MINIMAX-EVIDENCE-v1',proof,bundle,challengeRecord,snapshotRow});
+const sha256=createHash('sha256').update(Buffer.from(packageText,'utf8')).digest('hex');
+const path='/tmp/hitl-minimax-portable-private.json';
+fs.writeFileSync(path,packageText,{mode:0o600});
+if(createHash('sha256').update(fs.readFileSync(path)).digest('hex')!==sha256)throw Error('export_digest_mismatch');
+if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`### HITL-Minimax Preview evidence digest\n\n- Proof: ${proof.id}\n- SHA-256 of private package: ${sha256}\n- Provenance: UNESTABLISHED; hash is not a trusted timestamp.\n`);
+console.log('PASS private evidence package SHA-256:',sha256);
+console.log('HOLD external provenance: no trusted timestamp or independent attestation');
