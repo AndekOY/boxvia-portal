@@ -30,7 +30,9 @@ export async function handleMinimaxAttestation(request,env,url,owner) {
     try{
       const record=await env.DB.prepare("SELECT * FROM hitl_minimax_challenges WHERE id=? AND owner_id=?").bind(body.attestationId,owner.id).first();
       if(!record||record.state!=='PENDING'||record.expires_at<=Math.floor(Date.now()/1000)||record.rp_id!==url.hostname||record.origin!==url.origin)return json({error:'Expired or consumed'},409);
-      const bound=await prepareBoundDecision(env.DB,{caseId:record.case_id,decisionId:record.decision_id,version:record.decision_version,gate:body.gate,action:record.action});
+      const snapshotRow=await env.DB.prepare("SELECT gate FROM hitl_minimax_snapshots WHERE case_id=? AND decision_id=? AND version=? AND state='READY'").bind(record.case_id,record.decision_id,record.decision_version).first();
+      if(!snapshotRow)return json({error:'Snapshot unavailable'},409);
+      const bound=await prepareBoundDecision(env.DB,{caseId:record.case_id,decisionId:record.decision_id,version:record.decision_version,gate:snapshotRow.gate,action:record.action});
       if(bound.snapshotSha256!==record.snapshot_sha256)return json({error:'Snapshot changed'},409);
       const credential=await env.DB.prepare("SELECT * FROM hitl_authenticators WHERE credential_id=? AND owner_id=? AND state='ACTIVE'").bind(record.credential_id,owner.id).first();
       if(!credential?.public_key_spki)return json({error:'Credential unavailable'},409);
