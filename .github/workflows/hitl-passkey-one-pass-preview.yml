@@ -14,6 +14,11 @@ on:
       - 'cloudflare/hitl-preview-worker.js'
       - 'cloudflare/hitl-passkey-owner-page-preview.js'
       - 'tests/hitl-passkey-enrollment-preview.mjs'
+      - 'cloudflare/hitl-minimax-canonical.js'
+      - 'cloudflare/hitl-minimax-binding.js'
+      - 'cloudflare/hitl-minimax-attestation-preview.sql'
+      - 'tests/hitl-minimax-canonical.mjs'
+      - 'tests/hitl-minimax-binding.mjs'
 jobs:
   isolated-preview:
     runs-on: ubuntu-latest
@@ -34,7 +39,7 @@ jobs:
       - name: Unit, gateway, registration, route and replay checks
         run: |
           set -euo pipefail
-          node --test tests/hitl-passkey-enrollment-preview.mjs tests/hitl-passkey-registration-verify.mjs tests/hitl-passkey-independent-approval-preview.mjs
+          node --test tests/hitl-passkey-enrollment-preview.mjs tests/hitl-passkey-registration-verify.mjs tests/hitl-passkey-independent-approval-preview.mjs tests/hitl-minimax-canonical.mjs tests/hitl-minimax-binding.mjs
           python3 tests/test_hitl_signed_snapshot_v4.py
       - name: Enforce preview-only target and configuration
         run: |
@@ -83,6 +88,7 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-passkey-enrollment-preview.sql > /tmp/hitl-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-passkey-authentication-preview.sql > /tmp/hitl-login-schema.log
           npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-passkey-lifecycle-preview.sql > /tmp/hitl-lifecycle-schema.log
+          npx wrangler d1 execute "$DB" --remote --file cloudflare/hitl-minimax-attestation-preview.sql > /tmp/hitl-minimax-schema.log
           npx wrangler d1 execute "$DB" --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('hitl_passkey_enrollments','hitl_authenticators','hitl_auth_challenges','hitl_auth_proofs','hitl_passkey_login_challenges','hitl_passkey_lifecycle_events');" --json > /tmp/hitl-schema.json
           node --input-type=module -e 'import fs from "node:fs";const data=JSON.parse(fs.readFileSync("/tmp/hitl-schema.json"));const names=new Set(data.flatMap(x=>(x.results||[]).map(y=>y.name)));for(const n of ["hitl_passkey_enrollments","hitl_authenticators","hitl_auth_challenges","hitl_auth_proofs","hitl_passkey_login_challenges","hitl_passkey_lifecycle_events"])if(!names.has(n))throw Error("Missing preview table: "+n);console.log("PASS required Preview D1 tables")'
       - name: Retrieve and validate public Cloudflare Access signing keys
