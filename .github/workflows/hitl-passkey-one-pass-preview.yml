@@ -5,6 +5,10 @@ on:
     branches: [draft/hitl-site-alignment-20261115]
     paths:
       - '.github/workflows/hitl-passkey-one-pass-preview.yml'
+      - 'cloudflare/hitl-passkey-enrollment-preview.js'
+      - 'cloudflare/hitl-preview-worker.js'
+      - 'cloudflare/hitl-passkey-owner-page-preview.js'
+      - 'tests/hitl-passkey-enrollment-preview.mjs'
 jobs:
   isolated-preview:
     runs-on: ubuntu-latest
