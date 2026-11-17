@@ -63,7 +63,7 @@ export async function handleHitlPasskeyEnrollment(request,env,url) {
     return reply({error:"Identity unavailable",diagnostic:code},503);
   }
   if(!owner)return reply({error:"Verified owner Access session required"},401);
-  if(url.pathname==="/api/owner/hitl/passkey/activate/finish")return activateOwnerPasskey(request,env,url,owner);
+  if(url.pathname.startsWith("/api/owner/hitl/passkey/activate/"))return activateOwnerPasskey(request,env,url,owner);
   if(url.pathname.startsWith("/api/owner/hitl/passkey/attest/"))return handleMinimaxAttestation(request,env,url,owner);
   if(url.pathname.startsWith("/api/owner/hitl/passkey/login/"))return handleHitlPasskeyLogin(request,env,url,owner);
   const base="/api/owner/hitl/passkey/";
