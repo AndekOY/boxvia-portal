@@ -1,6 +1,6 @@
 # HITL-Minimax — encrypted evidence archive activation runbook
 
-Status: **PREPARED / NOT ACTIVATED**. Scope: isolated Preview only. No Production changes or legacy H3/H4/H5 authorization.
+Status: **ACTIVATED FOR ISOLATED PREVIEW / TECHNICAL RESTORE PASS / GOVERNANCE HOLD**. Scope: isolated Preview only. No Production changes or legacy H3/H4/H5 authorization.
 
 ## Preconditions
 
@@ -10,6 +10,14 @@ Status: **PREPARED / NOT ACTIVATED**. Scope: isolated Preview only. No Productio
 4. Re-run only the isolated Preview workflow `hitl-passkey-one-pass-preview.yml` on branch `draft/hitl-site-alignment-20261115`. Confirm the private package SHA-256 matches the anchored digest `756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e`, that offline WebAuthn replay passes, and that the encrypted artifact is uploaded.
 5. Retrieve the encrypted artifact into a controlled environment and test decryption with the independently retained key. Recompute plaintext SHA-256 and run `node tests/hitl-minimax-verify-portable.mjs <private-package.json> 756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e`. Protect and securely delete temporary plaintext copies.
 6. Move the encrypted artifact to an independently governed retention system with versioning/immutability controls, restore tests, and retention policy. GitHub Actions artifacts are configured for **30 days only** and do not constitute permanent evidence storage.
+
+## Activation evidence (2026-11-18)
+
+- Isolated Preview CI run [44318117973](https://github.com/AndekOY/boxvia-portal/actions/runs/44318117973) produced an encrypted archive.
+- Operator independently restored the archive locally and verified anchored SHA-256 and offline WebAuthn replay (PowerShell screenshot).
+- Owner uploaded the encrypted artifact to Google Drive and re-downloaded it; original and Drive copy both SHA-256 `61D496F7220742CB42C15C1F531010D73859E5C8C910BC33FE4DFA46B1DA2F16`.
+- This proves observed technical integrity, **not** immutable retention, independent source provenance, or third-party audited custody.
+- See [retention policy](hitl-minimax-retention-policy-v1-20261118.md), [provenance assessment](hitl-minimax-provenance-assessment-20261118.md), and [Preview acceptance report](hitl-minimax-preview-acceptance-report-v1-20261118.md).
 
 ## Current technical boundary
 
@@ -21,4 +29,4 @@ Status: **PREPARED / NOT ACTIVATED**. Scope: isolated Preview only. No Productio
 
 ## Acceptance conditions
 
-**ARCHIVE PASS** only after an encrypted artifact exists, a separate custodian has demonstrated recovery and offline replay, and an independent durable retention location is confirmed. Otherwise **ARCHIVE HOLD**. **PROVENANCE UNESTABLISHED** and **H3/H4/H5 HOLD** remain separate and unaffected.
+**Technical archive restore PASS** is established by the owner-executed offline recovery and matching external copy hash. **Full archive governance HOLD** remains until recovery contingency, retention enforcement and independent controls are evidenced; the owner is not a separate third-party custodian. **PROVENANCE UNESTABLISHED** and **H3/H4/H5 HOLD** remain separate and unaffected.
