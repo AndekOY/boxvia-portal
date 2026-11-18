@@ -30,6 +30,7 @@ on:
       - 'cloudflare/hitl-minimax-proof-verify.js'
       - 'tests/hitl-minimax-replay-preview.mjs'
       - 'tests/hitl-minimax-package-preview.mjs'
+      - 'tests/hitl-minimax-verify-portable.mjs'
       - 'tests/hitl-minimax-encrypt-archive.mjs'
       - 'tests/hitl-minimax-archive-synthetic-test.mjs'
 jobs:
@@ -136,6 +137,7 @@ jobs:
           npx wrangler d1 execute "$DB" --remote --command "SELECT s.* FROM hitl_minimax_snapshots s JOIN hitl_minimax_proofs p ON p.decision_id=s.decision_id AND p.decision_version=s.version WHERE p.id='$P';" --json > /tmp/hitl-snapshot-private.json
           node tests/hitl-minimax-replay-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
           node tests/hitl-minimax-package-preview.mjs /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json
+          node tests/hitl-minimax-verify-portable.mjs /tmp/hitl-minimax-portable-private.json 756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e
           if [[ -n "$HITL_ARCHIVE_AES256_KEY_B64URL" ]]; then
             node tests/hitl-minimax-encrypt-archive.mjs
           else
