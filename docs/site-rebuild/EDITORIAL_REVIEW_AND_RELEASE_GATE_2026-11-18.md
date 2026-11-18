@@ -33,14 +33,14 @@ Production: NOT AUTHORIZED
 ## Acceptance gates
 - Editorial scope and naming: READY FOR OWNER REVIEW.
 - GitHub changes committed to isolated branch: PASS.
-- Static route, link and typography validation: NOT EXECUTED in this environment; run `node scripts/check-public-site.mjs` locally or in CI.
+- Static route, link and typography validation: PASS in GitHub Actions, workflow run 44385057155, job 135087220776, commit 26ccdef79096bc93c792aa9332932eb67a24a868. Automated checks cannot establish browser behavior.
 - Request forms and Turnstile: NOT TESTED.
 - Desktop and mobile visual QA: NOT TESTED for latest revision.
 - Cloudflare Preview: NOT DEPLOYED for latest revision.
 - Production release: HOLD, requires explicit owner approval.
 
 ## Required before release
-1. Run static script from repository root and resolve failures; review warnings.
+1. Static GitHub Actions check completed successfully; inspect logs for any warnings if needed.
 2. Review desktop and mobile navigation, forms, links, wording and pricing.
 3. Confirm technical translation where any English meaning is uncertain.
 4. Show owner the GitHub diff and request explicit approval.
