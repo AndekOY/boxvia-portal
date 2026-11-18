@@ -39,7 +39,7 @@ Check a Claim is NOT automatically cancelled. Pizza Test must be absent from pub
 - Stripe: merchant readiness and API integration unverified.
 - SEO: preserve canonical URLs and sitemap; no deletions without redirects.
 - Confidentiality: request only non-sensitive initial details.
-- RU/EN: technical translation required; Russian text excludes ё.
+- Language: public website English-only; design and acceptance discussions in Russian. Technical translations into Russian are provided in chat when needed, not published as parallel pages. See docs/governance/LANGUAGE_AND_TRANSLATION_POLICY_2026-11-18.md.
 - Preview: requires independently verified deployment; a GitHub commit is not a Preview.
 - Acceptance: baseline -> change set -> tests -> Preview -> evidence -> PASS/RETEST/HOLD/UNESTABLISHED.
 - No merge or production deployment without explicit owner approval.
@@ -49,3 +49,6 @@ Check a Claim is NOT automatically cancelled. Pizza Test must be absent from pub
 2. Prepare homepage EN/RU content and code diff in this isolated branch.
 3. Run static checks and request preview verification.
 4. Present evidence and acceptance decision; do not release production.
+
+## Owner-approved language clarification - 2026-11-18
+The website is English-only. Russian is the working language for development and review. Chat-based technical translation is available when needed, with semantic fidelity. No bilingual website requirement applies. ANDEKS normative documents continue to require English technical translation from Russian working drafts. This clarification supersedes the earlier RU/EN site-acceptance wording.
