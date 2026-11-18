@@ -34,6 +34,7 @@ on:
       - 'tests/hitl-minimax-encrypt-archive.mjs'
       - 'tests/hitl-minimax-recover-archive.mjs'
       - 'tests/hitl-minimax-archive-acceptance.mjs'
+      - 'tests/hitl-minimax-archive-acceptance-test.mjs'
       - 'tests/hitl-minimax-archive-synthetic-test.mjs'
 jobs:
   isolated-preview:
@@ -58,6 +59,7 @@ jobs:
           set -euo pipefail
           node --test tests/hitl-passkey-enrollment-preview.mjs tests/hitl-passkey-registration-verify.mjs tests/hitl-passkey-independent-approval-preview.mjs tests/hitl-minimax-canonical.mjs tests/hitl-minimax-binding.mjs tests/hitl-minimax-proof-bundle.mjs tests/hitl-minimax-activation-contract.mjs tests/hitl-minimax-proof-verify.mjs
           node tests/hitl-minimax-archive-synthetic-test.mjs
+          node tests/hitl-minimax-archive-acceptance-test.mjs
           python3 tests/test_hitl_signed_snapshot_v4.py
       - name: Enforce preview-only target and configuration
         run: |
