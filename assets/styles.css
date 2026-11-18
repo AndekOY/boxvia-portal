@@ -353,3 +353,7 @@ main :is(p,li) a:not(.button):not(.oqr-action):not(.sample-report-button):not(.s
     white-space: normal;
   }
 }
+
+/* Audience-first navigation */
+@media(min-width:761px){header nav#boxvia-main-navigation{gap:12px;align-items:center}header nav#boxvia-main-navigation a{font-size:.9rem}header{padding-left:max(18px,calc((100vw - 1280px)/2));padding-right:max(18px,calc((100vw - 1280px)/2))}}
+@media(min-width:761px) and (max-width:1120px){header nav#boxvia-main-navigation{gap:8px}header nav#boxvia-main-navigation a{font-size:.82rem}}
