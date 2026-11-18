@@ -141,6 +141,14 @@ jobs:
           node tests/hitl-minimax-verify-portable.mjs /tmp/hitl-minimax-portable-private.json 756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e
           if [[ -n "$HITL_ARCHIVE_AES256_KEY_B64URL" ]]; then
             node tests/hitl-minimax-encrypt-archive.mjs
+            # Recovery gate must succeed before the encrypted artifact can be uploaded.
+            # Recovered plaintext is private and is removed even on verifier failure.
+            recovery=/tmp/hitl-minimax-recovery-check-private.json
+            trap 'rm -f "$recovery" /tmp/hitl-minimax-portable-private.json /tmp/hitl-proof-private.json /tmp/hitl-bundle-private.json /tmp/hitl-challenge-private.json /tmp/hitl-snapshot-private.json' EXIT
+            node tests/hitl-minimax-recover-archive.mjs /tmp/hitl-minimax-encrypted-artifact.json "$recovery" 756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e
+            node tests/hitl-minimax-verify-portable.mjs "$recovery" 756a82522ae9f4442eb4e9582e408c2fa32aa762c75f3cd51af47dcadbbd155e
+            rm -f "$recovery"
+            echo 'PASS encrypted archive recovery and offline WebAuthn replay before artifact upload'
           else
             echo 'HOLD durable archive: encryption key not configured; raw package never uploaded'
           fi
