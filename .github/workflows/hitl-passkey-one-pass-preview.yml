@@ -33,6 +33,7 @@ on:
       - 'tests/hitl-minimax-verify-portable.mjs'
       - 'tests/hitl-minimax-encrypt-archive.mjs'
       - 'tests/hitl-minimax-recover-archive.mjs'
+      - 'tests/hitl-minimax-archive-acceptance.mjs'
       - 'tests/hitl-minimax-archive-synthetic-test.mjs'
 jobs:
   isolated-preview:
@@ -162,6 +163,13 @@ jobs:
           path: /tmp/hitl-minimax-encrypted-artifact.json
           if-no-files-found: error
           retention-days: 30
+      - name: Record archive acceptance boundary (no self-certification)
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '{"artifacts":[]}' > /tmp/hitl-archive-inventory.json
+          node tests/hitl-minimax-archive-acceptance.mjs /tmp/hitl-archive-inventory.json
+          echo 'HOLD archive acceptance until independent artifact inventory, key custody, restore, and durable retention are verified'
       - name: Retrieve and validate public Cloudflare Access signing keys
         shell: bash
         run: |
