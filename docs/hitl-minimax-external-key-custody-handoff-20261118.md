@@ -1,6 +1,8 @@
 # HITL-Minimax external secret custody — operator handoff
 
-**2026-11-18 | APPROVED ARCHITECTURE / PROVIDER NOT YET SELECTED / ARCHIVE HOLD**
+**2026-11-18 | SUPERSEDED FOR ACTIVE DEPLOYMENT / ARCHIVE HOLD**
+
+**Provider decision:** Bitwarden Free was approved. Follow [Bitwarden Free activation](hitl-minimax-bitwarden-free-activation-20261118.md). The 1Password CLI steps below are historical/optional only and are **not authorized for the current deployment**.
 
 The owner approved an external secret manager. No provider account, vault, key, or GitHub Actions secret has been created or verified by this document. The repository provides an **optional 1Password CLI integration**, not a claim that 1Password was chosen or connected.
 
