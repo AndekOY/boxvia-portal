@@ -24,6 +24,15 @@ try {
  fs.rmSync(recoveredPath,{force:true});
  const wrongDigest=spawnSync(process.execPath,['tests/hitl-minimax-recover-archive.mjs',archive,recoveredPath,'0'.repeat(64)],{env:{...process.env,HITL_ARCHIVE_AES256_KEY_B64URL:key},encoding:'utf8'});
  if(wrongDigest.status===0||fs.existsSync(recoveredPath))throw Error('wrong_digest_recovery_accepted');
+ const wrongKey=spawnSync(process.execPath,['tests/hitl-minimax-recover-archive.mjs',archive,recoveredPath,digest],{env:{...process.env,HITL_ARCHIVE_AES256_KEY_B64URL:randomBytes(32).toString('base64url')},encoding:'utf8'});
+ if(wrongKey.status===0||fs.existsSync(recoveredPath))throw Error('wrong_key_cli_recovery_accepted');
+ const modified={...data,ciphertext:(data.ciphertext[0]==='A'?'B':'A')+data.ciphertext.slice(1)};
+ const modifiedPath='/tmp/hitl-minimax-synthetic-tampered.json';
+ try {
+  fs.writeFileSync(modifiedPath,JSON.stringify(modified),{mode:0o600});
+  const tamper=spawnSync(process.execPath,['tests/hitl-minimax-recover-archive.mjs',modifiedPath,recoveredPath,digest],{env:{...process.env,HITL_ARCHIVE_AES256_KEY_B64URL:key},encoding:'utf8'});
+  if(tamper.status===0||fs.existsSync(recoveredPath))throw Error('tampered_ciphertext_accepted');
+ }finally{fs.rmSync(modifiedPath,{force:true})}
  let rejected=false;
  try {await webcrypto.subtle.decrypt({name:'AES-GCM',iv:Buffer.from(data.iv,'base64url'),additionalData:new TextEncoder().encode(data.aad),tagLength:128},await webcrypto.subtle.importKey('raw',randomBytes(32),'AES-GCM',false,['decrypt']),Buffer.from(data.ciphertext,'base64url'))}catch{rejected=true}
  if(!rejected)throw Error('wrong_key_accepted');
