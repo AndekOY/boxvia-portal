@@ -32,6 +32,7 @@ on:
       - 'tests/hitl-minimax-package-preview.mjs'
       - 'tests/hitl-minimax-verify-portable.mjs'
       - 'tests/hitl-minimax-encrypt-archive.mjs'
+      - 'tests/hitl-minimax-recover-archive.mjs'
       - 'tests/hitl-minimax-archive-synthetic-test.mjs'
 jobs:
   isolated-preview:
