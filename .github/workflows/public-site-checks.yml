@@ -20,4 +20,4 @@ jobs:
       - name: Validate public pages
         run: node scripts/check-public-site.mjs
       - name: Verify inactive unified service catalog
-        run: node --test tests/service-catalog.test.mjs
+        run: node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs
