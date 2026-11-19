@@ -73,3 +73,15 @@ test("Stripe webhook rejects invalid signature and live-mode events before D1 wr
   assert.equal(ignored.status,200);
   assert.equal((await ignored.json()).outcome,"ignored");
 });
+
+test("Stripe Checkout stays closed without test-mode secret and feature gate", async () => {
+  const input={orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability:"a".repeat(64)};
+  const disabled=await worker.fetch(post("/api/stripe/checkout",input),{...flags,DB:db});
+  assert.equal(disabled.status,503);
+  const enabled={...flags,DB:db,STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",STRIPE_TEST_SECRET_KEY:"sk_test_not_real"};
+  const crossOrigin=await worker.fetch(post("/api/stripe/checkout",input,{Origin:"https://evil.example"}),enabled);
+  assert.equal(crossOrigin.status,403);
+  const pendingIndex=await worker.fetch(post("/api/stripe/checkout",input),enabled);
+  assert.equal(pendingIndex.status,503);
+  assert.equal((await pendingIndex.json()).error,"Checkout schema pending");
+});
