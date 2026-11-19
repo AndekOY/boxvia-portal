@@ -20,7 +20,7 @@ jobs:
       - name: Validate public pages
         run: node scripts/check-public-site.mjs
       - name: Verify inactive unified service catalog
-        run: node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs
+        run: node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
 
       - name: Preflight isolated D1 migration offline
         run: python3 scripts/check-unified-orders-schema.py
