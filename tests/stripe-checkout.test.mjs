@@ -11,6 +11,7 @@ test("server-only Stripe price, identity and safe redirects",()=>{
   assert.equal(form.get("line_items[0][price_data][currency]"),"usd");
   assert.equal(form.get("metadata[order_id]"),order.orderId);
   assert.equal(new URL(form.get("cancel_url")).origin,origin);
+  assert.ok(form.get("success_url").includes("{CHECKOUT_SESSION_ID}"));
   assert.throws(()=>buildStripeCheckoutForm({...order,amountMinor:2000},origin));
   assert.throws(()=>buildStripeCheckoutForm({...order,status:"paid"},origin));
   assert.throws(()=>buildStripeCheckoutForm({...order,serviceCode:"technical-pilot"},origin));
