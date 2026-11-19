@@ -23,7 +23,17 @@ export default {
     if (!env.DB) return json({ status: "database_unavailable" }, 503);
     try {
       await env.DB.prepare("SELECT 1 AS ok").first();
-      return json({ service: "boxvia-orders-sandbox", status: "ready", checkout: "disabled" });
+      const schema = await env.DB.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('service_orders','service_quotes','payment_attempts','payment_events','fulfillment_outbox')"
+      ).all();
+      const present = new Set((schema.results || []).map(row => row.name));
+      const required = ["service_orders","service_quotes","payment_attempts","payment_events","fulfillment_outbox"];
+      return json({
+        service: "boxvia-orders-sandbox",
+        status: required.every(name => present.has(name)) ? "schema_ready" : "schema_pending",
+        checkout: "disabled",
+        unified_tables_present: required.filter(name => present.has(name)).length
+      });
     } catch {
       return json({ status: "database_unavailable" }, 503);
     }
