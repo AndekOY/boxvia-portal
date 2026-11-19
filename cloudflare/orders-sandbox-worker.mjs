@@ -1,3 +1,4 @@
+import { isStripeTestApiKey } from "./stripe-test-key.mjs";
 import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession } from "./stripe-checkout.mjs";
 import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
@@ -22,8 +23,7 @@ export default {
     if (url.pathname === "/api/stripe/checkout" && request.method === "POST") {
       if (!env.DB || env.STRIPE_MODE !== "test" ||
           env.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
-          typeof env.STRIPE_TEST_SECRET_KEY !== "string" ||
-          !env.STRIPE_TEST_SECRET_KEY.startsWith("sk_test_")) {
+          !isStripeTestApiKey(env.STRIPE_TEST_SECRET_KEY)) {
         return json({ error: "Unavailable" }, 503);
       }
       if (request.headers.get("Origin") !== url.origin ||
