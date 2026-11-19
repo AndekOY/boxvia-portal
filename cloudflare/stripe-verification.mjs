@@ -42,11 +42,11 @@ export async function verifyStripeSignature(rawBody, signatureHeader, webhookSec
 }
 
 export function inspectStripeCheckoutSession(event, expectedOrder) {
-  if (!event || event.type !== "checkout.session.completed" ||
+  if (!event || event.livemode !== false || event.type !== "checkout.session.completed" ||
       !expectedOrder || expectedOrder.currency !== "USD" ||
       !Number.isSafeInteger(expectedOrder.amountMinor)) return null;
   const session = event.data?.object;
-  if (!session || session.object !== "checkout.session" ||
+  if (!session || session.livemode !== false || session.object !== "checkout.session" ||
       session.payment_status !== "paid" ||
       session.mode !== "payment" ||
       session.client_reference_id !== expectedOrder.id ||
