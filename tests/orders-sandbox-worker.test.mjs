@@ -15,7 +15,11 @@ const db = {
   prepare(sql) {
     return {
       bind(...args) { this.args=args; return this; },
-      async first() { return { ok: 1 }; },
+      async first() {
+        // A generic DB stub must not claim that a migration-created index exists.
+        if (sql.includes("idx_stripe_one_attempt_per_order")) return null;
+        return { ok: 1 };
+      },
       async all() { return { results: ["service_orders","service_quotes","payment_attempts","payment_events","fulfillment_outbox"].map(name => ({name})) }; }
     };
   }
