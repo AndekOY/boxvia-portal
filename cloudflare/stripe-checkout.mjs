@@ -1,3 +1,4 @@
+import { isStripeTestApiKey } from "./stripe-test-key.mjs";
 // Stripe Checkout Test Mode adapter. Not mounted on an HTTP route.
 // Caller MUST authenticate the order capability before calling this function.
 // This module never reads prices from browser input.
@@ -34,8 +35,7 @@ export function buildStripeCheckoutForm(order, origin) {
 
 export async function requestStripeTestSession(order, env, origin, attemptId) {
   if (env?.STRIPE_MODE !== "test" || env?.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
-      typeof env.STRIPE_TEST_SECRET_KEY !== "string" ||
-      !env.STRIPE_TEST_SECRET_KEY.startsWith("sk_test_") ||
+      !isStripeTestApiKey(env.STRIPE_TEST_SECRET_KEY) ||
       !/^[a-f0-9-]{36}$/i.test(attemptId || "")) throw new Error("Stripe Test Mode unavailable");
   const form = buildStripeCheckoutForm(order, origin);
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
