@@ -1,3 +1,4 @@
+import { isStripeTestApiKey } from "../cloudflare/stripe-test-key.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
@@ -18,4 +19,12 @@ test("server-only Stripe price, identity and safe redirects",()=>{
 });
 test("Stripe API adapter rejects missing test secrets before fetch",async()=>{
   await assert.rejects(requestStripeTestSession(order,{STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",STRIPE_TEST_SECRET_KEY:"sk_live_wrong"},origin,crypto.randomUUID()),/unavailable/);
+});
+
+test("restricted test key allowed, live keys and malformed keys rejected",()=>{
+  assert.equal(isStripeTestApiKey("rk_test_example123"),true);
+  assert.equal(isStripeTestApiKey("sk_test_example123"),true);
+  for(const key of ["rk_live_example123","sk_live_example123","rk_test_","sk_test_","",null,"rk_test_abc xyz"]){
+    assert.equal(isStripeTestApiKey(key),false);
+  }
 });
