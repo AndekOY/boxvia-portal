@@ -12,6 +12,9 @@ on:
       - cloudflare/stripe-settlement.mjs
       - cloudflare/stripe-checkout.mjs
       - tests/orders-sandbox-worker.test.mjs
+      - tests/stripe-checkout.test.mjs
+      - tests/stripe-verification.test.mjs
+      - tests/stripe-settlement.test.mjs
       - wrangler.orders-sandbox.jsonc
   workflow_dispatch:
 
