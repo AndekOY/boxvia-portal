@@ -7,9 +7,9 @@ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654";
 const sessionId="cs_test_123456789";
 const paymentId="pi_123456789";
 const event={
-  id:"evt_123456789",type:"checkout.session.completed",
+  id:"evt_123456789",livemode:false,type:"checkout.session.completed",
   data:{object:{
-    object:"checkout.session",id:sessionId,mode:"payment",payment_status:"paid",
+    object:"checkout.session",livemode:false,id:sessionId,mode:"payment",payment_status:"paid",
     client_reference_id:orderId,metadata:{order_id:orderId},
     amount_total:5000,currency:"usd",payment_intent:paymentId
   }}
