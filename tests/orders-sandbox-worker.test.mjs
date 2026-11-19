@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { webcrypto } from "node:crypto";
+import { webcrypto, createHmac } from "node:crypto";
 import worker from "../cloudflare/orders-sandbox-worker.mjs";
 globalThis.crypto ??= webcrypto;
 
@@ -47,4 +47,29 @@ test("order status never accepts a bare request id", async () => {
 test("all other routes are closed", async () => {
   const r=await worker.fetch(new Request(base + "/api/stripe/webhook",{method:"POST"}),{...flags,DB:db});
   assert.equal(r.status,404);
+});
+
+test("Stripe webhook is disabled without explicit test-mode gate and secret", async () => {
+  const body=JSON.stringify({id:"evt_123456789",livemode:false,type:"checkout.session.completed",data:{object:{}}});
+  const request=new Request(base+"/api/stripe/webhook",{method:"POST",headers:{"Content-Type":"application/json"},body});
+  const result=await worker.fetch(request,{...flags,DB:db});
+  assert.equal(result.status,503);
+});
+test("Stripe webhook rejects invalid signature and live-mode events before D1 writes", async () => {
+  const secret="whsec_test_not_real_secret";
+  const env={...flags,DB:db,STRIPE_WEBHOOK_TEST_ENABLED:"true",STRIPE_MODE:"test",STRIPE_TEST_WEBHOOK_SECRET:secret};
+  const send=async (payload, valid=true)=>{
+    const body=JSON.stringify(payload);
+    const t=Math.floor(Date.now()/1000);
+    const sig=createHmac("sha256",secret).update(t+"."+body).digest("hex");
+    return worker.fetch(new Request(base+"/api/stripe/webhook",{
+      method:"POST",headers:{"Content-Type":"application/json","Stripe-Signature":"t="+t+",v1="+(valid?sig:"0".repeat(64))},body
+    }),env);
+  };
+  const payload={id:"evt_123456789",livemode:false,type:"checkout.session.completed",data:{object:{}}};
+  assert.equal((await send(payload,false)).status,400);
+  assert.equal((await send({...payload,livemode:true})).status,400);
+  const ignored=await send({...payload,type:"customer.created"});
+  assert.equal(ignored.status,200);
+  assert.equal((await ignored.json()).outcome,"ignored");
 });
