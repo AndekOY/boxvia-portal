@@ -1,6 +1,11 @@
 name: BoxVia Orders Sandbox - Stripe attempt lock migration
 
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-attempt-migration.yml
   workflow_dispatch:
 
 permissions:
