@@ -5,7 +5,7 @@ Scope: All public BoxVia website pages and associated public-facing commercial c
 Production: No merge or release without explicit owner approval.
 
 ## Governing principle
-Write for the visitor's question and the deliverable, not for the internal methodology. A visitor should understand the offer within 10-15 seconds. Use short, plain, precise English and concrete outcomes. Avoid jargon, overclaiming, and unverified guarantees. Keep one sentence per paragraph wherever practicable. Do not use em dashes or en dashes in public text.
+Write for the visitor's question and the deliverable, not for the internal methodology. A visitor should understand the offer within 10-15 seconds. Use short, plain, precise English and concrete outcomes. Avoid jargon, overclaiming, and unverified guarantees. Mandatory presentation rule: each complete sentence starts on a new line in rendered public-facing text, including headings, lead copy, cards, and calls to action. Prefer separate paragraphs for prose and explicit line breaks within multi-sentence headings or slogans. Do not rely on source-code newlines, which HTML collapses. Preserve semantic HTML and accessible reading order. Legal, privacy, contractual, and normative texts may retain conventional paragraphing where sentence-by-sentence layout would harm clarity or legal accuracy. Do not split abbreviations, version identifiers, monetary figures, URLs, or formal normative labels. Do not use em dashes or en dashes in public text.
 
 ## Audience and architecture
 Four equal navigation audiences: Business & Consulting; Developers & Engineers; AI Builders & Creators; Researchers & Architects.
