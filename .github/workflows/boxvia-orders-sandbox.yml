@@ -6,6 +6,8 @@ on:
       - work/technical-pilots-first-20261118
     paths:
       - .github/workflows/boxvia-orders-sandbox.yml
+      - cloudflare/orders-sandbox-worker.mjs
+      - wrangler.orders-sandbox.jsonc
   workflow_dispatch:
 
 permissions:
