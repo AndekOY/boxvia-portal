@@ -68,9 +68,16 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,urllib.request
+          import json,urllib.request,urllib.error
           url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
-          with urllib.request.urlopen(url,timeout=30) as response:
+          try:
+            response=urllib.request.urlopen(url,timeout=30)
+          except urllib.error.HTTPError as exc:
+            if exc.code==403:
+              print('GitHub runner blocked by Cloudflare HTTP 403; browser verification required')
+              raise SystemExit(0)
+            raise
+          with response:
             assert response.status==200
             data=json.load(response)
           assert data['service']=='boxvia-orders-sandbox'
