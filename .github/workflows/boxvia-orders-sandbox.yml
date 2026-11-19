@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
       - name: Offline test gates
         run: |
-          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs
           python3 scripts/check-unified-orders-schema.py
       - name: Verify isolated deployment target
         run: |
@@ -64,3 +64,18 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
+      - name: Verify public health without exposing data
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request
+          url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
+          with urllib.request.urlopen(url,timeout=30) as response:
+            assert response.status==200
+            data=json.load(response)
+          assert data['service']=='boxvia-orders-sandbox'
+          assert data['status']=='schema_ready'
+          assert data['checkout']=='disabled'
+          assert data['unified_tables_present']==5
+          print('PASS: live sandbox health, five tables, checkout disabled')
+          PY
