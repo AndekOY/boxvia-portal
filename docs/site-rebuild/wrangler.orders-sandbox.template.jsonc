@@ -1,0 +1,21 @@
+{
+  "_comment": "TEMPLATE ONLY. Do not deploy. Provision a new D1 database, replace the database_id, then save as wrangler.orders-sandbox.jsonc after review. Never reuse Production D1 or boxvia-bxc-sandbox without explicit acceptance.",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-orders-sandbox",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boxvia-orders-sandbox",
+      "database_id": "REPLACE_WITH_NEW_SANDBOX_D1_ID"
+    }
+  ],
+  "vars": {
+    "CLAIM_INTAKE_ENABLED": "false",
+    "PAYPAL_CHECKOUT_ENABLED": "false",
+    "UNIFIED_ORDERS_ENABLED": "false",
+    "STRIPE_CHECKOUT_ENABLED": "false"
+  }
+}
