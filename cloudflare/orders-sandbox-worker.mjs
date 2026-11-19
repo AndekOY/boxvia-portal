@@ -1,3 +1,5 @@
+import { verifyStripeSignature } from "./stripe-verification.mjs";
+import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
 // No production routes, payment endpoints, customer data, or static asset exposure.
@@ -16,6 +18,44 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname === "/api/stripe/webhook" && request.method === "POST") {
+      // Strictly test-mode only; independently gated from checkout.
+      if (env.STRIPE_WEBHOOK_TEST_ENABLED !== "true" ||
+          env.STRIPE_MODE !== "test" ||
+          typeof env.STRIPE_TEST_WEBHOOK_SECRET !== "string" ||
+          !env.DB) return json({ error: "Unavailable" }, 503);
+      if (request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+        return json({ error: "Invalid content type" }, 415);
+      }
+      const declared = Number(request.headers.get("Content-Length") || 0);
+      if (!Number.isFinite(declared) || declared > 65536) return json({ error: "Too large" }, 413);
+      let raw;
+      try {
+        raw = await request.text();
+        if (new TextEncoder().encode(raw).byteLength > 65536) return json({ error: "Too large" }, 413);
+      } catch { return json({ error: "Invalid request" }, 400); }
+      try {
+        const event = await verifyStripeSignature(
+          raw, request.headers.get("Stripe-Signature"), env.STRIPE_TEST_WEBHOOK_SECRET
+        );
+        if (!event) return json({ error: "Invalid signature" }, 400);
+        if (event.livemode !== false) return json({ error: "Live events rejected" }, 400);
+        if (event.type !== "checkout.session.completed") return json({ received: true, outcome: "ignored" });
+        const result = await settleVerifiedStripeEvent(env.DB, event);
+        if (result.outcome === "paid" || result.outcome === "already_processed_or_manual_review") {
+          return json({ received: true, outcome: result.outcome });
+        }
+        if (result.outcome === "rejected" || result.outcome === "unmatched_attempt" ||
+            result.outcome === "unknown_order") {
+          console.warn("stripe_sandbox_unmatched_event", { outcome: result.outcome });
+          return json({ received: false, outcome: "requires_review" }, 409);
+        }
+        return json({ received: true, outcome: "ignored" });
+      } catch {
+        console.error("stripe_sandbox_webhook_processing_failed");
+        return json({ error: "Unavailable" }, 503);
+      }
+    }
     if (url.pathname === "/api/orders/status" && request.method === "POST") {
       if (!env.DB) return json({ error: "Unavailable" }, 503);
       if (request.headers.get("Origin") !== url.origin ||
