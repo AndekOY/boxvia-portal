@@ -71,14 +71,19 @@ jobs:
           key=Path('/tmp/boxvia-orders-request-key').read_text()
           Path('/tmp/boxvia-orders-find.sql').write_text("SELECT id,service_code FROM service_requests WHERE request_key='"+key+"';")
           PY
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-orders-find.sql --json > /tmp/boxvia-orders-seeded.json
+          # Wrangler's --file output is an import report, not the SELECT result rows.
+          # Execute SELECT with --command and parse its structured JSON response.
+          query="$(cat /tmp/boxvia-orders-find.sql)"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "$query" --json > /tmp/boxvia-orders-seeded.json
           python3 - <<'PY'
           import json
           from pathlib import Path
-          data=json.loads(Path('/tmp/boxvia-orders-seeded.json').read_text())
-          assert isinstance(data,list) and data[0]['success']
+          raw=Path('/tmp/boxvia-orders-seeded.json').read_text().strip()
+          assert raw, 'Wrangler returned empty JSON output for SELECT'
+          data=json.loads(raw)
+          assert isinstance(data,list) and data[0]['success'], data
           rows=data[0]['results']
-          assert len(rows)==1 and rows[0]['service_code']=='one-question-review'
+          assert len(rows)==1 and rows[0]['service_code']=='one-question-review', rows
           Path('/tmp/boxvia-orders-request-id').write_text(str(rows[0]['id']))
           print('PASS: synthetic service request persisted in sandbox D1')
           PY
