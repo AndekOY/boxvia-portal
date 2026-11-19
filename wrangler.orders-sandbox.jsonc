@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-orders-sandbox",
+  "main": "cloudflare/orders-sandbox-worker.mjs",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boxvia-bxc-sandbox",
+      "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+    }
+  ],
+  "vars": {
+    "UNIFIED_ORDERS_ENABLED": "false",
+    "PAYPAL_CHECKOUT_ENABLED": "false",
+    "STRIPE_CHECKOUT_ENABLED": "false"
+  }
+}
