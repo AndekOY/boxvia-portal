@@ -31,7 +31,7 @@ jobs:
       - name: Validate sandbox target and local tests
         run: |
           set -euo pipefail
-          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-http-contract.test.mjs
           python3 scripts/check-unified-orders-schema.py
           python3 - <<'PY'
           import json
