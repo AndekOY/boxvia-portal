@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/boxvia-orders-sandbox.yml
       - cloudflare/orders-sandbox-worker.mjs
+      - cloudflare/orders-persistence.mjs
       - wrangler.orders-sandbox.jsonc
   workflow_dispatch:
 
@@ -25,7 +26,7 @@ jobs:
           persist-credentials: false
       - name: Offline test gates
         run: |
-          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs
           python3 scripts/check-unified-orders-schema.py
       - name: Verify isolated deployment target
         run: |
