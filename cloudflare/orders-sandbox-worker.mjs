@@ -6,13 +6,16 @@ const json = (data, status = 200) => Response.json(data, {
   headers: {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "no-referrer",
-    "Access-Control-Allow-Origin": "null"
+    "Referrer-Policy": "no-referrer"
   }
 });
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const checkoutDisabled = env.UNIFIED_ORDERS_ENABLED === "false" &&
+      env.PAYPAL_CHECKOUT_ENABLED === "false" &&
+      env.STRIPE_CHECKOUT_ENABLED === "false";
+    if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
     if (url.pathname === "/api/orders/status" && request.method === "POST") {
       if (!env.DB) return json({ error: "Unavailable" }, 503);
       if (request.headers.get("Origin") !== url.origin ||
@@ -24,8 +27,13 @@ export default {
         if (Number(request.headers.get("Content-Length") || 0) > 2048) return json({ error: "Too large" }, 413);
         input = await request.json();
       } catch { return json({ error: "Invalid request" }, 400); }
-      const order = await getAuthorizedOrder(env.DB, input?.orderId, input?.capability);
-      return order ? json(order) : json({ error: "Not found" }, 404);
+      try {
+        const order = await getAuthorizedOrder(env.DB, input?.orderId, input?.capability);
+        return order ? json(order) : json({ error: "Not found" }, 404);
+      } catch {
+        console.error("orders_sandbox_status_failed");
+        return json({ error: "Unavailable" }, 503);
+      }
     }
     if (url.pathname === "/api/orders/create" && request.method === "POST") {
       // Owner-only sandbox endpoint; no customer-facing order creation yet.
