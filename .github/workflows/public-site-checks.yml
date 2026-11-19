@@ -19,3 +19,5 @@ jobs:
           node-version: '22'
       - name: Validate public pages
         run: node scripts/check-public-site.mjs
+      - name: Verify inactive unified service catalog
+        run: node --test tests/service-catalog.test.mjs
