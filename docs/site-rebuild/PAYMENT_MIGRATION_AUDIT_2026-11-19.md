@@ -16,6 +16,11 @@ Check a Claim $20 underwent a successful real-money control purchase and operati
 - services/one-question-review/index.html and services/ai-governance-review/index.html: distinct $50 service pages, currently submitting to generic service request route.
 - wrangler.site-preview.jsonc: site Preview disables CLAIM_INTAKE_ENABLED and PAYPAL_CHECKOUT_ENABLED and has no D1 binding. Therefore it cannot serve as an end-to-end payment acceptance environment.
 
+## Additional source findings
+- cloudflare/service-request.js: existing $50 service forms feed a Turnstile-verified, D1-backed service_requests intake with request_key deduplication; it is not a payment ledger.
+- cloudflare/notifications.js: scheduled paid-claim notification outbox explicitly joins claims and paypal_orders and checks USD 20.00; it must be generalized or replaced for $50 paid orders.
+- The site work branch does not contain wrangler.service-preview.jsonc; isolated payment testing must use an explicitly verified sandbox branch/config, not assume it is available here.
+
 ## Verified architectural constraints
 1. PayPal integration is claim-centric. It checks capture amount against exact USD 20.00 and writes to claims, paypal_orders and claim_access; it cannot safely be generalized by merely changing the displayed price.
 2. Generic service requests use /api/service-request; they are not yet shown by this review to have verified payment orders.
