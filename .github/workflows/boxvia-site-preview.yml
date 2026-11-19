@@ -1,0 +1,79 @@
+name: BoxVia SITE Preview - isolated deploy
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-site-preview.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-site-preview-20261118
+  cancel-in-progress: false
+
+jobs:
+  deploy-site-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: boxvia-preview
+    steps:
+      - name: Checkout exact site branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Validate site
+        run: node scripts/check-public-site.mjs
+      - name: Check isolated deployment target
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          config=json.load(open("wrangler.site-preview.jsonc"))
+          assert config["name"]=="boxvia-site-preview-20261118"
+          assert config["main"]=="cloudflare/worker.js"
+          assert config["workers_dev"] is True
+          assert config["vars"]["CLAIM_INTAKE_ENABLED"]=="false"
+          assert config["vars"]["PAYPAL_CHECKOUT_ENABLED"]=="false"
+          assert not config.get("d1_databases")
+          assert not config.get("routes")
+          assert not config.get("route")
+          print("Site Preview target isolated from Production and service Preview.")
+          PY
+      - name: Deploy SITE Preview only
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" || -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "Cloudflare secrets unavailable; no deployment attempted."
+            exit 2
+          fi
+          npx --yes wrangler@4 deploy --config wrangler.site-preview.jsonc
+      - name: Verify SITE Preview HTTP
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request
+          base="https://boxvia-site-preview-20261118.andeks.workers.dev"
+          for route,expected in [
+            ("/","Independent"),
+            ("/services/","Project Definition Review"),
+            ("/faar/","Project Definition Review"),
+            ("/for-business/","Business"),
+            ("/for-developers/","Developers"),
+            ("/for-creators/","Creators"),
+            ("/for-researchers/","Researchers"),
+          ]:
+            with urllib.request.urlopen(base+route,timeout=30) as response:
+              html=response.read().decode("utf-8","replace")
+              assert response.status==200, (route,response.status)
+              assert expected.lower() in html.lower(), route
+              print(route, "HTTP 200; expected text present")
+          PY
