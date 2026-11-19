@@ -11,6 +11,7 @@ on:
       - cloudflare/stripe-verification.mjs
       - cloudflare/stripe-settlement.mjs
       - cloudflare/stripe-checkout.mjs
+      - cloudflare/stripe-test-key.mjs
       - tests/orders-sandbox-worker.test.mjs
       - tests/stripe-checkout.test.mjs
       - tests/stripe-verification.test.mjs
