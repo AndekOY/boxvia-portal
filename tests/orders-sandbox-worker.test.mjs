@@ -46,7 +46,7 @@ test("order status never accepts a bare request id", async () => {
 });
 test("all other routes are closed", async () => {
   const r=await worker.fetch(new Request(base + "/api/stripe/webhook",{method:"POST"}),{...flags,DB:db});
-  assert.equal(r.status,404);
+  assert.equal(r.status,503);
 });
 
 test("Stripe webhook is disabled without explicit test-mode gate and secret", async () => {
