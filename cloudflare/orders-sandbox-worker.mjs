@@ -1,3 +1,4 @@
+import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession } from "./stripe-checkout.mjs";
 import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
@@ -18,6 +19,44 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname === "/api/stripe/checkout" && request.method === "POST") {
+      if (!env.DB || env.STRIPE_MODE !== "test" ||
+          env.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
+          typeof env.STRIPE_TEST_SECRET_KEY !== "string" ||
+          !env.STRIPE_TEST_SECRET_KEY.startsWith("sk_test_")) {
+        return json({ error: "Unavailable" }, 503);
+      }
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+        return json({ error: "Rejected" }, 403);
+      }
+      let body;
+      try {
+        if (Number(request.headers.get("Content-Length") || 0) > 2048) return json({ error: "Too large" }, 413);
+        const raw = await request.text();
+        if (raw.length > 2048) return json({ error: "Too large" }, 413);
+        body = JSON.parse(raw);
+      } catch { return json({ error: "Invalid request" }, 400); }
+      try {
+        // Refuse checkout until the sandbox-only unique index is actually installed.
+        const index = await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_stripe_one_attempt_per_order'"
+        ).first();
+        if (!index) return json({ error: "Checkout schema pending" }, 503);
+        const order = await getAuthorizedOrder(env.DB, body?.orderId, body?.capability);
+        if (!order) return json({ error: "Not found" }, 404);
+        if (order.status !== "pending" || order.amountMinor !== 5000 ||
+            order.currency !== "USD") return json({ error: "Order not eligible" }, 409);
+        const attempt = await reserveStripeAttempt(env.DB, order);
+        if (!attempt.created) return json({ error: "Checkout already reserved; reconciliation required" }, 409);
+        const session = await requestStripeTestSession(order, env, url.origin, attempt.attemptId);
+        await persistStripeSession(env.DB, attempt.attemptId, session.sessionId, order.orderId);
+        return json({ checkoutUrl: session.checkoutUrl, sessionId: session.sessionId }, 201);
+      } catch {
+        console.error("stripe_sandbox_checkout_failed_or_reconciliation_required");
+        return json({ error: "Checkout unavailable; reconciliation required" }, 503);
+      }
+    }
     if (url.pathname === "/api/stripe/webhook" && request.method === "POST") {
       // Strictly test-mode only; independently gated from checkout.
       if (env.STRIPE_WEBHOOK_TEST_ENABLED !== "true" ||
