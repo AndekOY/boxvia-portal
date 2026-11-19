@@ -88,4 +88,12 @@ test("Stripe Checkout stays closed without test-mode secret and feature gate", a
   const pendingIndex=await worker.fetch(post("/api/stripe/checkout",input),enabled);
   assert.equal(pendingIndex.status,503);
   assert.equal((await pendingIndex.json()).error,"Checkout schema pending");
+  const restricted={...enabled,STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy"};
+  const restrictedIndex=await worker.fetch(post("/api/stripe/checkout",input),restricted);
+  assert.equal(restrictedIndex.status,503);
+  assert.equal((await restrictedIndex.json()).error,"Checkout schema pending");
+  const liveKey={...enabled,STRIPE_TEST_SECRET_KEY:"rk_live_rejected_dummy"};
+  const rejected=await worker.fetch(post("/api/stripe/checkout",input),liveKey);
+  assert.equal(rejected.status,503);
+  assert.equal((await rejected.json()).error,"Unavailable");
 });
