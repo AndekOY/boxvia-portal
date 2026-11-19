@@ -1,0 +1,119 @@
+name: BoxVia Orders Sandbox - live order acceptance
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-orders-live-acceptance.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-live-acceptance
+  cancel-in-progress: false
+
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Validate sandbox target and local tests
+        run: |
+          set -euo pipefail
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs
+          python3 scripts/check-unified-orders-schema.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'assets' not in c
+          PY
+      - name: Create ephemeral admin token in Cloudflare secret store
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          Path('/tmp/boxvia-orders-admin-token').write_text(secrets.token_hex(32))
+          PY
+          npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-orders-admin-token
+      - name: Seed one synthetic service request in sandbox D1
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          key='orders-acceptance-'+secrets.token_hex(16)
+          # No personal information; only disposable synthetic data.
+          sql="INSERT INTO service_requests (service_code,service_title,customer_email,request_json,status,request_key,request_digest) VALUES ('one-question-review','One Question Review','sandbox@example.invalid','{}','new','"+key+"','"+'0'*64+"');"
+          Path('/tmp/boxvia-orders-seed.sql').write_text(sql)
+          Path('/tmp/boxvia-orders-request-key').write_text(key)
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-orders-seed.sql
+          python3 - <<'PY'
+          from pathlib import Path
+          key=Path('/tmp/boxvia-orders-request-key').read_text()
+          Path('/tmp/boxvia-orders-find.sql').write_text("SELECT id,service_code FROM service_requests WHERE request_key='"+key+"';")
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-orders-find.sql --json > /tmp/boxvia-orders-seeded.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/boxvia-orders-seeded.json').read_text())
+          assert isinstance(data,list) and data[0]['success']
+          rows=data[0]['results']
+          assert len(rows)==1 and rows[0]['service_code']=='one-question-review'
+          Path('/tmp/boxvia-orders-request-id').write_text(str(rows[0]['id']))
+          print('PASS: synthetic service request persisted in sandbox D1')
+          PY
+      - name: Exercise live order create, deduplication and capability access
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          from pathlib import Path
+          base='https://boxvia-orders-sandbox.andeks.workers.dev'
+          token=Path('/tmp/boxvia-orders-admin-token').read_text()
+          request_id=int(Path('/tmp/boxvia-orders-request-id').read_text())
+          def post(path,payload,authorized=False):
+            headers={'Content-Type':'application/json','Origin':base}
+            if authorized: headers['Authorization']='Bearer '+token
+            req=urllib.request.Request(base+path,data=json.dumps(payload).encode(),headers=headers,method='POST')
+            try:
+              with urllib.request.urlopen(req,timeout=30) as r:
+                return r.status,json.load(r)
+            except urllib.error.HTTPError as e:
+              if e.code==403 and e.headers.get('server','').lower().find('cloudflare')>=0:
+                raise SystemExit('BLOCKED: GitHub runner received Cloudflare 403; live acceptance NOT confirmed')
+              return e.code,json.load(e)
+          payload={'serviceRequestId':request_id,'serviceCode':'one-question-review'}
+          status,denied=post('/api/orders/create',payload)
+          assert status==401,(status,denied)
+          status,created=post('/api/orders/create',payload,True)
+          assert status==201 and created['created'] is True and created['amountMinor']==5000 and created['currency']=='USD'
+          capability=created['capability']
+          order_id=created['orderId']
+          status,repeated=post('/api/orders/create',payload,True)
+          assert status==200 and repeated['created'] is False and repeated['orderId']==order_id and 'capability' not in repeated
+          status,order=post('/api/orders/status',{'orderId':order_id,'capability':capability})
+          assert status==200 and order['status']=='pending' and order['amountMinor']==5000
+          status,_=post('/api/orders/status',{'orderId':order_id,'capability':'f'*64})
+          assert status==404
+          print('PASS: LIVE sandbox create $50, repeat dedupe, authorized status, invalid capability')
+          print('No capability, token or customer data emitted.')
+          PY
