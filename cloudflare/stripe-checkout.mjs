@@ -26,7 +26,8 @@ export function buildStripeCheckoutForm(order, origin) {
   form.set("line_items[0][price_data][product_data][name]",
     order.serviceCode === "one-question-review" ? "One Question Review" : "Focused AI Governance Review");
   form.set("line_items[0][quantity]", "1");
-  form.set("success_url", success);
+  // Stripe requires the literal placeholder, not URL-encoded braces.
+  form.set("success_url", success.replace("%7BCHECKOUT_SESSION_ID%7D", "{CHECKOUT_SESSION_ID}"));
   form.set("cancel_url", cancel);
   return form;
 }
