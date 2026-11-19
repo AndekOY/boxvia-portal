@@ -7,11 +7,11 @@ const now=1795000000;
 const secret="whsec_test_example_secret_not_live";
 const order={id:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",amountMinor:5000,currency:"USD"};
 const session={
-  object:"checkout.session",id:"cs_test_123456789",mode:"payment",payment_status:"paid",
+  object:"checkout.session",livemode:false,id:"cs_test_123456789",mode:"payment",payment_status:"paid",
   client_reference_id:order.id,metadata:{order_id:order.id},amount_total:5000,currency:"usd",
   payment_intent:"pi_123456789"
 };
-const event={id:"evt_123456789",type:"checkout.session.completed",data:{object:session}};
+const event={id:"evt_123456789",livemode:false,type:"checkout.session.completed",data:{object:session}};
 const signed=(body,t=now)=>"t="+t+",v1="+createHmac("sha256",secret).update(t+"."+body).digest("hex");
 test("valid signed raw Stripe event is authenticated",async()=>{
   const raw=JSON.stringify(event);
@@ -36,4 +36,6 @@ test("reject incorrect paid state, order identity, amount and live sessions",()=
   assert.equal(inspectStripeCheckoutSession({...event,data:{object:{...session,payment_status:"unpaid"}}},order),null);
   assert.equal(inspectStripeCheckoutSession({...event,data:{object:{...session,id:"cs_live_123456789"}}},order),null);
   assert.equal(inspectStripeCheckoutSession({...event,type:"payment_intent.created"},order),null);
+  assert.equal(inspectStripeCheckoutSession({...event,livemode:true},order),null);
+  assert.equal(inspectStripeCheckoutSession({...event,data:{object:{...session,livemode:true}}},order),null);
 });
