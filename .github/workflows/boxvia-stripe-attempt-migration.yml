@@ -1,0 +1,73 @@
+name: BoxVia Orders Sandbox - Stripe attempt lock migration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-sandbox-schema
+  cancel-in-progress: false
+
+jobs:
+  migrate-sandbox-only:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 12
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Validate sandbox-only target and schema migration
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          config=json.loads(Path('wrangler.orders-sandbox.jsonc').read_text())
+          assert config['name']=='boxvia-orders-sandbox'
+          assert config['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert config['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert all(config['vars'][x]=='false' for x in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          sql=Path('migrations/unified-orders-stripe-attempt-lock-v0.2.sql').read_text()
+          assert 'CREATE UNIQUE INDEX IF NOT EXISTS idx_stripe_one_attempt_per_order' in sql
+          assert "WHERE provider = 'stripe'" in sql
+          print('PASS: isolated sandbox migration target')
+          PY
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Read-only duplicate preflight
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT order_id, COUNT(*) AS attempts FROM payment_attempts WHERE provider = 'stripe' GROUP BY order_id HAVING COUNT(*) > 1 LIMIT 10" --json > /tmp/stripe-duplicates.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/stripe-duplicates.json').read_text())
+          assert isinstance(data,list) and len(data)==1 and data[0]['success'], 'D1 preflight failed'
+          assert data[0]['results']==[], 'Duplicate Stripe attempts exist: migration stopped'
+          print('PASS: no existing duplicate Stripe attempts')
+          PY
+      - name: Apply unique index to sandbox D1 only
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/unified-orders-stripe-attempt-lock-v0.2.sql
+      - name: Verify index exists in sandbox D1
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name,sql FROM sqlite_master WHERE type='index' AND name='idx_stripe_one_attempt_per_order'" --json > /tmp/stripe-index.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/stripe-index.json').read_text())
+          assert len(data)==1 and data[0]['success']
+          rows=data[0]['results']
+          assert len(rows)==1 and 'UNIQUE INDEX' in rows[0]['sql'].upper()
+          assert "WHERE provider = 'stripe'" in rows[0]['sql']
+          print('PASS: sandbox-only Stripe attempt unique index installed')
+          PY
