@@ -24,6 +24,7 @@ class DB {
       async first(){
         if(sql.includes("FROM service_orders"))return db.order;
         if(sql.includes("FROM payment_attempts"))return db.attempt;
+        if(sql.includes("FROM payment_events")){const stored=db.events.get(this.args[0]);return stored?{payload_digest:stored.digest}:null;}
         throw new Error("unexpected query");
       }
     };
@@ -77,7 +78,7 @@ test("event ID collision with different payload cannot settle another payment",a
   const db=new DB();
   db.events.set(event.id,{digest:"0".repeat(64),processed:true});
   const result=await settleVerifiedStripeEvent(db,event);
-  assert.equal(result.outcome,"already_processed_or_manual_review");
+  assert.equal(result.outcome,"event_id_collision");
   assert.equal(db.order.status,"checkout");
   assert.equal(db.outbox.size,0);
 });
