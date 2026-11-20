@@ -196,6 +196,17 @@ test("one-click Stripe Test page is read-only, secret-gated and rejects cross-or
     Origin:base,"Content-Type":"application/json"
   },body:"{}"}),enabled);
   assert.equal(wrongType.status,403);
+  const browserNoOrigin=await worker.fetch(new Request(path,{method:"POST",headers:{
+    "Sec-Fetch-Site":"same-origin","Sec-Fetch-Mode":"navigate",
+    "Content-Type":"application/x-www-form-urlencoded"
+  },body:""}),enabled);
+  assert.equal(browserNoOrigin.status,503);
+  assert.equal((await browserNoOrigin.json()).error,"Checkout schema pending");
+  const foreignMetadata=await worker.fetch(new Request(path,{method:"POST",headers:{
+    "Sec-Fetch-Site":"cross-site","Sec-Fetch-Mode":"navigate",
+    "Content-Type":"application/x-www-form-urlencoded"
+  },body:""}),enabled);
+  assert.equal(foreignMetadata.status,403);
   const noIndex=await worker.fetch(new Request(path,{method:"POST",headers:{
     Origin:base,"Content-Type":"application/x-www-form-urlencoded"
   },body:""}),enabled);
