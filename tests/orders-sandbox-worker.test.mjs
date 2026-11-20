@@ -114,3 +114,17 @@ test("Stripe browser return is safe, non-authoritative and does not leak session
   const wrongProvider=await worker.fetch(new Request(base+"/api/orders/return?provider=paypal"),flags);
   assert.equal(wrongProvider.status,404);
 });
+
+test("Stripe return is read-only, independent of D1, and refuses unexpected methods", async () => {
+  const noDb={...flags};
+  const valid=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&session_id=cs_test_123456789"),noDb);
+  assert.equal(valid.status,200);
+  const injected="<script>alert(1)</script>";
+  const malicious=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&session_id="+encodeURIComponent(injected)),noDb);
+  assert.equal(malicious.status,200);
+  assert.doesNotMatch(await malicious.text(),/<script>|alert\(1\)/);
+  const oversized=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&session_id="+"x".repeat(257)),noDb);
+  assert.equal(oversized.status,404);
+  const postReturn=await worker.fetch(post("/api/orders/return",{provider:"stripe"}),noDb);
+  assert.equal(postReturn.status,404);
+});
