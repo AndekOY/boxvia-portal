@@ -20,6 +20,51 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname === "/stripe-test" && (request.method === "GET" || request.method === "POST")) {
+      // One-off owner-assisted browser acceptance, isolated to one synthetic
+      // order. GET is read-only. POST reserves at most one Stripe attempt.
+      const testOrderId = "fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34";
+      if (!env.DB || env.STRIPE_MODE !== "test" ||
+          env.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
+          !isStripeTestApiKey(env.STRIPE_TEST_SECRET_KEY) ||
+          typeof env.STRIPE_E2E_ORDER_CAPABILITY !== "string") {
+        return json({ error: "Test checkout unavailable" }, 503);
+      }
+      if (request.method === "GET") {
+        const page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoxVia Stripe Test</title><main style="font:16px system-ui;max-width:38rem;margin:10vh auto;padding:1rem"><h1>Stripe Test Mode</h1><p>One Question Review — USD 50.00 (test payment only).</p><p>No real money will be charged.</p><form method="post" action="/stripe-test"><button type="submit">Open Stripe Test Checkout</button></form></main></html>';
+        return new Response(page, { status: 200, headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+          "Referrer-Policy": "no-referrer",
+          "X-Content-Type-Options": "nosniff"
+        } });
+      }
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/x-www-form-urlencoded") {
+        return json({ error: "Rejected" }, 403);
+      }
+      try {
+        const index = await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_stripe_one_attempt_per_order'"
+        ).first();
+        if (!index) return json({ error: "Checkout schema pending" }, 503);
+        const order = await getAuthorizedOrder(env.DB, testOrderId, env.STRIPE_E2E_ORDER_CAPABILITY);
+        if (!order || order.status !== "pending" || order.serviceCode !== "one-question-review" ||
+            order.amountMinor !== 5000 || order.currency !== "USD") return json({ error: "Order not eligible" }, 409);
+        const attempt = await reserveStripeAttempt(env.DB, order);
+        if (!attempt.created) return json({ error: "Checkout already reserved" }, 409);
+        const session = await requestStripeTestSession(order, env, url.origin, attempt.attemptId);
+        await persistStripeSession(env.DB, attempt.attemptId, session.sessionId, order.orderId);
+        return new Response(null, { status: 303, headers: {
+          "Location": session.checkoutUrl, "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer"
+        } });
+      } catch {
+        console.error("stripe_browser_test_checkout_failed_or_reconciliation_required");
+        return json({ error: "Checkout unavailable; reconciliation required" }, 503);
+      }
+    }
     if (url.pathname === "/api/stripe/checkout" && request.method === "POST") {
       if (!env.DB || env.STRIPE_MODE !== "test" ||
           env.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
