@@ -174,3 +174,31 @@ test("signed Stripe event with colliding ID is rejected at HTTP boundary", async
   assert.equal(response.status,409);
   assert.deepEqual(await response.json(),{received:false,outcome:"requires_review"});
 });
+
+test("one-click Stripe Test page is read-only, secret-gated and rejects cross-origin POST",async()=>{
+  const path=base+"/stripe-test";
+  const closed=await worker.fetch(new Request(path),flags);
+  assert.equal(closed.status,503);
+  const enabled={...flags,DB:db,STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",
+    STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy",STRIPE_E2E_ORDER_CAPABILITY:"a".repeat(64)};
+  const page=await worker.fetch(new Request(path),enabled);
+  assert.equal(page.status,200);
+  assert.equal(page.headers.get("Cache-Control"),"no-store");
+  const html=await page.text();
+  assert.match(html,/USD 50\.00/);
+  assert.match(html,/method="post"/);
+  assert.doesNotMatch(html,/a{64}|fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34/);
+  const foreign=await worker.fetch(new Request(path,{method:"POST",headers:{
+    Origin:"https://evil.example","Content-Type":"application/x-www-form-urlencoded"
+  },body:""}),enabled);
+  assert.equal(foreign.status,403);
+  const wrongType=await worker.fetch(new Request(path,{method:"POST",headers:{
+    Origin:base,"Content-Type":"application/json"
+  },body:"{}"}),enabled);
+  assert.equal(wrongType.status,403);
+  const noIndex=await worker.fetch(new Request(path,{method:"POST",headers:{
+    Origin:base,"Content-Type":"application/x-www-form-urlencoded"
+  },body:""}),enabled);
+  assert.equal(noIndex.status,503);
+  assert.equal((await noIndex.json()).error,"Checkout schema pending");
+});
