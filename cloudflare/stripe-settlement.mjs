@@ -45,7 +45,7 @@ export async function settleVerifiedStripeEvent(db, event) {
     ).bind(event.id, event.type, digest),
     db.prepare(
       "UPDATE service_orders SET status = 'paid', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'checkout' AND amount_minor = ? AND currency = 'USD' AND EXISTS (SELECT 1 FROM payment_events WHERE provider = 'stripe' AND event_id = ? AND payload_digest = ? AND processed_at IS NULL) AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND provider = 'stripe' AND provider_order_id = ? AND amount_minor = ? AND currency = 'USD' AND status IN ('created','pending','verified'))"
-    undefined
+    ).bind(order.id, order.amount_minor, event.id, digest, attempt.id, verified.providerOrderId, order.amount_minor),
     db.prepare(
       "UPDATE payment_attempts SET status = 'verified', provider_payment_id = ?, verified_at = CURRENT_TIMESTAMP WHERE id = ? AND provider = 'stripe' AND provider_order_id = ? AND status IN ('created','pending','verified') AND EXISTS (SELECT 1 FROM service_orders WHERE id = ? AND status = 'paid')"
     ).bind(verified.providerPaymentId, attempt.id, verified.providerOrderId, order.id),
