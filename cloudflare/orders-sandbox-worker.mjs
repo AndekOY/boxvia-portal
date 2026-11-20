@@ -95,6 +95,30 @@ export default {
         return json({ error: "Unavailable" }, 503);
       }
     }
+    if (url.pathname === "/api/orders/return" && request.method === "GET") {
+      // Stripe browser redirects are not payment evidence. Never disclose order
+      // state, capability, session identifiers, or customer information here.
+      if (url.searchParams.get("provider") !== "stripe" ||
+          (url.searchParams.has("session_id") && url.searchParams.get("session_id")?.length > 256)) {
+        return json({ error: "Not found" }, 404);
+      }
+      const cancelled = url.searchParams.get("cancelled") === "1";
+      const title = cancelled ? "Checkout cancelled" : "Checkout return received";
+      const message = cancelled
+        ? "No payment confirmation is available from this page. Return to your order to check its status."
+        : "Payment confirmation is pending independent verification. Return to your order to check its status.";
+      return new Response(
+        "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>BoxVia Sandbox</title><main style=\"font:16px system-ui;max-width:38rem;margin:10vh auto;padding:1rem\"><h1>" +
+        title + "</h1><p>" + message + "</p><p>BoxVia Stripe Test Mode — no real payments.</p></main></html>",
+        { status: 200, headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+          "Referrer-Policy": "no-referrer",
+          "X-Content-Type-Options": "nosniff"
+        } }
+      );
+    }
     if (url.pathname === "/api/orders/status" && request.method === "POST") {
       if (!env.DB) return json({ error: "Unavailable" }, 503);
       if (request.headers.get("Origin") !== url.origin ||
