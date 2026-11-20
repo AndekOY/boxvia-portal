@@ -47,7 +47,8 @@ export default {
       const fetchSite = request.headers.get("Sec-Fetch-Site");
       const fetchMode = request.headers.get("Sec-Fetch-Mode");
       const sameOrigin = originHeader === url.origin ||
-        (!originHeader && fetchSite === "same-origin" && fetchMode === "navigate");
+        ((originHeader === null || originHeader === "null") &&
+         fetchSite === "same-origin" && fetchMode === "navigate");
       if (!sameOrigin ||
           request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/x-www-form-urlencoded") {
         return json({ error: "Rejected" }, 403);
