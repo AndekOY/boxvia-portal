@@ -128,3 +128,49 @@ test("Stripe return is read-only, independent of D1, and refuses unexpected meth
   const postReturn=await worker.fetch(post("/api/orders/return",{provider:"stripe"}),noDb);
   assert.equal(postReturn.status,404);
 });
+
+test("signed Stripe event with colliding ID is rejected at HTTP boundary", async () => {
+  const secret="whsec_test_not_real_secret";
+  const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654";
+  const sessionId="cs_test_123456789";
+  const event={
+    id:"evt_123456789",livemode:false,type:"checkout.session.completed",
+    data:{object:{
+      object:"checkout.session",livemode:false,id:sessionId,mode:"payment",
+      payment_status:"paid",client_reference_id:orderId,
+      metadata:{order_id:orderId},amount_total:5000,currency:"usd",
+      payment_intent:"pi_123456789"
+    }}
+  };
+  const collisionDb={
+    prepare(sql){
+      return {
+        bind(...args){this.args=args;return this;},
+        async first(){
+          if(sql.includes("FROM service_orders"))return {id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};
+          if(sql.includes("FROM payment_attempts"))return {
+            id:"attempt-1",order_id:orderId,provider_order_id:sessionId,
+            amount_minor:5000,currency:"USD",status:"pending"
+          };
+          if(sql.includes("FROM payment_events"))return {payload_digest:"0".repeat(64)};
+          throw Error("Unexpected SQL");
+        }
+      };
+    },
+    async batch(){throw Error("Collision must not start a settlement transaction");}
+  };
+  const raw=JSON.stringify(event);
+  const t=Math.floor(Date.now()/1000);
+  const signature=createHmac("sha256",secret).update(t+"."+raw).digest("hex");
+  const response=await worker.fetch(new Request(base+"/api/stripe/webhook",{
+    method:"POST",headers:{
+      "Content-Type":"application/json",
+      "Stripe-Signature":"t="+t+",v1="+signature
+    },body:raw
+  }),{
+    ...flags,DB:collisionDb,STRIPE_MODE:"test",
+    STRIPE_WEBHOOK_TEST_ENABLED:"true",STRIPE_TEST_WEBHOOK_SECRET:secret
+  });
+  assert.equal(response.status,409);
+  assert.deepEqual(await response.json(),{received:false,outcome:"requires_review"});
+});
