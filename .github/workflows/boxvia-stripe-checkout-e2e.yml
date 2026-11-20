@@ -1,0 +1,84 @@
+name: BoxVia Stripe - sandbox checkout E2E initiation
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-checkout-e2e.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-stripe-checkout-e2e
+  cancel-in-progress: false
+
+jobs:
+  initiate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify exclusive sandbox target and fixed price
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Install ephemeral admin credential in sandbox Worker only
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          Path('/tmp/boxvia-stripe-admin').write_text(secrets.token_hex(32))
+          PY
+          npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-stripe-admin
+      - name: Create $50 order and Stripe Test Checkout via isolated Worker
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          from pathlib import Path
+          base='https://boxvia-orders-sandbox.andeks.workers.dev'
+          token=Path('/tmp/boxvia-stripe-admin').read_text()
+          def call(path,payload,admin=False):
+            headers={'Origin':base,'Content-Type':'application/json'}
+            if admin: headers['Authorization']='Bearer '+token
+            req=urllib.request.Request(base+path,data=json.dumps(payload).encode(),headers=headers,method='POST')
+            try:
+              with urllib.request.urlopen(req,timeout=30) as r:
+                return r.status,json.load(r)
+            except urllib.error.HTTPError as e:
+              if e.code==403:
+                raise SystemExit('BLOCKED: HTTP 403; cannot complete sandbox checkout from GitHub runner. No success claimed.')
+              try: response=json.load(e)
+              except Exception: response={'error':'Non-JSON response'}
+              raise SystemExit('STOP: sandbox endpoint '+path+' returned HTTP '+str(e.code)+': '+str(response.get('error','unknown')))
+          code,order=call('/api/orders/create',{'serviceRequestId':720026674,'serviceCode':'one-question-review'},True)
+          if code!=201 or order.get('created') is not True or order.get('amountMinor')!=5000 or order.get('currency')!='USD':
+            raise SystemExit('STOP: order not freshly created; do not reuse lost capability')
+          capability=order['capability']
+          print('PASS: sandbox order created:',order['orderId'],'amount: USD 50.00')
+          code,checkout=call('/api/stripe/checkout',{'orderId':order['orderId'],'capability':capability})
+          if code!=201 or not checkout.get('checkoutUrl','').startswith('https://checkout.stripe.com/'):
+            raise SystemExit('STOP: Stripe Checkout Session not confirmed')
+          print('PASS: Stripe Test Mode Checkout Session created')
+          print('STRIPE_TEST_CHECKOUT_URL:',checkout['checkoutUrl'])
+          print('NO CARD CHARGED. PAYMENT AND WEBHOOK NOT YET VERIFIED.')
+          PY
