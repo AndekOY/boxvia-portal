@@ -40,7 +40,18 @@ export default {
           "X-Content-Type-Options": "nosniff"
         } });
       }
-      if (request.headers.get("Origin") !== url.origin ||
+      // Same-origin browser form submission may omit Origin; require a
+      // matching Referer in that case. Never accept absent or foreign provenance.
+      const originHeader = request.headers.get("Origin");
+      const refererHeader = request.headers.get("Referer");
+      let sameOrigin = originHeader === url.origin;
+      if (!originHeader && refererHeader) {
+        try {
+          const ref = new URL(refererHeader);
+          sameOrigin = ref.origin === url.origin && ref.pathname === "/stripe-test";
+        } catch { sameOrigin = false; }
+      }
+      if (!sameOrigin ||
           request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/x-www-form-urlencoded") {
         return json({ error: "Rejected" }, 403);
       }
