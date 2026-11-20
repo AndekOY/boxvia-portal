@@ -15,7 +15,7 @@ const event={
   }}
 };
 class DB {
-  constructor() {this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:"attempt-1",order_id:orderId,provider_order_id:sessionId,amount_minor:5000,currency:"USD",status:"pending"};this.events=new Set();this.outbox=new Set();}
+  constructor() {this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:"attempt-1",order_id:orderId,provider_order_id:sessionId,amount_minor:5000,currency:"USD",status:"pending"};this.events=new Map();this.outbox=new Set();}
   prepare(sql) {
     const db=this;
     return {
@@ -33,14 +33,15 @@ class DB {
     for(const s of statements){
       let changes=0;
       if(s.sql.startsWith("INSERT OR IGNORE INTO payment_events")){
-        if(!this.events.has(s.args[0])){this.events.add(s.args[0]);changes=1;}
+        if(!this.events.has(s.args[0])){this.events.set(s.args[0],{digest:s.args[2],processed:false});changes=1;}
       } else if(s.sql.startsWith("UPDATE service_orders")){
-        if(this.order.status==="checkout"){this.order.status="paid";changes=1;}
+        const stored=this.events.get(s.args[2]);
+        if(this.order.status==="checkout"&&stored&&stored.digest===s.args[3]&&!stored.processed){this.order.status="paid";changes=1;}
       } else if(s.sql.startsWith("UPDATE payment_attempts")){
         if(this.order.status==="paid"){this.attempt.status="verified";changes=1;}
       } else if(s.sql.startsWith("INSERT OR IGNORE INTO fulfillment_outbox")){
         if(this.order.status==="paid"&&this.attempt.status==="verified"&&!this.outbox.has(orderId)){this.outbox.add(orderId);changes=1;}
-      } else if(s.sql.startsWith("UPDATE payment_events"))changes=1;
+      } else if(s.sql.startsWith("UPDATE payment_events")){const stored=this.events.get(s.args[0]);if(stored){stored.processed=true;changes=1;}}
       else throw new Error("unexpected SQL");
       result.push({success:true,meta:{changes}});
     }
@@ -70,4 +71,13 @@ test("unverified event type does not write to D1",async()=>{
   const db=new DB();
   assert.equal((await settleVerifiedStripeEvent(db,{...event,type:"payment_intent.created"})).outcome,"ignored");
   assert.equal(db.events.size,0);
+});
+
+test("event ID collision with different payload cannot settle another payment",async()=>{
+  const db=new DB();
+  db.events.set(event.id,{digest:"0".repeat(64),processed:true});
+  const result=await settleVerifiedStripeEvent(db,event);
+  assert.equal(result.outcome,"already_processed_or_manual_review");
+  assert.equal(db.order.status,"checkout");
+  assert.equal(db.outbox.size,0);
 });
