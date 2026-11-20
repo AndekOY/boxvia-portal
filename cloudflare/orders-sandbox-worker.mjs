@@ -40,17 +40,14 @@ export default {
           "X-Content-Type-Options": "nosniff"
         } });
       }
-      // Same-origin browser form submission may omit Origin; require a
-      // matching Referer in that case. Never accept absent or foreign provenance.
+      // Same-origin browser form submission may omit Origin. A same-origin
+      // Fetch Metadata signal is acceptable only if Origin is absent.
+      // Reject foreign Origin even when other headers appear trustworthy.
       const originHeader = request.headers.get("Origin");
-      const refererHeader = request.headers.get("Referer");
-      let sameOrigin = originHeader === url.origin;
-      if (!originHeader && refererHeader) {
-        try {
-          const ref = new URL(refererHeader);
-          sameOrigin = ref.origin === url.origin && ref.pathname === "/stripe-test";
-        } catch { sameOrigin = false; }
-      }
+      const fetchSite = request.headers.get("Sec-Fetch-Site");
+      const fetchMode = request.headers.get("Sec-Fetch-Mode");
+      const sameOrigin = originHeader === url.origin ||
+        (!originHeader && fetchSite === "same-origin" && fetchMode === "navigate");
       if (!sameOrigin ||
           request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/x-www-form-urlencoded") {
         return json({ error: "Rejected" }, 403);
