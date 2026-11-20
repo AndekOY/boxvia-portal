@@ -1,6 +1,11 @@
 name: BoxVia Stripe Test Mode - seed synthetic request (sandbox only)
 
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-test-seed.yml
   workflow_dispatch:
 
 permissions:
