@@ -17,6 +17,8 @@ on:
       - tests/stripe-settlement.test.mjs
       - tests/stripe-verification.test.mjs
       - .github/workflows/boxvia-orders-offline-acceptance.yml
+      - scripts/check-stripe-settlement-sqlite.py
+      - migrations/unified-orders-sandbox-v0.1.sql
   workflow_dispatch:
 
 permissions:
@@ -49,3 +51,5 @@ jobs:
           node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
       - name: Verify D1 migration schema offline
         run: python3 scripts/check-unified-orders-schema.py
+      - name: Verify real SQLite Stripe settlement and replay invariants
+        run: python3 scripts/check-stripe-settlement-sqlite.py
