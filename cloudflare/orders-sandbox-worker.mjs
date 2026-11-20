@@ -85,7 +85,7 @@ export default {
           return json({ received: true, outcome: result.outcome });
         }
         if (result.outcome === "rejected" || result.outcome === "unmatched_attempt" ||
-            result.outcome === "unknown_order") {
+            result.outcome === "unknown_order" || result.outcome === "event_id_collision") {
           console.warn("stripe_sandbox_unmatched_event", { outcome: result.outcome });
           return json({ received: false, outcome: "requires_review" }, 409);
         }
