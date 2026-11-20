@@ -97,3 +97,20 @@ test("Stripe Checkout stays closed without test-mode secret and feature gate", a
   assert.equal(rejected.status,503);
   assert.equal((await rejected.json()).error,"Unavailable");
 });
+
+test("Stripe browser return is safe, non-authoritative and does not leak session", async () => {
+  const session="cs_test_123456789";
+  const returned=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&session_id="+session),flags);
+  assert.equal(returned.status,200);
+  assert.match(returned.headers.get("Content-Type"),/text\/html/);
+  assert.equal(returned.headers.get("Cache-Control"),"no-store");
+  const html=await returned.text();
+  assert.match(html,/pending independent verification/);
+  assert.doesNotMatch(html,/payment confirmed|payment successful|paid/i);
+  assert.doesNotMatch(html,/cs_test_123456789/);
+  const cancelled=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&cancelled=1"),flags);
+  assert.equal(cancelled.status,200);
+  assert.match(await cancelled.text(),/Checkout cancelled/);
+  const wrongProvider=await worker.fetch(new Request(base+"/api/orders/return?provider=paypal"),flags);
+  assert.equal(wrongProvider.status,404);
+});
