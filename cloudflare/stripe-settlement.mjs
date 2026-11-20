@@ -37,6 +37,14 @@ export async function settleVerifiedStripeEvent(db, event) {
     "SHA-256", new TextEncoder().encode(JSON.stringify(event))
   );
   const digest = [...new Uint8Array(eventDigest)].map(x => x.toString(16).padStart(2, "0")).join("");
+  // Distinguish a legitimate retry from reuse of a provider event ID with
+  // different content. Such a collision is a review condition, never an ACK.
+  const recorded = await db.prepare(
+    "SELECT payload_digest FROM payment_events WHERE provider = 'stripe' AND event_id = ?"
+  ).bind(event.id).first();
+  if (recorded && recorded.payload_digest !== digest) {
+    return { outcome: "event_id_collision", orderId: order.id };
+  }
   // The conditional order UPDATE is the paid-once latch. In a D1 transactional
   // batch, a replay cannot create another fulfillment row.
   const statements = [
