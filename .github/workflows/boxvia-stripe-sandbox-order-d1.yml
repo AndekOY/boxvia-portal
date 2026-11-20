@@ -1,0 +1,99 @@
+name: BoxVia Stripe - create isolated D1 test order
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-sandbox-order-d1.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-stripe-sandbox-order-d1
+  cancel-in-progress: false
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 12
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify sandbox isolation and immutable request
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Verify test request and no existing order (read-only)
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT r.id,r.service_code,(SELECT COUNT(*) FROM service_orders o WHERE o.service_request_id=r.id) AS order_count FROM service_requests r WHERE r.id=720026674" --json > /tmp/boxvia-stripe-preflight.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/boxvia-stripe-preflight.json'))
+          assert isinstance(data,list) and data[0]['success'],data
+          rows=data[0]['results']
+          assert len(rows)==1 and rows[0]['service_code']=='one-question-review',rows
+          assert rows[0]['order_count']==0,'Order already exists; STOP, reconcile instead of creating another'
+          print('PASS: confirmed synthetic request, no existing order')
+          PY
+      - name: Generate capability and store it in isolated Worker secret store
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import secrets,hashlib,uuid
+          from pathlib import Path
+          token=secrets.token_hex(32)
+          Path('/tmp/boxvia-stripe-capability').write_text(token)
+          Path('/tmp/boxvia-stripe-order-id').write_text(str(uuid.uuid4()))
+          Path('/tmp/boxvia-stripe-capability-hash').write_text(hashlib.sha256(token.encode()).hexdigest())
+          PY
+          npx --yes wrangler@4 secret put STRIPE_E2E_ORDER_CAPABILITY --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-stripe-capability
+          rm /tmp/boxvia-stripe-capability
+      - name: Insert one fixed-price sandbox order with capability hash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          order_id=Path('/tmp/boxvia-stripe-order-id').read_text()
+          digest=Path('/tmp/boxvia-stripe-capability-hash').read_text()
+          sql=(
+            "INSERT OR IGNORE INTO service_orders "
+            "(id,service_request_id,service_code,amount_minor,currency,capability_hash,status) "
+            "SELECT '"+order_id+"',id,'one-question-review',5000,'USD','"+digest+"','pending' "
+            "FROM service_requests WHERE id=720026674 AND service_code='one-question-review';"
+          )
+          Path('/tmp/boxvia-stripe-order.sql').write_text(sql)
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-stripe-order.sql > /tmp/boxvia-stripe-insert.log
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT id,service_request_id,service_code,amount_minor,currency,status FROM service_orders WHERE service_request_id=720026674" --json > /tmp/boxvia-stripe-order-result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.load(open('/tmp/boxvia-stripe-order-result.json'))
+          assert isinstance(data,list) and data[0]['success'],data
+          rows=data[0]['results']
+          expected=Path('/tmp/boxvia-stripe-order-id').read_text()
+          assert len(rows)==1,rows
+          row=rows[0]
+          assert row=={'id':expected,'service_request_id':720026674,'service_code':'one-question-review','amount_minor':5000,'currency':'USD','status':'pending'},row
+          print('PASS: sandbox D1 order:',expected,'USD 50.00 status=pending')
+          print('Capability is stored only as SHA-256 in D1; raw token stored only in isolated Worker secret.')
+          print('No checkout session, payment or charge created.')
+          PY
