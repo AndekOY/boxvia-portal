@@ -22,3 +22,26 @@ test("archive writes manifest and refuses repeated version",async()=>{
  assert.equal(await downloadOwnerDocument(bucket,{orderId:id,termsDigest:digest,fileName:"../../secret"}),null);
  await assert.rejects(archiveCommercialPack(bucket,{orderId:id,termsPdf:data,termsDigest:digest}),/already exists/);
 });
+
+test("manifest SHA-256 and byte lengths match archived PDF bytes",async()=>{
+ const orderPdf=buildOrderTermsPdf({orderId:id,service:"One Question Review",amountMinor:5000,currency:"USD",scope:"Synthetic scope",deliverable:"Synthetic report",deadline:"24 hours",termsVersion:"v1",offerVersion:"v1",confidentialityVersion:"v1"});
+ const acceptancePdf=buildAcceptancePdf({orderId:id,termsDigest:digest,offerVersion:"v1",offerDigest:digest,offerAcceptedAt:"2026-11-21T09:00:00Z",confidentialityVersion:"v1",confidentialityDigest:digest,confidentialityAcceptedAt:"2026-11-21T09:01:00Z"});
+ const stored=new Map();
+ const bucket={
+  async head(k){return stored.has(k)?{etag:"existing"}:null;},
+  async put(k,v){if(stored.has(k))return null;stored.set(k,new Uint8Array(v));return {etag:"ok"};},
+  async get(k){return stored.get(k)??null;}
+ };
+ const result=await archiveCommercialPack(bucket,{orderId:id,termsPdf:orderPdf,acceptancePdf,termsDigest:digest});
+ assert.equal(result.manifest.files.length,2);
+ const manifestBytes=await downloadOwnerDocument(bucket,{orderId:id,termsDigest:digest,fileName:"manifest.json"});
+ const manifest=JSON.parse(new TextDecoder().decode(manifestBytes));
+ assert.deepEqual(manifest,result.manifest);
+ for(const entry of manifest.files){
+  const bytes=await downloadOwnerDocument(bucket,{orderId:id,termsDigest:digest,fileName:entry.name});
+  assert.equal(entry.bytes,bytes.byteLength);
+  assert.equal(entry.sha256,await sha256Bytes(bytes));
+ }
+ assert.equal(stored.size,3);
+ await assert.rejects(archiveCommercialPack(bucket,{orderId:id,termsPdf:orderPdf,acceptancePdf,termsDigest:digest}),/Archive already exists/);
+});
