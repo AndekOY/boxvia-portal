@@ -29,3 +29,28 @@ test("unsupported providers and invalid order state cannot open checkout",async(
  assert.deepEqual(await authorizeCommercialPayment(db(),{...order,status:"checkout"},"stripe"),{authorized:false,reason:"invalid_order_status"});
  assert.equal((await authorizeCommercialPayment(db(),{...order,status:"checkout"},"stripe",{recovery:true})).authorized,true);
 });
+
+test("both fixed-price services require independent canonical consent for Stripe and PayPal",async()=>{
+ for(const serviceCode of ["one-question-review","ai-governance-review"]){
+  const candidate={...order,serviceCode};
+  const matching={...accepted,service_code:serviceCode};
+  for(const provider of ["stripe","paypal"]){
+   assert.deepEqual(await authorizeCommercialPayment(db(matching),candidate,provider),{
+    authorized:true,provider,orderId:id,amountMinor:5000,currency:"USD",recovery:false
+   });
+   for(const [label,consent,source] of [
+    ["missing consent",null,{scope_text:"Scope",terms_version:"v1"}],
+    ["wrong service",{...matching,service_code:"one-question-review"===serviceCode?"ai-governance-review":"one-question-review"},{scope_text:"Scope",terms_version:"v1"}],
+    ["wrong price",{...matching,amount_minor:4999},{scope_text:"Scope",terms_version:"v1"}],
+    ["missing source",matching,null],
+    ["blank source",matching,{scope_text:" ",terms_version:"v1"}],
+    ["blank version",matching,{scope_text:"Scope",terms_version:" "}],
+    ["offer timestamp absent",{...matching,offer_accepted_at:null},{scope_text:"Scope",terms_version:"v1"}],
+    ["confidentiality timestamp absent",{...matching,confidentiality_accepted_at:null},{scope_text:"Scope",terms_version:"v1"}]
+   ]){
+    const result=await authorizeCommercialPayment(db(consent,source),candidate,provider);
+    assert.equal(result.authorized,false,serviceCode+" "+provider+" "+label);
+   }
+  }
+ }
+});
