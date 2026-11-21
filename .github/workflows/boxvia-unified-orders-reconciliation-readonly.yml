@@ -1,0 +1,57 @@
+name: BoxVia Unified Orders - targeted reconciliation (read-only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify sandbox isolation and payment HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Correlate reserved attempts with order states without identifiers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --json --command "SELECT a.provider AS provider, a.status AS attempt_status, o.status AS order_status, CASE WHEN a.provider_order_id IS NULL THEN 'UNBOUND' ELSE 'BOUND' END AS provider_binding, COUNT(*) AS attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id GROUP BY a.provider,a.status,o.status,provider_binding ORDER BY provider,attempt_status,order_status,provider_binding" > /tmp/reconciliation.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/reconciliation.json'))
+          assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
+          rows=data[0].get('results')
+          assert isinstance(rows,list)
+          print('READ_ONLY_RECONCILIATION_SUMMARY')
+          for r in rows:
+              assert isinstance(r.get('attempts'),int) and r['attempts']>=0
+              assert r.get('provider') in ('stripe','paypal')
+              assert r.get('attempt_status') in ('created','pending','completed','failed','cancelled','expired','refunded','succeeded')
+              assert r.get('order_status') in ('pending','checkout','paid','completed','cancelled','failed','refunded')
+              assert r.get('provider_binding') in ('UNBOUND','BOUND')
+              print('provider={provider} attempt_status={attempt_status} order_status={order_status} binding={provider_binding} count={attempts}'.format(**r))
+          if any(r['attempt_status']=='created' and r['provider_binding']=='UNBOUND' and r['order_status']=='pending' for r in rows):
+              print('RECONCILIATION: UNBOUND_CREATED_ATTEMPT_ON_PENDING_ORDER')
+              print('DECISION: HOLD; do not retry, delete, or mutate attempt without provider-side evidence')
+          else:
+              print('RECONCILIATION: REVIEW_AGGREGATE_ROWS')
+          print('No order IDs, customer data, secrets, payment actions, or D1 writes.')
+          PY
