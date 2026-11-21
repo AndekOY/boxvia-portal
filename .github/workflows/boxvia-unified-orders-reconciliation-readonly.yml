@@ -1,6 +1,11 @@
 name: BoxVia Unified Orders - targeted reconciliation (read-only)
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-unified-orders-reconciliation-readonly.yml
 permissions:
   contents: read
 jobs:
