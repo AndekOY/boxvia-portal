@@ -150,34 +150,35 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          if ! npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT 'service_orders' AS metric,COUNT(*) AS n FROM service_orders UNION ALL SELECT 'payment_attempts',COUNT(*) FROM payment_attempts UNION ALL SELECT 'payment_events',COUNT(*) FROM payment_events UNION ALL SELECT 'fulfillment_outbox',COUNT(*) FROM fulfillment_outbox UNION ALL SELECT 'order_terms_acceptances',COUNT(*) FROM order_terms_acceptances UNION ALL SELECT 'stripe_event_order_links',COUNT(*) FROM stripe_event_order_links UNION ALL SELECT 'paypal_capture_evidence',COUNT(*) FROM paypal_capture_evidence" --json > /tmp/boxvia-evidence-counts.json 2>/tmp/boxvia-counts-stderr; then
-            echo "::error::Sandbox D1 count query failed; remote database unchanged"
-            exit 1
-          fi
-          if ! npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT COUNT(*) AS orphan_attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL" --json > /tmp/boxvia-evidence-orphans.json 2>/tmp/boxvia-orphans-stderr; then
-            echo "::error::Sandbox D1 orphan query failed; remote database unchanged"
-            exit 1
-          fi
           python3 - <<'PY'
-          import json,os
-          def extract(path):
-            data=json.load(open(path))
-            assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
-            return data[0]['results']
-          rows=extract('/tmp/boxvia-evidence-counts.json')
-          counts={r['metric']:r['n'] for r in rows}
-          required={'service_orders','payment_attempts','payment_events','fulfillment_outbox','order_terms_acceptances','stripe_event_order_links','paypal_capture_evidence'}
-          assert set(counts)==required and all(type(n)==int and n>=0 for n in counts.values())
-          orphan=extract('/tmp/boxvia-evidence-orphans.json')[0]['orphan_attempts']
-          assert type(orphan)==int and orphan>=0
+          import json,os,subprocess
+          tables=['service_orders','payment_attempts','payment_events','fulfillment_outbox','order_terms_acceptances','stripe_event_order_links','paypal_capture_evidence']
+          def query(sql):
+            args=['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote','--command',sql,'--json']
+            proc=subprocess.run(args,capture_output=True,text=True,timeout=90)
+            if proc.returncode:
+              raise SystemExit('UNESTABLISHED: remote D1 read-only query failed (exit code '+str(proc.returncode)+'). Inspect private runner logs; no data changed.')
+            try:
+              data=json.loads(proc.stdout)
+              assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
+              return data[0]['results']
+            except (ValueError,KeyError,AssertionError,TypeError):
+              raise SystemExit('UNESTABLISHED: unexpected remote D1 JSON response; no data changed.')
+          counts={}
+          for table in tables:
+            rows=query('SELECT COUNT(*) AS n FROM '+table)
+            assert len(rows)==1 and type(rows[0]['n'])==int
+            counts[table]=rows[0]['n']
+          rows=query('SELECT COUNT(*) AS n FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL')
+          orphan=rows[0]['n']
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-            summary.write('### Remote sandbox D1 read-only evidence inventory\\n\\n')
+            summary.write('### Remote sandbox D1 evidence inventory (read-only)\\n\\n')
             summary.write('| Metric | Count |\\n|---|---:|\\n')
             for name in sorted(counts):
               summary.write(f'| {name} | {counts[name]} |\\n')
             summary.write(f'| orphan_attempts | {orphan} |\\n')
-            summary.write('\\nCounts do not establish provider settlement, customer consent, or HTTP reachability. No D1 writes performed.\\n')
+            summary.write('\\nCounts alone do not establish provider settlement, consent, or HTTP availability.\\n')
           if orphan:
-            raise SystemExit(f'FAIL: {orphan} payment attempts lack an order')
-          print('PASS: read-only evidence inventory and payment-attempt referential integrity')
+            raise SystemExit(f'FAIL: {orphan} orphan payment attempts')
+          print('PASS: seven independent D1 counts and zero orphan attempts; no writes')
           PY
