@@ -24,6 +24,8 @@ export async function settleVerifiedUnifiedPayPalCapture(db,providerOrder,expect
    return {outcome:"already_processed",orderId:order.id};
   return {outcome:"manual_review",orderId:order.id};
  }
+ const proof=JSON.stringify([verified.providerOrderId,verified.captureId,verified.orderId,verified.attemptId,verified.amountMinor,verified.currency]);
+ const proofHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(proof))),b=>b.toString(16).padStart(2,"0")).join("");
  const statements=[
   db.prepare(
    "UPDATE service_orders SET status = 'paid',paid_at = CURRENT_TIMESTAMP,updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'checkout' AND amount_minor = ? AND currency = 'USD' AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND order_id = ? AND provider = 'paypal' AND provider_order_id = ? AND amount_minor = ? AND currency = 'USD' AND status IN ('created','pending') AND provider_payment_id IS NULL)"
@@ -32,13 +34,16 @@ export async function settleVerifiedUnifiedPayPalCapture(db,providerOrder,expect
    "UPDATE payment_attempts SET status = 'verified',provider_payment_id = ?,verified_at = CURRENT_TIMESTAMP WHERE id = ? AND order_id = ? AND provider = 'paypal' AND provider_order_id = ? AND amount_minor = ? AND currency = 'USD' AND status IN ('created','pending') AND provider_payment_id IS NULL AND EXISTS (SELECT 1 FROM service_orders WHERE id = ? AND status = 'paid')"
   ).bind(verified.captureId,attempt.id,order.id,verified.providerOrderId,order.amount_minor,order.id),
   db.prepare(
-   "INSERT OR IGNORE INTO fulfillment_outbox (id,order_id,status) SELECT ?,id,'pending' FROM service_orders WHERE id = ? AND status = 'paid' AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND order_id = ? AND provider = 'paypal' AND provider_order_id = ? AND provider_payment_id = ? AND status = 'verified')"
-  ).bind(crypto.randomUUID(),order.id,attempt.id,order.id,verified.providerOrderId,verified.captureId)
+   "INSERT INTO paypal_capture_evidence (capture_id,paypal_order_id,order_id,payment_attempt_id,amount_minor,currency,capture_digest) SELECT ?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM service_orders WHERE id = ? AND status = 'paid') AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND order_id = ? AND provider = 'paypal' AND provider_order_id = ? AND provider_payment_id = ? AND status = 'verified')"
+  ).bind(verified.captureId,verified.providerOrderId,order.id,attempt.id,order.amount_minor,order.currency,proofHash,order.id,attempt.id,order.id,verified.providerOrderId,verified.captureId),
+  db.prepare(
+   "INSERT OR IGNORE INTO fulfillment_outbox (id,order_id,status) SELECT ?,id,'pending' FROM service_orders WHERE id = ? AND status = 'paid' AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND order_id = ? AND provider = 'paypal' AND provider_order_id = ? AND provider_payment_id = ? AND status = 'verified') AND EXISTS (SELECT 1 FROM paypal_capture_evidence WHERE capture_id = ? AND order_id = ? AND payment_attempt_id = ? AND capture_digest = ?)"
+  ).bind(crypto.randomUUID(),order.id,attempt.id,order.id,verified.providerOrderId,verified.captureId,verified.captureId,order.id,attempt.id,proofHash)
  ];
  const results=await db.batch(statements);
- if(!Array.isArray(results)||results.length!==3||results.some(x=>x?.success!==true))
+ if(!Array.isArray(results)||results.length!==4||results.some(x=>x?.success!==true))
   throw new Error("PayPal settlement transaction not confirmed");
- if(results[0]?.meta?.changes!==1||results[1]?.meta?.changes!==1)
+ if(results[0]?.meta?.changes!==1||results[1]?.meta?.changes!==1||results[2]?.meta?.changes!==1)
   throw new Error("PayPal capture settlement requires manual reconciliation");
  return {outcome:"paid",orderId:order.id,captureId:verified.captureId};
 }
