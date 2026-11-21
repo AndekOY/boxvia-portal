@@ -1,3 +1,4 @@
+import {verifyBcdeAccess} from "./bcde-access.mjs";
 import { isStripeTestApiKey } from "./stripe-test-key.mjs";
 import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession, retrieveExistingStripeTestSession } from "./stripe-checkout.mjs";
 import { verifyStripeSignature } from "./stripe-verification.mjs";
@@ -23,7 +24,10 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
-    if (url.pathname === "/bcde-owner" && request.method === "GET") return new Response(ownerConsoleHtml,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"}});
+    if (url.pathname === "/bcde-owner" && request.method === "GET") {
+      if (!await verifyBcdeAccess(request,env)) return json({error:"Access denied"},401);
+      return new Response(ownerConsoleHtml,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"}});
+    }
     if (url.pathname.startsWith("/api/bcde/")) return handleBcdeOwner(request,env);
     if (url.pathname === "/stripe-test/open" && request.method === "GET") {
       // One-time sandbox diagnostic: read-only recovery of the existing
