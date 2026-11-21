@@ -1,6 +1,13 @@
 name: BoxVia Stripe - sandbox checkout E2E initiation
 
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-checkout-e2e.yml
+      - cloudflare/commercial-payment-gate.mjs
+      - tests/commercial-payment-gate.test.mjs
   workflow_dispatch:
     inputs:
       service_code:
@@ -56,10 +63,12 @@ jobs:
           assert c['name']=='boxvia-orders-sandbox'
           assert c['vars']['UNIFIED_ORDERS_ENABLED']=='false'
           assert c['vars']['STRIPE_CHECKOUT_ENABLED']=='false'
-          service=os.environ['SERVICE_CODE']
-          assert service in ('one-question-review','ai-governance-review')
-          raw=os.environ['SERVICE_REQUEST_ID']
-          assert raw.isdecimal() and int(raw)>0
+          service=os.environ.get('SERVICE_CODE','')
+          if service:
+            assert service in ('one-question-review','ai-governance-review')
+          raw=os.environ.get('SERVICE_REQUEST_ID','')
+          if raw:
+            assert raw.isdecimal() and int(raw)>0
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
             summary.write('### Stripe sandbox readiness only\\n\\n')
             summary.write('Local tests completed; checkout remains disabled.\\n\\n')
