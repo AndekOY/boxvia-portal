@@ -399,10 +399,14 @@ test("PayPal recovery refuses pending order before consent, index or provider ac
  const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability="a".repeat(64);
  const hash=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(capability)))].map(x=>x.toString(16).padStart(2,"0")).join("");
  const queries=[];
- const DB={prepare(sql){queries.push(sql);if(!sql.includes("FROM service_orders"))throw Error("Unexpected D1 access");return {
-  bind(){return {async first(){return {id:orderId,service_code:"one-question-review",amount_minor:5000,
-   currency:"USD",status:"pending",capability_hash:hash};}}};
- };}};
+ const DB={prepare(sql){
+  queries.push(sql);
+  if(!sql.includes("FROM service_orders"))throw Error("Unexpected D1 access");
+  return {bind(){return {async first(){return {
+   id:orderId,service_code:"one-question-review",amount_minor:5000,
+   currency:"USD",status:"pending",capability_hash:hash
+  };}};}};
+ }};
  const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
   ...flags,DB,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true"});
  assert.equal(response.status,409);
