@@ -3,7 +3,7 @@
 export const SERVICE_CATALOG = Object.freeze({
   "one-question-review": Object.freeze({ title: "One Question Review", currency: "USD", fixedPriceMinor: 5000, startingPriceMinor: 5000, quoteRequired: false }),
   "ai-governance-review": Object.freeze({ title: "Focused AI Governance Review", currency: "USD", fixedPriceMinor: 5000, startingPriceMinor: 5000, quoteRequired: false }),
-  "pre-decision-review": Object.freeze({ title: "Independent Pre-Decision Review", currency: "USD", fixedPriceMinor: 20000, startingPriceMinor: 20000, quoteRequired: false }),
+  "pre-decision-review": Object.freeze({ title: "Independent Pre-Decision Review", currency: "USD", fixedPriceMinor: null, startingPriceMinor: 20000, quoteRequired: true }),
   "technical-pilot": Object.freeze({ title: "Technical Pilot", currency: "USD", fixedPriceMinor: null, startingPriceMinor: 25000, quoteRequired: true }),
   "faar-stage-1": Object.freeze({ title: "Project Definition Review", currency: "USD", fixedPriceMinor: null, startingPriceMinor: 25000, quoteRequired: true }),
   "ai-governance-gap-assessment": Object.freeze({ title: "AI Governance & Compliance Gap Assessment", currency: "USD", fixedPriceMinor: null, startingPriceMinor: 30000, quoteRequired: true })
