@@ -17,6 +17,7 @@ on:
       - tests/paypal-unified-settlement.test.mjs
       - cloudflare/paypal-unified-api.mjs
       - tests/paypal-unified-api.test.mjs
+      - migrations/paypal-one-attempt-per-order-sandbox-v0.1.sql
       - cloudflare/paypal-unified-attempt.mjs
       - tests/paypal-unified-attempt.test.mjs
       - cloudflare/orders-persistence.mjs
