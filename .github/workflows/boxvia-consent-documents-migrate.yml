@@ -1,6 +1,11 @@
 name: BoxVia Consent Documents - sandbox D1 migration (manual)
 
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-consent-documents-migrate.yml
   workflow_dispatch:
 
 permissions:
