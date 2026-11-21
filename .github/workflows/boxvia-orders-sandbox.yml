@@ -12,6 +12,7 @@ on:
       - tests/commercial-payment-gate.test.mjs
       - cloudflare/paypal-unified-sandbox.mjs
       - tests/paypal-unified-sandbox.test.mjs
+      - migrations/paypal-capture-evidence-sandbox-v0.1.sql
       - cloudflare/paypal-unified-settlement.mjs
       - tests/paypal-unified-settlement.test.mjs
       - cloudflare/orders-persistence.mjs
