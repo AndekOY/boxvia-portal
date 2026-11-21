@@ -25,6 +25,15 @@ export async function handleBcdeOwner(request,env){
   const record=await env.DB.prepare("SELECT id,service_code,amount_minor,currency,status FROM service_orders WHERE id = ?").bind(orderId).first();
   if(!record)return json({error:"Not found"},404);
   const order={orderId:record.id,serviceCode:record.service_code,amountMinor:record.amount_minor,currency:record.currency,status:record.status};
+  if(url.pathname==="/api/bcde/readiness" && request.method==="GET"){
+    const consent=await env.DB.prepare("SELECT terms_digest FROM order_terms_acceptances WHERE order_id = ?").bind(orderId).first();
+    const source=consent?.terms_digest ? await env.DB.prepare("SELECT scope_text,terms_version FROM order_document_sources WHERE order_id = ? AND terms_digest = ?").bind(orderId,consent.terms_digest).first() : null;
+    const checkout=await getCheckoutEligibility(env.DB,order);
+    const canonicalTermsPresent=!!(source?.scope_text?.trim()&&source?.terms_version?.trim());
+    const evidenceReady=checkout.eligible&&canonicalTermsPresent;
+    const archivePresent=evidenceReady ? !!await env.BCDE_ARCHIVE.head("bcde/"+orderId+"/v1-"+consent.terms_digest+"/manifest.json") : false;
+    return json({orderId,orderStatus:order.status,consentPresent:!!consent,canonicalTermsPresent,checkoutEligible:checkout.eligible,checkoutReason:checkout.eligible?null:checkout.reason,documentEvidenceReady:evidenceReady,archivePresent,canGenerate:evidenceReady&&!archivePresent});
+  }
   const eligibility=await getCheckoutEligibility(env.DB,order);
   if(!eligibility.eligible)return json({error:"Accepted terms unavailable",reason:eligibility.reason},409);
   const evidence=await env.DB.prepare("SELECT scope_digest,terms_digest,deliverable,deadline,offer_version,offer_digest,offer_accepted_at,confidentiality_version,confidentiality_digest,confidentiality_accepted_at FROM order_terms_acceptances WHERE order_id = ?").bind(orderId).first();
