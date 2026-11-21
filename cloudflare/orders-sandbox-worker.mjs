@@ -5,6 +5,8 @@ import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 import { authorizeCommercialPayment } from "./commercial-payment-gate.mjs";
+import { reserveUnifiedPayPalAttempt, persistUnifiedPayPalProviderOrder } from "./paypal-unified-attempt.mjs";
+import { createUnifiedPayPalSandboxOrder } from "./paypal-unified-api.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
 import { ownerConsoleHtml } from "./bcde-owner-console.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
@@ -146,6 +148,42 @@ export default {
       } catch {
         console.error("stripe_browser_test_checkout_failed_or_reconciliation_required");
         return json({ error: "Checkout unavailable; reconciliation required" }, 503);
+      }
+    }
+    if (url.pathname === "/api/paypal/sandbox/checkout" && request.method === "POST") {
+      // Sandbox-only, disabled by default; no live PayPal checkout.
+      if (!env.DB || env.PAYPAL_MODE !== "sandbox" ||
+          env.PAYPAL_UNIFIED_TEST_ENABLED !== "true" ||
+          env.PAYPAL_CHECKOUT_ENABLED !== "true" ||
+          env.UNIFIED_ORDERS_ENABLED !== "true") return json({error:"Unavailable"},503);
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json")
+        return json({error:"Rejected"},403);
+      let body;
+      try {
+        if (Number(request.headers.get("Content-Length") || 0)>2048) return json({error:"Too large"},413);
+        const raw=await request.text();
+        if(raw.length>2048)return json({error:"Too large"},413);
+        body=JSON.parse(raw);
+      } catch {return json({error:"Invalid request"},400);}
+      try {
+        const index=await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_paypal_one_attempt_per_order'"
+        ).first();
+        if(!index)return json({error:"Checkout schema pending"},503);
+        const order=await getAuthorizedOrder(env.DB,body?.orderId,body?.capability);
+        if(!order)return json({error:"Not found"},404);
+        if(order.status!=="pending")return json({error:"Order not eligible"},409);
+        const authorization=await authorizeCommercialPayment(env.DB,order,"paypal");
+        if(!authorization.authorized)return json({error:"Terms acceptance required"},409);
+        const attempt=await reserveUnifiedPayPalAttempt(env.DB,authorization);
+        if(!attempt.created)return json({error:"Checkout reserved; reconciliation required"},409);
+        const provider=await createUnifiedPayPalSandboxOrder(env,authorization,attempt.attemptId,url.origin);
+        await persistUnifiedPayPalProviderOrder(env.DB,authorization,attempt.attemptId,provider.providerOrderId);
+        return json({checkoutUrl:provider.approvalUrl},201);
+      }catch{
+        console.error("paypal_sandbox_checkout_failed_or_reconciliation_required");
+        return json({error:"Checkout unavailable; reconciliation required"},503);
       }
     }
     if (url.pathname === "/api/stripe/checkout" && request.method === "POST") {
