@@ -1,0 +1,56 @@
+name: BoxVia PayPal Sandbox - OAuth readiness (no payment)
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-paypal-sandbox-oauth-readiness.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oauth:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 5
+    env:
+      PAYPAL_SANDBOX_CLIENT_ID: ${{ secrets.PAYPAL_SANDBOX_CLIENT_ID }}
+      PAYPAL_SANDBOX_CLIENT_SECRET: ${{ secrets.PAYPAL_SANDBOX_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify isolated checkout remains HOLD and test sandbox OAuth only
+        run: |
+          python3 - <<'PY'
+          import base64,json,os,urllib.request,urllib.error
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert c['vars']=={'UNIFIED_ORDERS_ENABLED':'false','PAYPAL_CHECKOUT_ENABLED':'false','STRIPE_CHECKOUT_ENABLED':'false'}
+          client=os.environ.get('PAYPAL_SANDBOX_CLIENT_ID','')
+          secret=os.environ.get('PAYPAL_SANDBOX_CLIENT_SECRET','')
+          status='BLOCKED_MISSING_SANDBOX_CREDENTIALS'
+          if bool(client)!=bool(secret):
+            status='BLOCKED_INCOMPLETE_SANDBOX_CREDENTIALS'
+          elif client and secret:
+            auth=base64.b64encode((client+':'+secret).encode()).decode()
+            req=urllib.request.Request(
+              'https://api-m.sandbox.paypal.com/v1/oauth2/token',
+              data=b'grant_type=client_credentials',
+              headers={'Authorization':'Basic '+auth,'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},
+              method='POST')
+            try:
+              with urllib.request.urlopen(req,timeout=20) as r:
+                body=json.load(r)
+                assert isinstance(body.get('access_token'),str) and len(body['access_token'])>=16
+                assert body.get('token_type')=='Bearer'
+                status='PASS_SANDBOX_OAUTH'
+            except (urllib.error.URLError,ValueError,AssertionError,TimeoutError):
+              status='BLOCKED_SANDBOX_OAUTH_UNVERIFIED'
+          print('PayPal sandbox OAuth readiness:',status)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('### PayPal sandbox OAuth readiness\\n\\n**'+status+'**\\n\\n')
+            f.write('OAuth token endpoint only. No order ID, no checkout creation, no capture, no D1 access. No credentials or tokens printed.\\n')
+          PY
