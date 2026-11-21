@@ -4,7 +4,7 @@ import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession, r
 import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
-import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
+import { authorizeCommercialPayment } from "./commercial-payment-gate.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
 import { ownerConsoleHtml } from "./bcde-owner-console.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
@@ -47,8 +47,8 @@ export default {
           order.amountMinor !== 5000 || order.currency !== "USD") {
         return json({ error: "Existing order not eligible" }, 409);
       }
-      const evidenceGate = await getCheckoutEligibility(env.DB, order);
-      if (!evidenceGate.eligible) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
+      const evidenceGate = await authorizeCommercialPayment(env.DB, order, "stripe", {recovery:order.status==="checkout"});
+      if (!evidenceGate.authorized) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
       const attempt = await env.DB.prepare(
         "SELECT provider_order_id,status FROM payment_attempts WHERE order_id = ? AND provider = 'stripe' ORDER BY created_at DESC LIMIT 1"
       ).bind(order.orderId).first();
@@ -114,7 +114,7 @@ export default {
         }
         // This diagnostic route cannot bypass the canonical offer and consent gate.
         const evidenceGate = await getCheckoutEligibility(env.DB, order);
-        if (!evidenceGate.eligible) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
+        if (!evidenceGate.authorized) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
         if (order.status === "checkout") {
           // Reuse only the session already bound to this authenticated order.
           const existing = await env.DB.prepare(
@@ -178,7 +178,7 @@ export default {
         // No Stripe session before server-stored final terms, offer and confidentiality consent.
         // A missing migration fails closed rather than falling back to browser assertions.
         const eligibility = await getCheckoutEligibility(env.DB, order);
-        if (!eligibility.eligible) return json({ error: "Terms acceptance required" }, 409);
+        if (!eligibility.authorized) return json({ error: "Terms acceptance required" }, 409);
         const attempt = await reserveStripeAttempt(env.DB, order);
         if (!attempt.created) return json({ error: "Checkout already reserved; reconciliation required" }, 409);
         const session = await requestStripeTestSession(order, env, url.origin, attempt.attemptId);
