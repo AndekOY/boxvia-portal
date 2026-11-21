@@ -291,6 +291,41 @@ export default {
         } }
       );
     }
+    if (url.pathname === "/api/orders/terms-preview" && request.method === "POST") {
+      // Render only the canonical document bound to a capability-authenticated order.
+      // No consent can be recorded through this read-only route.
+      if (!env.DB) return json({ error: "Unavailable" }, 503);
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+        return json({ error: "Rejected" }, 403);
+      }
+      let input;
+      try {
+        if (Number(request.headers.get("Content-Length") || 0) > 2048) return json({ error: "Too large" }, 413);
+        const raw = await request.text();
+        if (raw.length > 2048) return json({ error: "Too large" }, 413);
+        input = JSON.parse(raw);
+      } catch { return json({ error: "Invalid request" }, 400); }
+      try {
+        const order = await getAuthorizedOrder(env.DB, input?.orderId, input?.capability);
+        if (!order) return json({ error: "Not found" }, 404);
+        const document = await env.DB.prepare(
+          "SELECT scope_text,terms_version,terms_digest FROM order_document_sources WHERE order_id = ?"
+        ).bind(order.orderId).first();
+        if (!document || typeof document.scope_text !== "string" || !document.scope_text.trim() ||
+            typeof document.terms_version !== "string" || !document.terms_version.trim() ||
+            typeof document.terms_digest !== "string" || !/^[a-f0-9]{64}$/.test(document.terms_digest)) {
+          return json({ available: false, reason: "canonical_document_missing" }, 409);
+        }
+        return json({ available: true, serviceCode: order.serviceCode,
+          amountMinor: order.amountMinor, currency: order.currency,
+          scopeText: document.scope_text, termsVersion: document.terms_version,
+          termsDigest: document.terms_digest });
+      } catch {
+        console.error("orders_sandbox_terms_preview_failed");
+        return json({ error: "Unavailable" }, 503);
+      }
+    }
     if (url.pathname === "/api/orders/terms-status" && request.method === "POST") {
       // Read-only capability-bound diagnostic. Never accepts terms or enables payment.
       if (!env.DB) return json({ error: "Unavailable" }, 503);
