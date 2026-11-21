@@ -2,6 +2,14 @@ name: BoxVia Orders Sandbox - live order acceptance
 
 on:
   workflow_dispatch:
+    inputs:
+      service_code:
+        description: 'Fixed-price service for synthetic order acceptance'
+        required: true
+        type: choice
+        options:
+          - one-question-review
+          - ai-governance-review
 
 permissions:
   contents: read
@@ -49,16 +57,22 @@ jobs:
           PY
           npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-orders-admin-token
       - name: Seed one synthetic service request in sandbox D1
+        env:
+          SERVICE_CODE: ${{ inputs.service_code }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import secrets
+          import secrets,os
           from pathlib import Path
+          service=os.environ['SERVICE_CODE']
+          titles={'one-question-review':'One Question Review','ai-governance-review':'Focused AI Governance Review'}
+          assert service in titles
           key='orders-acceptance-'+secrets.token_hex(16)
           # No personal information; only disposable synthetic data.
-          sql="INSERT INTO service_requests (service_code,service_title,customer_email,request_json,status,request_key,request_digest) VALUES ('one-question-review','One Question Review','sandbox@example.invalid','{}','new','"+key+"','"+'0'*64+"');"
+          sql="INSERT INTO service_requests (service_code,service_title,customer_email,request_json,status,request_key,request_digest) VALUES ('"+service+"','"+titles[service]+"','sandbox@example.invalid','{}','new','"+key+"','"+'0'*64+"');"
           Path('/tmp/boxvia-orders-seed.sql').write_text(sql)
           Path('/tmp/boxvia-orders-request-key').write_text(key)
+          Path('/tmp/boxvia-orders-service-code').write_text(service)
           PY
           npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-orders-seed.sql
           python3 - <<'PY'
@@ -78,7 +92,7 @@ jobs:
           data=json.loads(raw)
           assert isinstance(data,list) and data[0]['success'], data
           rows=data[0]['results']
-          assert len(rows)==1 and rows[0]['service_code']=='one-question-review', rows
+          assert len(rows)==1 and rows[0]['service_code']==Path('/tmp/boxvia-orders-service-code').read_text(), 'Synthetic service mismatch'
           Path('/tmp/boxvia-orders-request-id').write_text(str(rows[0]['id']))
           print('PASS: synthetic service request persisted in sandbox D1')
           PY
@@ -110,7 +124,7 @@ jobs:
               except (OSError,ValueError):
                 raise SystemExit('BLOCKED: non-JSON response on '+path+'; no acceptance claimed')
               return status,response
-          payload={'serviceRequestId':request_id,'serviceCode':'one-question-review'}
+          payload={'serviceRequestId':request_id,'serviceCode':Path('/tmp/boxvia-orders-service-code').read_text()}
           status,denied=post('/api/orders/create',payload)
           assert status==401,(status,denied)
           status,created=post('/api/orders/create',payload,True)
