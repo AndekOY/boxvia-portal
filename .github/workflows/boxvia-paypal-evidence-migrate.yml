@@ -1,0 +1,106 @@
+name: BoxVia PayPal Evidence - sandbox D1 backup and migration
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-paypal-evidence-migrate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-sandbox-d1
+  cancel-in-progress: false
+
+jobs:
+  backup-and-migrate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Offline migration verification and exact sandbox target
+        run: |
+          python3 scripts/check-paypal-capture-evidence-schema.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert c['vars']=={'UNIFIED_ORDERS_ENABLED':'false','PAYPAL_CHECKOUT_ENABLED':'false','STRIPE_CHECKOUT_ENABLED':'false'}
+          print('PASS: isolated sandbox and disabled payment flags')
+          PY
+      - name: Check remote schema and count before migration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT type,name FROM sqlite_master WHERE name IN ('service_orders','payment_attempts','fulfillment_outbox','paypal_capture_evidence','paypal_capture_evidence_no_update','paypal_capture_evidence_no_delete') ORDER BY type,name" --json > /tmp/paypal-before.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/paypal-before.json'))
+          assert isinstance(x,list) and x and x[0].get('success')
+          names={r['name'] for r in x[0].get('results',[])}
+          assert {'service_orders','payment_attempts','fulfillment_outbox'}<=names
+          evidence={'paypal_capture_evidence','paypal_capture_evidence_no_update','paypal_capture_evidence_no_delete'}
+          present=names & evidence
+          assert not present or present==evidence, 'Partial schema: manual review'
+          print('PASS: required parents; evidence objects:',sorted(present))
+          PY
+      - name: Export sandbox D1 before any schema write
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/boxvia-paypal-d1-backup
+          npx --yes wrangler@4 d1 export boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --output /tmp/boxvia-paypal-d1-backup/boxvia-bxc-sandbox-before-paypal-evidence.sql
+          test -s /tmp/boxvia-paypal-d1-backup/boxvia-bxc-sandbox-before-paypal-evidence.sql
+          sha256sum /tmp/boxvia-paypal-d1-backup/boxvia-bxc-sandbox-before-paypal-evidence.sql > /tmp/boxvia-paypal-d1-backup/SHA256SUMS
+          echo 'PASS: sandbox D1 export created; contents not logged'
+      - name: Preserve backup in restricted workflow artifacts before migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: boxvia-paypal-evidence-pre-migration-d1-${{ github.run_id }}
+          path: /tmp/boxvia-paypal-d1-backup/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Apply additive PayPal evidence schema to sandbox only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/paypal-capture-evidence-sandbox-v0.1.sql
+      - name: Verify exact table, index, triggers and empty evidence history
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT type,name FROM sqlite_master WHERE name IN ('paypal_capture_evidence','idx_paypal_capture_evidence_order','paypal_capture_evidence_no_update','paypal_capture_evidence_no_delete') ORDER BY type,name" --json > /tmp/paypal-after.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/paypal-after.json'))
+          assert isinstance(x,list) and x and x[0].get('success')
+          names={r['name'] for r in x[0].get('results',[])}
+          expected={'paypal_capture_evidence','idx_paypal_capture_evidence_order','paypal_capture_evidence_no_update','paypal_capture_evidence_no_delete'}
+          assert expected<=names, 'Incomplete remote PayPal evidence schema'
+          print('PASS: sandbox evidence table, index and immutable triggers installed')
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT COUNT(*) AS count FROM paypal_capture_evidence" --json > /tmp/paypal-count.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/paypal-count.json'))
+          assert x[0]['success']
+          print('Existing evidence records:',x[0]['results'][0]['count'])
+          PY
