@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/boxvia-orders-sandbox.yml
       - cloudflare/orders-sandbox-worker.mjs
+      - cloudflare/order-consent-route.mjs
+      - tests/order-consent-route.test.mjs
       - cloudflare/commercial-payment-gate.mjs
       - cloudflare/checkout-eligibility-db.mjs
       - tests/commercial-payment-gate.test.mjs
@@ -48,7 +50,7 @@ jobs:
           persist-credentials: false
       - name: Offline test gates
         run: |
-          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-terms-status.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-terms-status.test.mjs tests/order-consent-route.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
           python3 scripts/check-unified-orders-schema.py
       - name: Verify isolated deployment target
         run: |
