@@ -45,6 +45,8 @@ jobs:
           assert c['r2_buckets']==[{'binding':'BCDE_ARCHIVE','bucket_name':'boxvia-bcde-archive-sandbox'}]
           PY
           node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
+      # R2 bucket is provisioned separately. This deploy token may have Workers write
+      # access without R2 bucket list/create permissions; never gate deploy on them.
       - name: Deploy only isolated owner Worker (requires pre-provisioned private R2 bucket)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
