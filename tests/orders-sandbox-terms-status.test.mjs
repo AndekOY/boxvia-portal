@@ -46,3 +46,22 @@ test("terms-preview rejects unauthenticated order without document disclosure",a
  assert.equal(response.status,404);
  assert.deepEqual(await response.json(),{error:"Not found"});
 });
+
+test("terms-preview rejects a changed canonical scope before showing it",async()=>{
+ const capability="a".repeat(64);
+ const capabilityHash=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(capability)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const id="00000000-0000-4000-8000-000000000000";
+ const db={prepare(sql){return {bind(){return {async first(){
+  if(sql.includes("FROM service_orders"))return {id,service_code:"one-question-review",amount_minor:5000,currency:"USD",status:"pending",capability_hash:capabilityHash};
+  if(sql.includes("FROM order_document_sources"))return {scope_text:"CHANGED CANONICAL SCOPE",terms_version:"v1",terms_digest:"b".repeat(64),offer_text:"offer",offer_version:"v1",confidentiality_text:"conf",confidentiality_version:"v1",deliverable:"report",deadline:"24 hours"};
+  throw Error("Unexpected read");
+ }}}}}};
+ const response=await worker.fetch(request("/api/orders/terms-preview",{orderId:id,capability}),{
+  DB:db,UNIFIED_ORDERS_ENABLED:"false",PAYPAL_CHECKOUT_ENABLED:"false",STRIPE_CHECKOUT_ENABLED:"false"
+ });
+ assert.equal(response.status,409);
+ const body=await response.json();
+ assert.equal(body.available,false);
+ assert.equal(body.reason,"canonical_document_integrity_mismatch");
+ assert.equal(JSON.stringify(body).includes("CHANGED CANONICAL SCOPE"),false);
+});
