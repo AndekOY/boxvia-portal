@@ -45,19 +45,7 @@ jobs:
           assert c['r2_buckets']==[{'binding':'BCDE_ARCHIVE','bucket_name':'boxvia-bcde-archive-sandbox'}]
           PY
           node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
-      - name: Provision or verify isolated BCDE sandbox R2 bucket
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          if ! npx --yes wrangler@4 r2 bucket create boxvia-bcde-archive-sandbox; then
-            echo 'Create returned non-success; verifying bucket exists before proceeding'
-            npx --yes wrangler@4 r2 bucket list | grep -F 'boxvia-bcde-archive-sandbox'
-          fi
-      - name: Deploy only isolated owner Worker (private R2 binding, no payment secrets)
+      - name: Deploy only isolated owner Worker (requires pre-provisioned private R2 bucket)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
