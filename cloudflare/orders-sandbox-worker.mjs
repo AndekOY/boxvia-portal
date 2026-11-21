@@ -47,6 +47,8 @@ export default {
           order.amountMinor !== 5000 || order.currency !== "USD") {
         return json({ error: "Existing order not eligible" }, 409);
       }
+      const evidenceGate = await getCheckoutEligibility(env.DB, order);
+      if (!evidenceGate.eligible) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
       const attempt = await env.DB.prepare(
         "SELECT provider_order_id,status FROM payment_attempts WHERE order_id = ? AND provider = 'stripe' ORDER BY created_at DESC LIMIT 1"
       ).bind(order.orderId).first();
@@ -110,6 +112,9 @@ export default {
             order.amountMinor !== 5000 || order.currency !== "USD") {
           return json({ error: "Order not eligible" }, 409);
         }
+        // This diagnostic route cannot bypass the canonical offer and consent gate.
+        const evidenceGate = await getCheckoutEligibility(env.DB, order);
+        if (!evidenceGate.eligible) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
         if (order.status === "checkout") {
           // Reuse only the session already bound to this authenticated order.
           const existing = await env.DB.prepare(
