@@ -43,7 +43,10 @@ export async function createUnifiedPayPalSandboxOrder(env,authorization,attemptI
  if(typeof approval?.href!=="string")throw Error("PayPal approval URL missing");
  const url=new URL(approval.href);
  if(url.protocol!=="https:"||url.hostname!=="www.sandbox.paypal.com"||
-    !url.pathname.startsWith("/checkoutnow"))throw Error("Untrusted PayPal approval URL");
+    url.port!==""||url.username!==""||url.password!==""||
+    url.pathname!=="/checkoutnow"||url.searchParams.getAll("token").length!==1||
+    url.searchParams.get("token")!==response.id)
+    throw Error("Untrusted PayPal approval URL");
  return Object.freeze({providerOrderId:response.id,approvalUrl:url.toString()});
 }
 export async function captureUnifiedPayPalSandboxOrder(env,expected,request=fetch){
@@ -87,6 +90,8 @@ export async function retrieveExistingUnifiedPayPalSandboxCheckout(env,expected,
  const url=new URL(approval.href);
  if(url.protocol!=="https:"||url.hostname!=="www.sandbox.paypal.com"||
     !url.pathname.startsWith("/checkoutnow")||
+    url.port!==""||url.username!==""||url.password!==""||
+    url.pathname!=="/checkoutnow"||url.searchParams.getAll("token").length!==1||
     url.searchParams.get("token")!==expected.providerOrderId)
    throw Error("Untrusted PayPal checkout recovery URL");
  return Object.freeze({status:order.status,checkoutUrl:url.toString()});
