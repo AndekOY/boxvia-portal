@@ -98,6 +98,19 @@ test("Stripe Checkout stays closed without test-mode secret and feature gate", a
   assert.equal((await rejected.json()).error,"Unavailable");
 });
 
+test("Stripe test form CSP permits provider redirect without permitting arbitrary destinations", async () => {
+  const env={...flags,DB:db,STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",
+    STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy",STRIPE_E2E_ORDER_CAPABILITY:"dummy"};
+  const response=await worker.fetch(new Request(base+"/stripe-test"),env);
+  assert.equal(response.status,200);
+  const csp=response.headers.get("Content-Security-Policy");
+  assert.match(csp,/form-action 'self' https:\/\/checkout\.stripe\.com https:\/\/checkout\.stripe\.dev/);
+  assert.match(csp,/default-src 'none'/);
+  assert.match(csp,/base-uri 'none'/);
+  assert.doesNotMatch(csp,/form-action[^;]*\*/);
+  assert.match(await response.text(),/<form method="post" action="\/stripe-test">/);
+});
+
 test("Stripe browser return is safe, non-authoritative and does not leak session", async () => {
   const session="cs_test_123456789";
   const returned=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&session_id="+session),flags);
