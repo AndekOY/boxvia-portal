@@ -17,7 +17,7 @@ const db = {
       bind(...args) { this.args=args; return this; },
       async first() {
         // A generic DB stub must not claim that a migration-created index exists.
-        if (sql.includes("idx_stripe_one_attempt_per_order")) return null;
+        if (sql.includes("idx_payment_attempt_one_total_per_order")) return null;
         return { ok: 1 };
       },
       async all() { return { results: ["service_orders","service_quotes","payment_attempts","payment_events","fulfillment_outbox"].map(name => ({name})) }; }
@@ -272,7 +272,7 @@ test("Stripe diagnostic POST rejects missing consent before attempt reservation 
  const hash=Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,"0")).join("");
  let attempts=0;
  const evidenceDb={prepare(sql){return {bind(){return this;},async first(){
-  if(sql.includes("idx_stripe_one_attempt_per_order"))return {name:"idx_stripe_one_attempt_per_order"};
+  if(sql.includes("idx_payment_attempt_one_total_per_order"))return {name:"idx_payment_attempt_one_total_per_order"};
   if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",amount_minor:5000,currency:"USD",status:"pending",capability_hash:hash};
   if(sql.includes("FROM order_terms_acceptances"))return null;
   if(sql.includes("FROM payment_attempts")){attempts++;throw Error("Payment attempt lookup must not run");}
