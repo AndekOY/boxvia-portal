@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/boxvia-unified-orders-operations-readiness.yml
       - scripts/unified-orders-readiness-report.py
+      - scripts/test-unified-orders-readiness-report.py
 permissions:
   contents: read
 jobs:
@@ -33,6 +34,8 @@ jobs:
           assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
           assert 'routes' not in c and 'assets' not in c
           PY
+      - name: Test aggregate readiness classifier offline
+        run: python3 scripts/test-unified-orders-readiness-report.py
       - name: Read-only D1 aggregate diagnosis
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
