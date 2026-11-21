@@ -2,7 +2,7 @@ import { isStripeTestApiKey } from "../cloudflare/stripe-test-key.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
-import { buildStripeCheckoutForm, requestStripeTestSession } from "../cloudflare/stripe-checkout.mjs";
+import { buildStripeCheckoutForm, requestStripeTestSession, retrieveExistingStripeTestSession } from "../cloudflare/stripe-checkout.mjs";
 globalThis.crypto ??= webcrypto;
 const order={orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",serviceCode:"one-question-review",amountMinor:5000,currency:"USD",status:"pending"};
 const origin="https://boxvia-orders-sandbox.andeks.workers.dev";
@@ -79,4 +79,42 @@ test("Stripe Test Mode adapter rejects live sessions and off-domain redirects",a
       await assert.rejects(requestStripeTestSession(order,env,origin,attemptId));
     }
   }finally{globalThis.fetch=originalFetch;}
+});
+
+test("existing test session recovery is read-only, bound to the order and Stripe",async()=>{
+  const original=globalThis.fetch;
+  const sessionId="cs_test_123456789012345";
+  const existing={...order,status:"checkout"};
+  const env={STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy"};
+  const good={id:sessionId,livemode:false,mode:"payment",status:"open",
+    client_reference_id:order.orderId,metadata:{order_id:order.orderId},
+    amount_total:5000,currency:"usd",url:"https://checkout.stripe.com/c/pay/cs_test_existing"};
+  let calls=0;
+  try{
+    globalThis.fetch=async(url,options)=>{
+      calls++;
+      assert.equal(options.method,"GET");
+      assert.equal(url,"https://api.stripe.com/v1/checkout/sessions/"+sessionId);
+      assert.equal(options.headers.Authorization,"Bearer rk_test_restricted_dummy");
+      return Response.json(good);
+    };
+    const recovered=await retrieveExistingStripeTestSession(existing,sessionId,env);
+    assert.equal(recovered.status,"open");
+    assert.equal(new URL(recovered.checkoutUrl).hostname,"checkout.stripe.com");
+    assert.equal(calls,1);
+    globalThis.fetch=async()=>Response.json({...good,status:"expired",url:null});
+    const expired=await retrieveExistingStripeTestSession(existing,sessionId,env);
+    assert.deepEqual(expired,{status:"expired",checkoutUrl:null});
+    for(const invalid of [
+      {...good,livemode:true},{...good,client_reference_id:"another"},
+      {...good,metadata:{order_id:"another"}},
+      {...good,url:"https://checkout.stripe.com.evil.example/pay"},
+      {...good,amount_total:100}
+    ]){
+      globalThis.fetch=async()=>Response.json(invalid);
+      await assert.rejects(retrieveExistingStripeTestSession(existing,sessionId,env));
+    }
+    await assert.rejects(retrieveExistingStripeTestSession({...existing,status:"pending"},sessionId,env));
+    await assert.rejects(retrieveExistingStripeTestSession(existing,"cs_live_123456789012345",env));
+  }finally{globalThis.fetch=original;}
 });
