@@ -14,7 +14,11 @@ export default {
   async fetch(request,env){
     const url=new URL(request.url);
     if(!["GET","POST"].includes(request.method))return json({error:"Method not allowed"},405);
-    if(!await verifyBcdeAccess(request,env))return json({error:"Unauthorized"},401);
+    let accessFailure="unknown";
+    if(!await verifyBcdeAccess(request,env,{onFailure:reason=>{accessFailure=reason;}})){
+      console.warn("BCDE Access denied",accessFailure);
+      return json({error:"Unauthorized",diagnostic:accessFailure},401);
+    }
     if(url.pathname==="/" || url.pathname==="/bcde-owner"){
       if(request.method!=="GET")return json({error:"Method not allowed"},405);
       return new Response(ownerConsoleHtml,{headers:{
