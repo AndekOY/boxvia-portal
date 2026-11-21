@@ -63,7 +63,10 @@ jobs:
           import urllib.request, urllib.error
           url='https://boxvia-bcde-owner.andeks.workers.dev/'
           req=urllib.request.Request(url,headers={'User-Agent':'BoxVia-BCDE-CI/1.0'})
-          opener=urllib.request.build_opener(urllib.request.HTTPHandler())
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl):
+                  return None
+          opener=urllib.request.build_opener(NoRedirect())
           try:
               response=opener.open(req,timeout=20)
               code=response.status
