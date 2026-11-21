@@ -26,6 +26,7 @@ on:
       - cloudflare/stripe-checkout.mjs
       - cloudflare/stripe-test-key.mjs
       - tests/orders-sandbox-worker.test.mjs
+      - tests/orders-sandbox-terms-status.test.mjs
       - tests/stripe-checkout.test.mjs
       - tests/stripe-verification.test.mjs
       - tests/stripe-settlement.test.mjs
@@ -47,7 +48,7 @@ jobs:
           persist-credentials: false
       - name: Offline test gates
         run: |
-          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-terms-status.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
           python3 scripts/check-unified-orders-schema.py
       - name: Verify isolated deployment target
         run: |
