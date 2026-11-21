@@ -279,7 +279,7 @@ export default {
         });
         return json(order,order.created ? 201 : 200);
       } catch (error) {
-        if (/Invalid request|mismatch|Only the two/.test(error.message)) return json({ error: "Invalid service request" }, 400);
+        if (/Invalid request|mismatch|Only fixed-price/.test(error.message)) return json({ error: "Invalid service request" }, 400);
         console.error("orders_sandbox_create_failed");
         return json({ error: "Unavailable" }, 503);
       }
