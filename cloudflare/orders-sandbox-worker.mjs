@@ -113,7 +113,7 @@ export default {
           return json({ error: "Order not eligible" }, 409);
         }
         // This diagnostic route cannot bypass the canonical offer and consent gate.
-        const evidenceGate = await getCheckoutEligibility(env.DB, order);
+        const evidenceGate = await authorizeCommercialPayment(env.DB, order, "stripe", {recovery:order.status==="checkout"});
         if (!evidenceGate.authorized) return json({ error: "Accepted commercial terms required", reason: evidenceGate.reason }, 409);
         if (order.status === "checkout") {
           // Reuse only the session already bound to this authenticated order.
@@ -177,7 +177,7 @@ export default {
             order.currency !== "USD") return json({ error: "Order not eligible" }, 409);
         // No Stripe session before server-stored final terms, offer and confidentiality consent.
         // A missing migration fails closed rather than falling back to browser assertions.
-        const eligibility = await getCheckoutEligibility(env.DB, order);
+        const eligibility = await authorizeCommercialPayment(env.DB, order, "stripe", {recovery:order.status==="checkout"});
         if (!eligibility.authorized) return json({ error: "Terms acceptance required" }, 409);
         const attempt = await reserveStripeAttempt(env.DB, order);
         if (!attempt.created) return json({ error: "Checkout already reserved; reconciliation required" }, 409);
