@@ -1,0 +1,22 @@
+name: BoxVia Stripe - additive event linkage offline acceptance
+on:
+  push:
+    branches: [work/technical-pilots-first-20261118]
+    paths:
+      - migrations/stripe-event-order-links-sandbox-v0.1.sql
+      - scripts/check-stripe-event-linkage-sqlite.py
+      - .github/workflows/boxvia-stripe-evidence-linkage.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linkage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate additive migration and replay in real SQLite
+        run: python3 scripts/check-stripe-event-linkage-sqlite.py
+      - name: Record acceptance boundary
+        run: |
+          echo '## Stripe event linkage — offline acceptance' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Additive schema and replay checks passed. Remote migration NOT applied; historical Stripe event remains UNLINKED until independently verified.' >> "$GITHUB_STEP_SUMMARY"
