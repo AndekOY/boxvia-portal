@@ -9,6 +9,9 @@ on:
       - cloudflare/orders-persistence.mjs
       - cloudflare/checkout-eligibility.mjs
       - cloudflare/checkout-eligibility-db.mjs
+      - cloudflare/bcde-pdf.mjs
+      - cloudflare/bcde-archive.mjs
+      - tests/bcde-stage1.test.mjs
       - cloudflare/order-terms-recording.mjs
       - migrations/order-terms-acceptances-sandbox-v0.1.sql
       - cloudflare/service-catalog.mjs
@@ -56,7 +59,7 @@ jobs:
           PY
       - name: Test full HTTP order contract and Stripe Test Mode locally
         run: |
-          node --test tests/checkout-eligibility.test.mjs tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
+          node --test tests/bcde-stage1.test.mjs tests/checkout-eligibility.test.mjs tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
       - name: Verify D1 migration schema offline
         run: python3 scripts/check-unified-orders-schema.py
       - name: Verify real SQLite Stripe settlement and replay invariants
