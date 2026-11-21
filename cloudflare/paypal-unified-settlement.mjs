@@ -20,8 +20,17 @@ export async function settleVerifiedUnifiedPayPalCapture(db,providerOrder,expect
     !["created","pending","verified"].includes(attempt.status))
   return {outcome:"unmatched_attempt"};
  if(order.status!=="checkout"){
-  if(order.status==="paid"&&attempt.status==="verified"&&attempt.provider_payment_id===verified.captureId)
-   return {outcome:"already_processed",orderId:order.id};
+  if(order.status==="paid"&&attempt.status==="verified"&&attempt.provider_payment_id===verified.captureId){
+   const proof=JSON.stringify([verified.providerOrderId,verified.captureId,verified.orderId,verified.attemptId,verified.amountMinor,verified.currency]);
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(proof))),b=>b.toString(16).padStart(2,"0")).join("");
+   const evidence=await db.prepare(
+    "SELECT capture_id FROM paypal_capture_evidence WHERE capture_id = ? AND paypal_order_id = ? AND order_id = ? AND payment_attempt_id = ? AND amount_minor = ? AND currency = ? AND capture_digest = ?"
+   ).bind(verified.captureId,verified.providerOrderId,order.id,attempt.id,order.amount_minor,order.currency,digest).first();
+   const fulfillment=await db.prepare(
+    "SELECT id FROM fulfillment_outbox WHERE order_id = ?"
+   ).bind(order.id).first();
+   if(evidence&&fulfillment)return {outcome:"already_processed",orderId:order.id};
+  }
   return {outcome:"manual_review",orderId:order.id};
  }
  const proof=JSON.stringify([verified.providerOrderId,verified.captureId,verified.orderId,verified.attemptId,verified.amountMinor,verified.currency]);
