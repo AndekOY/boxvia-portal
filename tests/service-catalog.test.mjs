@@ -16,11 +16,11 @@ test("two independent $50 entry services", () => {
   }
 });
 test("fixed price cannot be overridden", () => {
-  assert.deepEqual(resolveOrderPrice("pre-decision-review"), { amountMinor: 20000, currency: "USD" });
+  assert.throws(() => resolveOrderPrice("pre-decision-review"), /quote/);
   assert.throws(() => resolveOrderPrice("check-a-claim"), /Unknown/);
 });
 test("variable-price services require an accepted server-side quote", () => {
-  for (const code of ["technical-pilot", "faar-stage-1", "ai-governance-gap-assessment"]) {
+  for (const code of ["pre-decision-review", "technical-pilot", "faar-stage-1", "ai-governance-gap-assessment"]) {
     const s = getServiceDefinition(code);
     assert.throws(() => resolveOrderPrice(code), /quote/);
     assert.throws(() => resolveOrderPrice(code, { serviceCode: code, amountMinor: 1, currency: "USD", status: "accepted", scopeDigest: "a".repeat(64) }), /quote/);
