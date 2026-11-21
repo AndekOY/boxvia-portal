@@ -14,6 +14,8 @@ on:
       - migrations/paypal-capture-evidence-sandbox-v0.1.sql
       - cloudflare/paypal-unified-settlement.mjs
       - tests/paypal-unified-settlement.test.mjs
+      - cloudflare/paypal-unified-api.mjs
+      - tests/paypal-unified-api.test.mjs
       - cloudflare/orders-persistence.mjs
       - cloudflare/checkout-eligibility.mjs
       - cloudflare/checkout-eligibility-db.mjs
@@ -72,7 +74,7 @@ jobs:
           PY
       - name: Test full HTTP order contract and Stripe Test Mode locally
         run: |
-          node --test tests/bcde-access.test.mjs tests/bcde-stage1.test.mjs tests/checkout-eligibility.test.mjs tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
+          node --test tests/bcde-access.test.mjs tests/bcde-stage1.test.mjs tests/checkout-eligibility.test.mjs tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
       - name: Verify D1 migration schema offline
         run: python3 scripts/check-unified-orders-schema.py
       - name: Verify real SQLite Stripe settlement and replay invariants
