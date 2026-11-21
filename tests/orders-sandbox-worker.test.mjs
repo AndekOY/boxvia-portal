@@ -247,3 +247,21 @@ test("read-only Stripe recovery link never reserves a new checkout attempt", asy
   const missing=await worker.fetch(new Request(base+"/stripe-test/open"),flags);
   assert.equal(missing.status,503);
 });
+
+test("Stripe test recovery rejects checkout without canonical consent before provider call",async()=>{
+ const capability="a".repeat(64),orderId="fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34";
+ const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(capability));
+ const hash=Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,"0")).join("");
+ let attemptLookups=0;
+ const evidenceDb={prepare(sql){return {bind(){return this;},async first(){
+  if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",amount_minor:5000,currency:"USD",status:"checkout",capability_hash:hash};
+  if(sql.includes("FROM order_terms_acceptances"))return null;
+  if(sql.includes("FROM payment_attempts")){attemptLookups++;return {provider_order_id:"cs_test_123",status:"pending"};}
+  throw Error("Unexpected query: "+sql);
+ }}}};
+ const env={...flags,DB:evidenceDb,STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy",STRIPE_E2E_ORDER_CAPABILITY:capability};
+ const result=await worker.fetch(new Request(base+"/stripe-test/open"),env);
+ assert.equal(result.status,409);
+ assert.deepEqual(await result.json(),{error:"Accepted commercial terms required",reason:"consent_missing"});
+ assert.equal(attemptLookups,0);
+});
