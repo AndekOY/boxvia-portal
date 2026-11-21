@@ -299,7 +299,7 @@ test("PayPal return is informational only and cannot mark an order paid", async 
 test("PayPal unified sandbox checkout stays disabled with production-safe flags",async()=>{
  const response=await worker.fetch(post("/api/paypal/sandbox/checkout",{orderId:"forged",capability:"forged"}),flags);
  assert.equal(response.status,503);
- assert.deepEqual(await response.json(),{error:"Unavailable"});
+ assert.deepEqual(await response.json(),{error:path==="/api/stripe/checkout"?"Checkout unavailable; reconciliation required":"Unavailable"});
 });
 test("PayPal sandbox checkout rejects enabled payment flags at worker boundary",async()=>{
  const env={...flags,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",PAYPAL_CHECKOUT_ENABLED:"true",UNIFIED_ORDERS_ENABLED:"true",DB:{prepare(){throw Error("No DB access allowed");}}};
