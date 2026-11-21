@@ -93,3 +93,13 @@ test("PayPal approved or completed state never reopens checkout or infers paymen
   assert.deepEqual(recovered,{status,checkoutUrl:null});
  }
 });
+
+test("PayPal creation refuses provider checkout token substitution",async()=>{
+ const request=async(url)=>url.endsWith("/token")?json(token):json({
+  id:expected.providerOrderId,status:"CREATED",intent:"CAPTURE",
+  purchase_units:[{reference_id:attemptId,custom_id:orderId,amount:{currency_code:"USD",value:"50.00"}}],
+  links:[{rel:"payer-action",href:"https://www.sandbox.paypal.com/checkoutnow?token=OTHER123"}]
+ });
+ await assert.rejects(()=>createUnifiedPayPalSandboxOrder(env,authorization,attemptId,
+  "https://boxvia-orders-sandbox.andeks.workers.dev",request),/Untrusted/);
+});
