@@ -20,3 +20,31 @@ export async function probeBcdeR2(bucket){
   if(wrote)await bucket.delete(key);
  }
 }
+
+export async function probeBcdeSyntheticPdfPack(bucket,buildOrderTermsPdf,buildAcceptancePdf,sha256Bytes){
+ if(!bucket||typeof bucket.put!=="function"||typeof bucket.get!=="function"||typeof bucket.delete!=="function")throw new Error("R2 binding unavailable");
+ const id=crypto.randomUUID(),digest="b".repeat(64);
+ const a=buildOrderTermsPdf({orderId:id,service:"Synthetic Diagnostic Only",amountMinor:5000,currency:"USD",scope:"SYNTHETIC TEST ONLY - NO CUSTOMER CONTRACT",deliverable:"Synthetic PDF test",deadline:"Not applicable",termsVersion:"TEST",offerVersion:"TEST",confidentialityVersion:"TEST"});
+ const b=buildAcceptancePdf({orderId:id,termsDigest:digest,offerVersion:"TEST",offerDigest:digest,offerAcceptedAt:"2000-01-01T00:00:00Z",confidentialityVersion:"TEST",confidentialityDigest:digest,confidentialityAcceptedAt:"2000-01-01T00:00:00Z"});
+ const files=[["01_SYNTHETIC_TERMS.pdf",a],["02_SYNTHETIC_ACCEPTANCE.pdf",b]];
+ const manifest={schema:"bcde-synthetic-diagnostic-v1",synthetic:true,files:await Promise.all(files.map(async ([name,bytes])=>({name,bytes:bytes.byteLength,sha256:await sha256Bytes(bytes)})))};
+ const entries=[...files,["manifest.json",new TextEncoder().encode(JSON.stringify(manifest))]];
+ const prefix="diagnostics/pdf-"+id+"/",written=[];
+ try{
+  for(const [name,bytes] of entries){
+   const key=prefix+name;
+   const saved=await bucket.put(key,bytes,{onlyIf:{etagDoesNotMatch:"*"},httpMetadata:{contentType:name.endsWith(".pdf")?"application/pdf":"application/json"}});
+   if(!saved)throw new Error("R2 synthetic PDF write rejected");
+   written.push(key);
+  }
+  for(const [name,bytes] of entries){
+   const obj=await bucket.get(prefix+name);
+   if(!obj)throw new Error("R2 synthetic PDF read missing");
+   const actual=new Uint8Array(await obj.arrayBuffer());
+   if(actual.byteLength!==bytes.byteLength || await sha256Bytes(actual)!==await sha256Bytes(bytes))throw new Error("R2 synthetic PDF integrity mismatch");
+  }
+  return {ok:true,synthetic:true,pdfCount:2,manifestVerified:true,sha256Verified:true,cleanupAttempted:true};
+ }finally{
+  await Promise.allSettled(written.map(key=>bucket.delete(key)));
+ }
+}
