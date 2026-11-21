@@ -78,8 +78,8 @@ export async function reserveStripeAttempt(db, order) {
   if (existing) return { created: false, attemptId: existing.id, status: existing.status };
   const id = crypto.randomUUID();
   const result = await db.prepare(
-    "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'stripe','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = 5000 AND currency = 'USD'"
-  ).bind(id, order.orderId).run();
+    "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'stripe','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = 5000 AND currency = 'USD' AND NOT EXISTS (SELECT 1 FROM payment_attempts WHERE order_id = ? AND provider = 'stripe')"
+  ).bind(id, order.orderId, order.orderId).run();
   if (!result?.success || result.meta?.changes !== 1) throw new Error("Stripe attempt already reserved or unavailable");
   return { created: true, attemptId: id, status: "created" };
 }
