@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/boxvia-bcde-owner-sandbox.yml
       - wrangler.bcde-owner.jsonc
+      - cloudflare/bcde-r2-probe.mjs
       - cloudflare/bcde-owner-worker.mjs
       - cloudflare/bcde-access.mjs
       - cloudflare/bcde-owner-api.mjs
