@@ -67,5 +67,17 @@ test("synthetic PDF R2 pack writes verifies and removes all diagnostic objects",
  assert.equal(result.pdfCount,2);
  assert.equal(result.manifestVerified,true);
  assert.equal(result.sha256Verified,true);
+ assert.equal(result.cleanupVerified,true);
  assert.equal(stored.size,0);
+});
+
+test("synthetic PDF diagnostic rejects unverified R2 cleanup",async()=>{
+ const stored=new Map();
+ const bucket={
+  async put(k,v){stored.set(k,new Uint8Array(v));return {etag:"ok"};},
+  async get(k){const v=stored.get(k);return v?{arrayBuffer:async()=>v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength)}:null;},
+  async delete(){return undefined;}
+ };
+ await assert.rejects(probeBcdeSyntheticPdfPack(bucket,buildOrderTermsPdf,buildAcceptancePdf,sha256Bytes),/cleanup not verified/);
+ assert.equal(stored.size,3);
 });
