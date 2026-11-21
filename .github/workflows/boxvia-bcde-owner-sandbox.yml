@@ -13,7 +13,9 @@ on:
       - cloudflare/bcde-owner-console.mjs
       - tests/bcde-owner-worker.test.mjs
       - tests/bcde-access.test.mjs
-      - tests/bcde-stage1.test.mjs
+      - tests/bcde-stage1.test.mjs tests/checkout-canonical-terms.test.mjs
+      - tests/checkout-canonical-terms.test.mjs
+      - cloudflare/checkout-eligibility-db.mjs
   workflow_dispatch:
 
 permissions:
