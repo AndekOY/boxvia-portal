@@ -13,7 +13,7 @@ on:
       - cloudflare/bcde-owner-console.mjs
       - tests/bcde-owner-worker.test.mjs
       - tests/bcde-access.test.mjs
-      - tests/bcde-stage1.test.mjs tests/checkout-canonical-terms.test.mjs
+      - tests/bcde-stage1.test.mjs
       - tests/checkout-canonical-terms.test.mjs
       - cloudflare/checkout-eligibility-db.mjs
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
           assert 'PAYPAL' not in str(c) and 'STRIPE' not in str(c)
           assert c['r2_buckets']==[{'binding':'BCDE_ARCHIVE','bucket_name':'boxvia-bcde-archive-sandbox'}]
           PY
-          node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
+          node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs tests/checkout-canonical-terms.test.mjs
       # R2 bucket is provisioned separately. This deploy token may have Workers write
       # access without R2 bucket list/create permissions; never gate deploy on them.
       # Schema was provisioned in run #16; deployment is now strictly read-only for D1.
