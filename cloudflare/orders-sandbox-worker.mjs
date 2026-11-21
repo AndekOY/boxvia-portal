@@ -5,6 +5,7 @@ import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
+import { ownerConsoleHtml } from "./bcde-owner-console.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
 // No production routes, payment endpoints, customer data, or static asset exposure.
 const json = (data, status = 200) => Response.json(data, {
@@ -22,6 +23,7 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname === "/bcde-owner" && request.method === "GET") return new Response(ownerConsoleHtml,{headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Content-Security-Policy":"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"}});
     if (url.pathname.startsWith("/api/bcde/")) return handleBcdeOwner(request,env);
     if (url.pathname === "/stripe-test/open" && request.method === "GET") {
       // One-time sandbox diagnostic: read-only recovery of the existing
