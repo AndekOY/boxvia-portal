@@ -14,7 +14,7 @@ test("reservation refuses absent consent authorization before any database acces
 });
 test("existing PayPal attempt is returned without minting another",async()=>{
  let reads=0,writes=0;
- const db={prepare(sql){return {bind(){return this;},async first(){reads++;return {id:attemptId,status:"created",provider_order_id:null};},async run(){writes++;throw Error("Unexpected write");}};}};
+ const db={prepare(sql){return {bind(){return this;},async first(){reads++;return {id:attemptId,provider:"paypal",status:"created",provider_order_id:null};},async run(){writes++;throw Error("Unexpected write");}};}};
  const x=await reserveUnifiedPayPalAttempt(db,auth);
  assert.equal(x.created,false);assert.equal(x.attemptId,attemptId);
  assert.equal(reads,1);assert.equal(writes,0);
