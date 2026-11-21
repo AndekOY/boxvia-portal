@@ -56,3 +56,21 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4 deploy --config wrangler.bcde-owner.jsonc --keep-vars
+      - name: Verify deployed owner endpoint fails closed without Access session
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, urllib.error
+          url='https://boxvia-bcde-owner.andeks.workers.dev/'
+          req=urllib.request.Request(url,headers={'User-Agent':'BoxVia-BCDE-CI/1.0'})
+          opener=urllib.request.build_opener(urllib.request.HTTPHandler())
+          try:
+              response=opener.open(req,timeout=20)
+              code=response.status
+          except urllib.error.HTTPError as error:
+              code=error.code
+          # Without an Access identity, the endpoint must never serve the owner console.
+          if code not in (401,403,302,303,307,308):
+              raise SystemExit(f'Unexpected anonymous owner endpoint HTTP {code}; expected Access challenge or denial')
+          print(f'Anonymous BCDE owner endpoint protected: HTTP {code}')
+          PY
