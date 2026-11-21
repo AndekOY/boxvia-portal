@@ -5,6 +5,7 @@ import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 import { authorizeCommercialPayment } from "./commercial-payment-gate.mjs";
+import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
 import { reserveUnifiedPayPalAttempt, persistUnifiedPayPalProviderOrder } from "./paypal-unified-attempt.mjs";
 import { createUnifiedPayPalSandboxOrder } from "./paypal-unified-api.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
@@ -289,6 +290,32 @@ export default {
           "X-Content-Type-Options": "nosniff"
         } }
       );
+    }
+    if (url.pathname === "/api/orders/terms-status" && request.method === "POST") {
+      // Read-only capability-bound diagnostic. Never accepts terms or enables payment.
+      if (!env.DB) return json({ error: "Unavailable" }, 503);
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+        return json({ error: "Rejected" }, 403);
+      }
+      let input;
+      try {
+        if (Number(request.headers.get("Content-Length") || 0) > 2048) return json({ error: "Too large" }, 413);
+        const raw = await request.text();
+        if (raw.length > 2048) return json({ error: "Too large" }, 413);
+        input = JSON.parse(raw);
+      } catch { return json({ error: "Invalid request" }, 400); }
+      try {
+        const order = await getAuthorizedOrder(env.DB, input?.orderId, input?.capability);
+        if (!order) return json({ error: "Not found" }, 404);
+        const eligibility = await getCheckoutEligibility(env.DB, order);
+        // No canonical text, timestamps, identifiers or customer data in response.
+        return json({ eligible: eligibility.eligible === true,
+          reason: eligibility.eligible === true ? "ready" : "evidence_not_established" });
+      } catch {
+        console.error("orders_sandbox_terms_status_failed");
+        return json({ error: "Unavailable" }, 503);
+      }
     }
     if (url.pathname === "/api/orders/status" && request.method === "POST") {
       if (!env.DB) return json({ error: "Unavailable" }, 503);
