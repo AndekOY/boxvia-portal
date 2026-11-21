@@ -23,7 +23,7 @@ export async function verifyBcdeAccess(request,env,{fetchKeys=fetch,now=Math.flo
      typeof payload.email!=="string"||payload.email.toLowerCase()!==email.toLowerCase())return fail("jwt_claims");
   const url=`https://${domain}/cdn-cgi/access/certs`;
   stage="certs_fetch";
-  const response=await fetchKeys(url,{redirect:"error",headers:{"Accept":"application/json"}});
+  const response=await fetchKeys(url,{redirect:"manual",headers:{"Accept":"application/json"}});
   if(!response.ok)return fail("certs_http");
   stage="certs_parse";
   const keys=await response.json();
