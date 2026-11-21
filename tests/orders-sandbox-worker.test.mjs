@@ -284,3 +284,14 @@ test("Stripe diagnostic POST rejects missing consent before attempt reservation 
  assert.deepEqual(await result.json(),{error:"Accepted commercial terms required",reason:"consent_missing"});
  assert.equal(attempts,0);
 });
+
+test("PayPal return is informational only and cannot mark an order paid", async () => {
+ const env={UNIFIED_ORDERS_ENABLED:"false",PAYPAL_CHECKOUT_ENABLED:"false",STRIPE_CHECKOUT_ENABLED:"false",DB:{prepare(){throw Error("Return must never access D1");}}};
+ for(const suffix of ["?provider=paypal","?provider=paypal&cancelled=1","?provider=paypal&order_id=FORGED&status=COMPLETED"]){
+  const response=await worker.fetch(new Request("https://boxvia-orders-sandbox.andeks.workers.dev/api/orders/return"+suffix),env);
+  assert.equal(response.status,200);
+  const body=await response.text();
+  assert.match(body,/pending independent verification|No payment confirmation/);
+  assert.doesNotMatch(body,/FORGED|Payment successful|Payment confirmed/);
+ }
+});
