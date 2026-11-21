@@ -69,3 +69,20 @@ test("replay with missing evidence is manual review, not an ACK",async()=>{
  assert.equal((await settleVerifiedUnifiedPayPalCapture(db,capture(),expected)).outcome,"manual_review");
  assert.equal(db.batches,1);
 });
+
+test("PayPal settlement rejects incomplete D1 batch acknowledgment",async()=>{
+ const db=new DB();
+ db.batch=async statements=>statements.map((_,i)=>({success:i!==2,meta:{changes:i===2?0:1}}));
+ await assert.rejects(()=>settleVerifiedUnifiedPayPalCapture(db,capture(),expected),/transaction not confirmed/);
+});
+test("PayPal settlement refuses success when capture evidence insert has no changes",async()=>{
+ const db=new DB();
+ db.batch=async statements=>statements.map((_,i)=>({success:true,meta:{changes:i===2?0:1}}));
+ await assert.rejects(()=>settleVerifiedUnifiedPayPalCapture(db,capture(),expected),/manual reconciliation/);
+});
+test("PayPal replay with missing fulfillment record requires manual review",async()=>{
+ const db=new DB();await settleVerifiedUnifiedPayPalCapture(db,capture(),expected);
+ db.outbox.clear();
+ assert.equal((await settleVerifiedUnifiedPayPalCapture(db,capture(),expected)).outcome,"manual_review");
+ assert.equal(db.batches,1);
+});
