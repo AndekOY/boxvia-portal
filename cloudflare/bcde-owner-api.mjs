@@ -12,7 +12,12 @@ export async function handleBcdeOwner(request,env){
   const url=new URL(request.url);
   if(!url.pathname.startsWith("/api/bcde/"))return null;
   if(!env?.DB||!env?.BCDE_ARCHIVE)return json({error:"BCDE not configured"},503);
-  if(request.headers.get("Origin")!==url.origin)return json({error:"Origin rejected"},403);
+  // Same-origin GET fetches often omit Origin; reject explicit foreign origins.
+  // State-changing POST must carry an exact same-origin Origin header.
+  const origin=request.headers.get("Origin");
+  if((origin && origin!==url.origin) || (request.method==="POST" && origin!==url.origin))return json({error:"Origin rejected"},403);
+  const fetchSite=request.headers.get("Sec-Fetch-Site");
+  if(fetchSite && fetchSite!=="same-origin")return json({error:"Cross-site request rejected"},403);
   if(!await verifyBcdeAccess(request,env))return json({error:"Unauthorized"},401);
   if(!["POST","GET"].includes(request.method))return json({error:"Method not allowed"},405);
   const orderId=url.searchParams.get("orderId");
