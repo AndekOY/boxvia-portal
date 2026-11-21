@@ -597,28 +597,22 @@ test("PayPal recovery never reopens completed provider orders",async()=>{
  }finally{globalThis.fetch=originalFetch;}
 });
 
-test("Stripe and PayPal creation reject absent global index before order lookup or provider call",async()=>{
+test("global HOLD blocks both payment creation routes before any D1 or provider access",async()=>{
  const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability="a".repeat(64);
- const queries=[];
- const DB={prepare(sql){
-  queries.push(sql);
-  assert.match(sql,/idx_payment_attempt_one_total_per_order/);
-  return {async first(){return null;}};
- }};
+ let dbCalls=0,providerCalls=0;
+ const DB={prepare(){dbCalls++;throw Error("HOLD must prevent D1 access");}};
  const oldFetch=globalThis.fetch;
- let providerCalls=0;
- globalThis.fetch=async()=>{providerCalls++;throw Error("Provider must not be contacted");};
+ globalThis.fetch=async()=>{providerCalls++;throw Error("HOLD must prevent provider access");};
  try{
-  const scenarios=[
+  for(const [path,extra] of [
    ["/api/stripe/checkout",{STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy"}],
-   ["/api/paypal/sandbox/checkout",{PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",PAYPAL_CHECKOUT_ENABLED:"true",UNIFIED_ORDERS_ENABLED:"true"}]
-  ];
-  for(const [path,extra] of scenarios){
+   ["/api/paypal/sandbox/checkout",{PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true"}]
+  ]){
    const response=await worker.fetch(post(path,{orderId,capability}),{...flags,DB,...extra});
    assert.equal(response.status,503,path);
-   assert.deepEqual(await response.json(),{error:"Checkout schema pending"});
+   assert.deepEqual(await response.json(),{error:"Unavailable"});
   }
-  assert.equal(queries.length,2);
+  assert.equal(dbCalls,0);
   assert.equal(providerCalls,0);
  }finally{globalThis.fetch=oldFetch;}
 });
