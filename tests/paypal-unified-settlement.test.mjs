@@ -10,7 +10,7 @@ function capture(){return {id:expected.providerOrderId,status:"COMPLETED",purcha
  payments:{captures:[{id:"CAPTURE12345",status:"COMPLETED",amount:{currency_code:"USD",value:"50.00"}}]}
 }]};}
 class DB {
- constructor(){this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:attemptId,order_id:orderId,provider_order_id:expected.providerOrderId,provider_payment_id:null,amount_minor:5000,currency:"USD",status:"pending"};this.outbox=new Set();this.batches=0;}
+ constructor(){this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:attemptId,order_id:orderId,provider_order_id:expected.providerOrderId,provider_payment_id:null,amount_minor:5000,currency:"USD",status:"pending"};this.outbox=new Set();this.evidence=new Map();this.batches=0;}
  prepare(sql){const db=this;return {sql,args:[],bind(...args){this.args=args;return this;},async first(){
   if(sql.includes("FROM service_orders"))return db.order;
   if(sql.includes("FROM payment_attempts"))return db.attempt;
@@ -22,8 +22,13 @@ class DB {
     if(this.order.status==="checkout"&&this.attempt.status==="pending"&&!this.attempt.provider_payment_id){this.order.status="paid";changes=1;}
    }else if(s.sql.startsWith("UPDATE payment_attempts")){
     if(this.order.status==="paid"&&this.attempt.status==="pending"&&!this.attempt.provider_payment_id){this.attempt.status="verified";this.attempt.provider_payment_id=s.args[0];changes=1;}
+   }else if(s.sql.startsWith("INSERT INTO paypal_capture_evidence")){
+    const [captureId,paypalOrderId,linkedOrder,linkedAttempt,amount,currency,hash]=s.args;
+    if(this.order.status==="paid"&&this.attempt.status==="verified"&&this.attempt.provider_payment_id===captureId&&!this.evidence.has(captureId)){
+      this.evidence.set(captureId,{paypalOrderId,linkedOrder,linkedAttempt,amount,currency,hash});changes=1;
+    }
    }else if(s.sql.startsWith("INSERT OR IGNORE INTO fulfillment_outbox")){
-    if(this.order.status==="paid"&&this.attempt.status==="verified"&&!this.outbox.has(orderId)){this.outbox.add(orderId);changes=1;}
+    if(this.order.status==="paid"&&this.attempt.status==="verified"&&this.evidence.has(this.attempt.provider_payment_id)&&!this.outbox.has(orderId)){this.outbox.add(orderId);changes=1;}
    }else throw Error("Unexpected SQL "+s.sql);
    results.push({success:true,meta:{changes}});
   }return results;
@@ -35,6 +40,8 @@ test("verified PayPal capture marks order paid once and queues one fulfillment",
  assert.equal(db.order.status,"paid");
  assert.equal(db.attempt.provider_payment_id,"CAPTURE12345");
  assert.equal(db.outbox.size,1);
+ assert.equal(db.evidence.get("CAPTURE12345")?.linkedAttempt,attemptId);
+ assert.match(db.evidence.get("CAPTURE12345")?.hash,/^[a-f0-9]{64}$/);
  assert.equal((await settleVerifiedUnifiedPayPalCapture(db,capture(),expected)).outcome,"already_processed");
  assert.equal(db.batches,1);
 });
