@@ -87,28 +87,40 @@ jobs:
           npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
       - name: Verify live sandbox health (strict acceptance gate)
         shell: bash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_SECRET }}
         run: |
           python3 - <<'PY'
           import json,os,urllib.request,urllib.error
           url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
+          client_id=os.environ.get('CF_ACCESS_CLIENT_ID','')
+          client_secret=os.environ.get('CF_ACCESS_CLIENT_SECRET','')
+          if bool(client_id)!=bool(client_secret):
+            raise SystemExit('Incomplete optional sandbox Access service token configuration')
+          headers={'Accept':'application/json'}
+          if client_id:
+            headers['CF-Access-Client-Id']=client_id
+            headers['CF-Access-Client-Secret']=client_secret
+          request=urllib.request.Request(url,headers=headers)
           try:
-            response=urllib.request.urlopen(url,timeout=30)
+            response=urllib.request.urlopen(request,timeout=30)
           except urllib.error.HTTPError as exc:
-            if exc.code==403:
-              message='UNESTABLISHED: Cloudflare HTTP 403 blocks independent sandbox health verification. Deployment may have succeeded, but live acceptance did not pass.'
-              print('::error::'+message)
-              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-                summary.write('### Sandbox live health: UNESTABLISHED\\n\\n'+message+'\\n')
-              raise SystemExit(1)
-            raise
+            ray=exc.headers.get('CF-Ray','not-provided')
+            message=f'UNESTABLISHED: sandbox health HTTP {exc.code}; CF-Ray={ray}; Access credentials configured={bool(client_id)}. No acceptance proof.'
+            print('::error::'+message)
+            with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+              summary.write('### Sandbox live health: UNESTABLISHED\\n\\n'+message+'\\n')
+            raise SystemExit(1)
           with response:
-            assert response.status==200
+            if response.status!=200:
+              raise SystemExit(f'Unexpected sandbox health HTTP {response.status}')
             data=json.load(response)
           assert data['service']=='boxvia-orders-sandbox'
           assert data['status']=='schema_ready'
           assert data['checkout']=='disabled'
           assert data['unified_tables_present']==5
-          print('PASS: live sandbox health, five tables, checkout disabled')
+          print('PASS: authenticated or public live sandbox health; five tables; checkout disabled')
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-            summary.write('### Sandbox live health: PASS\\n\\nVerified live HTTP 200, schema_ready, checkout disabled and five required tables.\\n')
+            summary.write('### Sandbox live health: PASS\\n\\nVerified HTTP 200, schema_ready, checkout disabled, five required tables.\\n')
           PY
