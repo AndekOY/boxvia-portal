@@ -3,6 +3,7 @@ import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession, r
 import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
+import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
 // No production routes, payment endpoints, customer data, or static asset exposure.
 const json = (data, status = 200) => Response.json(data, {
@@ -161,6 +162,10 @@ export default {
         if (!order) return json({ error: "Not found" }, 404);
         if (order.status !== "pending" || order.amountMinor !== 5000 ||
             order.currency !== "USD") return json({ error: "Order not eligible" }, 409);
+        // No Stripe session before server-stored final terms, offer and confidentiality consent.
+        // A missing migration fails closed rather than falling back to browser assertions.
+        const eligibility = await getCheckoutEligibility(env.DB, order);
+        if (!eligibility.eligible) return json({ error: "Terms acceptance required" }, 409);
         const attempt = await reserveStripeAttempt(env.DB, order);
         if (!attempt.created) return json({ error: "Checkout already reserved; reconciliation required" }, 409);
         const session = await requestStripeTestSession(order, env, url.origin, attempt.attemptId);
