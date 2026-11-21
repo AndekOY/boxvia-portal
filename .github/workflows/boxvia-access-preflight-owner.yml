@@ -1,0 +1,68 @@
+name: BoxVia Access - owner policy preflight (read-only)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-access-preflight-owner.yml
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify isolated Worker and HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Check Access organization and Workers subdomain (read-only)
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error,re
+          account=os.environ['CLOUDFLARE_ACCOUNT_ID']
+          token=os.environ['CLOUDFLARE_API_TOKEN']
+          assert account and token
+          def read(path):
+              req=urllib.request.Request('https://api.cloudflare.com/client/v4/'+path,headers={'Authorization':'Bearer '+token,'Accept':'application/json'},method='GET')
+              try:
+                  with urllib.request.urlopen(req,timeout=20) as r: return json.load(r),None
+              except urllib.error.HTTPError as e: return None,'HTTP_'+str(e.code)
+              except Exception: return None,'REQUEST_FAILED'
+          org,err=read('accounts/'+account+'/access/organizations')
+          if err: print('ACCESS_ORGANIZATION: BLOCKED_'+err)
+          elif org.get('success') is not True or not isinstance(org.get('result'),dict): print('ACCESS_ORGANIZATION: UNESTABLISHED')
+          else:
+              domain=org['result'].get('auth_domain') or org['result'].get('name')
+              if isinstance(domain,str) and re.fullmatch(r'[a-z0-9-]+\.cloudflareaccess\.com',domain):
+                  print('ACCESS_TEAM_DOMAIN: VERIFIED_FORMAT')
+              else: print('ACCESS_TEAM_DOMAIN: UNESTABLISHED')
+          sub,err=read('accounts/'+account+'/workers/subdomain')
+          if err: print('WORKERS_SUBDOMAIN: BLOCKED_'+err)
+          elif sub.get('success') is True and isinstance(sub.get('result'),dict):
+              value=sub['result'].get('subdomain')
+              if isinstance(value,str) and re.fullmatch('[a-z0-9-]+',value):
+                  print('ISOLATED_WORKER_HOST: CONFIRMED_WORKERS_SUBDOMAIN')
+              else: print('ISOLATED_WORKER_HOST: UNESTABLISHED')
+          else: print('ISOLATED_WORKER_HOST: UNESTABLISHED')
+          print('OWNER_ALLOWLIST: andek.oy@gmail.com (planned, NOT_APPLIED)')
+          print('ACCESS_APPLICATION: NOT_CREATED')
+          print('ACCESS_POLICY: NOT_CREATED')
+          print('PRODUCTION: HOLD')
+          PY

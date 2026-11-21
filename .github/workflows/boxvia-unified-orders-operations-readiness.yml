@@ -1,0 +1,46 @@
+name: BoxVia Unified Orders - read-only operations readiness
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-unified-orders-operations-readiness.yml
+      - scripts/unified-orders-readiness-report.py
+      - scripts/test-unified-orders-readiness-report.py
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolation and HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Test aggregate readiness classifier offline
+        run: python3 scripts/test-unified-orders-readiness-report.py
+      - name: Read-only D1 aggregate diagnosis
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --json --command "SELECT (SELECT COUNT(*) FROM service_orders) AS orders_total, (SELECT COUNT(*) FROM service_orders WHERE status='pending') AS pending_orders, (SELECT COUNT(*) FROM service_orders WHERE status='checkout') AS checkout_orders, (SELECT COUNT(*) FROM payment_attempts) AS attempts_total, (SELECT COUNT(*) FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL) AS orphan_attempts, (SELECT COUNT(*) FROM order_terms_acceptances a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL) AS orphan_consents, (SELECT COUNT(*) FROM payment_attempts WHERE status='created' AND provider_order_id IS NULL) AS unbound_attempts, (SELECT COUNT(*) FROM service_orders o WHERE o.status='checkout' AND NOT EXISTS (SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id AND a.provider_order_id IS NOT NULL)) AS checkout_without_provider_binding, (SELECT COUNT(*) FROM (SELECT order_id FROM payment_attempts GROUP BY order_id HAVING COUNT(*)>1)) AS duplicate_order_attempts, (SELECT COUNT(*) FROM service_orders o WHERE o.status='pending' AND EXISTS (SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id)) AS pending_with_reserved_attempt, (SELECT COUNT(*) FROM order_terms_acceptances a LEFT JOIN order_document_sources s ON s.order_id=a.order_id AND s.terms_digest=a.terms_digest WHERE s.order_id IS NULL) AS consent_without_canonical_source" > /tmp/orders-readiness.json
+          python3 scripts/unified-orders-readiness-report.py /tmp/orders-readiness.json

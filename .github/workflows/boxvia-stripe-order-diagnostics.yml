@@ -1,0 +1,57 @@
+name: BoxVia Stripe - read-only sandbox order diagnostics
+
+on:
+  push:
+    branches: [work/technical-pilots-first-20261118]
+    paths: [.github/workflows/boxvia-stripe-order-diagnostics.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify isolated target
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open("wrangler.orders-sandbox.jsonc"))
+          assert c["name"]=="boxvia-orders-sandbox"
+          assert c["d1_databases"][0]["database_name"]=="boxvia-bxc-sandbox"
+          assert c["d1_databases"][0]["database_id"]=="baf79e93-cbea-4786-8779-974f3b3afbcc"
+          assert c["vars"]=={"UNIFIED_ORDERS_ENABLED":"false","PAYPAL_CHECKOUT_ENABLED":"false","STRIPE_CHECKOUT_ENABLED":"false"}
+          PY
+      - name: Inspect existing order and attempt without reading secrets or customer data
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          SQL="SELECT o.id,o.service_request_id,o.service_code,o.amount_minor,o.currency,o.status,LENGTH(o.capability_hash) AS capability_hash_length,(SELECT COUNT(*) FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='stripe') AS stripe_attempt_count,(SELECT COUNT(*) FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='stripe' AND a.provider_order_id IS NOT NULL) AS stripe_session_count FROM service_orders o WHERE o.id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34'"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "$SQL" --json > /tmp/stripe-order-diagnostic.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/stripe-order-diagnostic.json'))
+          assert isinstance(d,list) and d[0]['success'], "Sandbox D1 read failed"
+          rows=d[0]['results']
+          if len(rows)!=1:
+              print('DIAGNOSIS: ORDER_MISSING')
+              raise SystemExit(0)
+          r=rows[0]
+          for k in ('id','service_request_id','service_code','amount_minor','currency','status','capability_hash_length','stripe_attempt_count','stripe_session_count'):
+              print(f'{k}: {r[k]}')
+          eligible=(r['status']=='pending' and r['service_code']=='one-question-review' and r['amount_minor']==5000 and r['currency']=='USD' and r['capability_hash_length']==64)
+          print('D1_ELIGIBILITY_FIELDS:', 'PASS' if eligible else 'FAIL')
+          print('CAPABILITY_SECRET_MATCH: NOT_CHECKED (Cloudflare secrets are not readable through Wrangler)')
+          print('No writes to D1, no Stripe API calls, no checkout attempts.')
+          PY

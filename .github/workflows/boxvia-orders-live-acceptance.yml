@@ -1,0 +1,208 @@
+name: BoxVia Orders Sandbox - live order acceptance
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-orders-live-acceptance.yml
+  workflow_dispatch:
+    inputs:
+      service_code:
+        description: 'Fixed-price service for synthetic order acceptance'
+        required: true
+        type: choice
+        options:
+          - one-question-review
+          - ai-governance-review
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-live-acceptance
+  cancel-in-progress: false
+
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Validate sandbox target and local tests
+        run: |
+          set -euo pipefail
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-http-contract.test.mjs
+          python3 scripts/check-unified-orders-schema.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'assets' not in c
+          PY
+      - name: Deploy current isolated Worker version before editing secret
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          # Cloudflare refuses secret put if its latest Worker version is not deployed.
+          # Deploy ONLY the validated sandbox target, preserving all existing secrets.
+          npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
+      - name: Create ephemeral admin token in Cloudflare secret store
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          Path('/tmp/boxvia-orders-admin-token').write_text(secrets.token_hex(32))
+          PY
+          npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-orders-admin-token
+      - name: Verify immutable consent triggers are active before test writes
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'trg_order_%_no_%'" --json > /tmp/boxvia-live-triggers.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/boxvia-live-triggers.json'))
+          assert len(d)==1 and d[0]['success']
+          found={r['name'] for r in d[0]['results']}
+          expected={'trg_order_terms_acceptances_no_update','trg_order_terms_acceptances_no_delete','trg_order_document_sources_no_update','trg_order_document_sources_no_delete'}
+          assert found==expected,(found,expected)
+          print('PASS: all four sandbox evidence immutability triggers active')
+          PY
+      - name: Seed one synthetic service request in sandbox D1
+        env:
+          SERVICE_CODE: ${{ inputs.service_code || 'one-question-review' }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import secrets,os
+          from pathlib import Path
+          service=os.environ['SERVICE_CODE']
+          titles={'one-question-review':'One Question Review','ai-governance-review':'Focused AI Governance Review'}
+          assert service in titles
+          key='orders-acceptance-'+secrets.token_hex(16)
+          # No personal information; only disposable synthetic data.
+          sql="INSERT INTO service_requests (service_code,service_title,customer_email,request_json,status,request_key,request_digest) VALUES ('"+service+"','"+titles[service]+"','sandbox@example.invalid','{}','new','"+key+"','"+'0'*64+"');"
+          Path('/tmp/boxvia-orders-seed.sql').write_text(sql)
+          Path('/tmp/boxvia-orders-request-key').write_text(key)
+          Path('/tmp/boxvia-orders-service-code').write_text(service)
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-orders-seed.sql
+          python3 - <<'PY'
+          from pathlib import Path
+          key=Path('/tmp/boxvia-orders-request-key').read_text()
+          Path('/tmp/boxvia-orders-find.sql').write_text("SELECT id,service_code FROM service_requests WHERE request_key='"+key+"';")
+          PY
+          # Wrangler's --file output is an import report, not the SELECT result rows.
+          # Execute SELECT with --command and parse its structured JSON response.
+          query="$(cat /tmp/boxvia-orders-find.sql)"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "$query" --json > /tmp/boxvia-orders-seeded.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          raw=Path('/tmp/boxvia-orders-seeded.json').read_text().strip()
+          assert raw, 'Wrangler returned empty JSON output for SELECT'
+          data=json.loads(raw)
+          assert isinstance(data,list) and data[0]['success'], data
+          rows=data[0]['results']
+          assert len(rows)==1 and rows[0]['service_code']==Path('/tmp/boxvia-orders-service-code').read_text(), 'Synthetic service mismatch'
+          Path('/tmp/boxvia-orders-request-id').write_text(str(rows[0]['id']))
+          print('PASS: synthetic service request persisted in sandbox D1')
+          PY
+      - name: Exercise live order create, deduplication and capability access
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,tempfile,os
+          from pathlib import Path
+          base='https://boxvia-orders-sandbox.andeks.workers.dev'
+          token=Path('/tmp/boxvia-orders-admin-token').read_text()
+          request_id=int(Path('/tmp/boxvia-orders-request-id').read_text())
+          def post(path,payload,authorized=False):
+            with tempfile.TemporaryDirectory() as directory:
+              body=os.path.join(directory,'body')
+              args=['curl','--silent','--show-error','--max-time','30','--output',body,'--write-out','%{http_code}','--request','POST','--header','Content-Type: application/json','--header','Origin: '+base,'--header','User-Agent: BoxVia-Sandbox-CI-Orders/1.0','--data-binary',json.dumps(payload),base+path]
+              if authorized:
+                args+=['--header','Authorization: Bearer '+token]
+              result=subprocess.run(args,capture_output=True,text=True,timeout=40)
+              if result.returncode:
+                raise SystemExit('BLOCKED: sandbox POST transport failed; no acceptance claimed')
+              try:
+                status=int(result.stdout.strip())
+              except ValueError:
+                raise SystemExit('BLOCKED: sandbox POST returned no HTTP status')
+              if status==403:
+                raise SystemExit('BLOCKED: HTTP 403 on '+path+'; no acceptance claimed')
+              try:
+                response=json.loads(Path(body).read_text())
+              except (OSError,ValueError):
+                raise SystemExit('BLOCKED: non-JSON response on '+path+'; no acceptance claimed')
+              return status,response
+          payload={'serviceRequestId':request_id,'serviceCode':Path('/tmp/boxvia-orders-service-code').read_text()}
+          status,denied=post('/api/orders/create',payload)
+          assert status==401,(status,denied)
+          status,created=post('/api/orders/create',payload,True)
+          assert status==201 and created['created'] is True and created['amountMinor']==5000 and created['currency']=='USD'
+          capability=created['capability']
+          order_id=created['orderId']
+          Path('/tmp/boxvia-orders-order-id').write_text(order_id)
+          Path('/tmp/boxvia-orders-capability').write_text(capability)
+          status,repeated=post('/api/orders/create',payload,True)
+          assert status==200 and repeated['created'] is False and repeated['orderId']==order_id and 'capability' not in repeated
+          status,order=post('/api/orders/status',{'orderId':order_id,'capability':capability})
+          assert status==200 and order['status']=='pending' and order['amountMinor']==5000
+          status,_=post('/api/orders/status',{'orderId':order_id,'capability':'f'*64})
+          assert status==404
+          print('PASS: LIVE sandbox create $50, repeat dedupe, authorized status, invalid capability')
+          print('No capability, token or customer data emitted.')
+          PY
+      - name: Seed synthetic canonical dual documents and test live HTTP consent
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,subprocess,tempfile,os
+          from pathlib import Path
+          base='https://boxvia-orders-sandbox.andeks.workers.dev'
+          order_id=Path('/tmp/boxvia-orders-order-id').read_text()
+          capability=Path('/tmp/boxvia-orders-capability').read_text()
+          scope='SYNTHETIC TEST ONLY - fixed price $50; independent report; no actual customer'
+          digest=hashlib.sha256(scope.encode()).hexdigest()
+          sql="INSERT INTO order_document_sources (order_id,terms_digest,terms_version,scope_text,offer_text,offer_version,confidentiality_text,confidentiality_version,deliverable,deadline) VALUES ("+",".join("'"+v.replace("'","''")+"'" for v in (order_id,digest,'synthetic-v1',scope,'Synthetic offer only, no legal effect','synthetic-offer-v1','Synthetic confidentiality notice, no personal data','synthetic-conf-v1','Synthetic independent report','24 hours'))+");"
+          Path('/tmp/boxvia-synthetic-terms.sql').write_text(sql)
+          subprocess.run(['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote','--file','/tmp/boxvia-synthetic-terms.sql'],check=True,stdout=subprocess.DEVNULL)
+          def post(path,payload):
+            with tempfile.TemporaryDirectory() as d:
+              file=os.path.join(d,'body')
+              args=['curl','--silent','--show-error','--max-time','30','--output',file,'--write-out','%{http_code}','--request','POST','--header','Content-Type: application/json','--header','Origin: '+base,'--data-binary',json.dumps(payload),base+path]
+              result=subprocess.run(args,capture_output=True,text=True,timeout=40,check=True)
+              return int(result.stdout.strip()),json.loads(Path(file).read_text())
+          auth={'orderId':order_id,'capability':capability}
+          status,preview=post('/api/orders/terms-preview',auth)
+          assert status==200 and preview['available'] and preview['termsDigest']==digest and preview['offerText']=='Synthetic offer only, no legal effect',(status,preview)
+          status,missing=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':False})
+          assert status==400,(status,missing)
+          status,wrong=post('/api/orders/consent',{**auth,'termsDigest':'f'*64,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==409,(status,wrong)
+          status,unauth=post('/api/orders/consent',{**auth,'capability':'f'*64,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==404,(status,unauth)
+          status,consent=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==201 and consent=={'recorded':True,'eligible':True},(status,consent)
+          status,ready=post('/api/orders/terms-status',auth)
+          assert status==200 and ready['eligible'] is True,(status,ready)
+          status,duplicate=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status!=201,(status,duplicate)
+          print('PASS: remote synthetic canonical preview, two explicit consents, D1 eligibility, tampering rejection and duplicate rejection')
+          print('No tokens, capability, synthetic document content or personal information logged')
+          PY

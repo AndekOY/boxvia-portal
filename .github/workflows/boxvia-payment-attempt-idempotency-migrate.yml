@@ -1,0 +1,75 @@
+name: BoxVia Payment Attempt Idempotency - sandbox D1 migration
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-payment-attempt-idempotency-migrate.yml
+permissions:
+  contents: read
+concurrency:
+  group: boxvia-sandbox-schema-migration
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Offline test and exact sandbox identity
+        run: |
+          set -euo pipefail
+          python3 tests/payment-attempt-idempotency.test.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          PY
+      - name: Fail closed if duplicate attempts or index already exists
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT order_id,provider,count(*) AS n FROM payment_attempts GROUP BY order_id,provider HAVING count(*)>1 LIMIT 1" --json > /tmp/boxvia-attempt-duplicates.json
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_payment_attempt_one_per_order_provider'" --json > /tmp/boxvia-attempt-index-before.json
+          python3 - <<'PY'
+          import json
+          for path in ('/tmp/boxvia-attempt-duplicates.json','/tmp/boxvia-attempt-index-before.json'):
+            d=json.load(open(path))
+            assert len(d)==1 and d[0]['success'] and not d[0]['results'],path
+          print('PASS: no duplicates and migration not previously applied')
+          PY
+      - name: Export sandbox D1 backup
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/boxvia-attempt-backup
+          npx --yes wrangler@4 d1 export boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --output /tmp/boxvia-attempt-backup/before-v04.sql
+          test -s /tmp/boxvia-attempt-backup/before-v04.sql
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boxvia-sandbox-before-payment-idempotency-v04
+          path: /tmp/boxvia-attempt-backup/before-v04.sql
+          retention-days: 7
+          if-no-files-found: error
+      - name: Apply unique index to sandbox only
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/payment-attempt-idempotency-sandbox-v0.4.sql
+      - name: Verify exact unique index
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name,\"unique\" FROM pragma_index_list('payment_attempts') WHERE name='idx_payment_attempt_one_per_order_provider'" --json > /tmp/boxvia-attempt-index-after.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/boxvia-attempt-index-after.json'))
+          assert len(d)==1 and d[0]['success']
+          assert len(d[0]['results'])==1 and d[0]['results'][0]['unique']==1
+          print('PASS: unique payment attempt index active on isolated sandbox D1')
+          PY

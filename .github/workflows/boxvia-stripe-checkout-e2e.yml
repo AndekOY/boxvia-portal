@@ -1,0 +1,83 @@
+name: BoxVia Stripe - sandbox checkout E2E initiation
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-checkout-e2e.yml
+      - cloudflare/commercial-payment-gate.mjs
+      - tests/commercial-payment-gate.test.mjs
+      - tests/order-terms-recording.test.mjs
+      - cloudflare/order-terms-recording.mjs
+  workflow_dispatch:
+    inputs:
+      service_code:
+        description: 'Fixed-price service under test'
+        required: true
+        type: choice
+        options:
+          - one-question-review
+          - ai-governance-review
+      service_request_id:
+        description: 'Existing synthetic sandbox D1 service request ID (readiness metadata only)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-stripe-checkout-e2e
+  cancel-in-progress: false
+
+jobs:
+  initiate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify exclusive sandbox target and fixed price
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Fail-closed readiness assessment (no D1 writes or provider calls)
+        run: |
+          set -euo pipefail
+          node --test tests/service-catalog.test.mjs tests/commercial-payment-gate.test.mjs tests/order-terms-recording.test.mjs tests/checkout-canonical-terms.test.mjs tests/stripe-checkout.test.mjs tests/stripe-settlement.test.mjs
+          python3 - <<'PY'
+          import json,os
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['vars']['UNIFIED_ORDERS_ENABLED']=='false'
+          assert c['vars']['STRIPE_CHECKOUT_ENABLED']=='false'
+          service=os.environ.get('SERVICE_CODE','')
+          if service:
+            assert service in ('one-question-review','ai-governance-review')
+          raw=os.environ.get('SERVICE_REQUEST_ID','')
+          if raw:
+            assert raw.isdecimal() and int(raw)>0
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+            summary.write('### Stripe sandbox readiness only\\n\\n')
+            summary.write('Local tests completed; checkout remains disabled.\\n\\n')
+            summary.write('No remote D1 mutation, Stripe session, payment or webhook was initiated.\\n\\n')
+            summary.write('Actual provider E2E requires independent server-stored offer/terms/consent evidence and explicitly controlled sandbox enablement.\\n')
+          print('PASS: offline Stripe readiness only; provider E2E UNESTABLISHED')
+          PY
+        env:
+          SERVICE_CODE: ${{ inputs.service_code }}
+          SERVICE_REQUEST_ID: ${{ inputs.service_request_id }}

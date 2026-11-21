@@ -1,0 +1,52 @@
+name: BoxVia BCDE - sandbox order evidence audit (read-only)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-bcde-order-evidence-audit.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect existing order evidence without exposing commercial terms
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.bcde-owner.jsonc'))
+          assert c['name']=='boxvia-bcde-owner'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.bcde-owner.jsonc --remote --json --command "SELECT EXISTS(SELECT 1 FROM service_orders WHERE id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34') AS order_present, EXISTS(SELECT 1 FROM order_terms_acceptances WHERE order_id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34') AS consent_present, EXISTS(SELECT 1 FROM order_document_sources WHERE order_id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34') AS canonical_source_present, EXISTS(SELECT 1 FROM order_terms_acceptances a JOIN order_document_sources s ON s.order_id=a.order_id AND s.terms_digest=a.terms_digest WHERE a.order_id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34' AND length(trim(s.scope_text))>0 AND length(trim(s.terms_version))>0) AS matching_terms_present" > /tmp/bcde-order-audit.json
+          python3 - <<'PY'
+          import json
+          response=json.load(open('/tmp/bcde-order-audit.json'))
+          assert isinstance(response,list) and response and response[0].get('success')
+          rows=response[0].get('results',[])
+          assert len(rows)==1
+          r=rows[0]
+          for k in ('order_present','consent_present','canonical_source_present','matching_terms_present'):
+              assert r[k] in (0,1)
+              print(f'{k}: {bool(r[k])}')
+          if not all(r[k] for k in ('order_present','consent_present','canonical_source_present','matching_terms_present')):
+              print('BCDE DOCUMENT ACCEPTANCE BLOCKED: required evidence is incomplete; no writes performed.')
+          else:
+              print('BCDE document evidence exists; semantic eligibility and real archive acceptance remain separate.')
+          PY

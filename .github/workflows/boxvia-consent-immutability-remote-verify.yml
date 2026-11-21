@@ -1,0 +1,86 @@
+name: BoxVia Consent Immutability - remote negative verification
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-consent-immutability-remote-verify.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: boxvia-sandbox-schema-migration
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify sandbox identity and payment HOLD
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          PY
+      - name: Remote read-only selection and four safe negative mutation probes
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import json,subprocess
+          base=['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote']
+          def query(sql):
+            p=subprocess.run(base+['--command',sql,'--json'],capture_output=True,text=True,timeout=90)
+            if p.returncode:raise RuntimeError('Remote read-only query failed')
+            d=json.loads(p.stdout)
+            assert len(d)==1 and d[0]['success'] is True
+            return d[0]['results']
+          expected={'trg_order_terms_acceptances_no_update','trg_order_terms_acceptances_no_delete','trg_order_document_sources_no_update','trg_order_document_sources_no_delete'}
+          found={r['name'] for r in query("SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'trg_order_%_no_%'")}
+          assert found==expected,(found,expected)
+          # Only target disposable synthetic acceptance rows. No real user data.
+          rows=query("SELECT a.order_id FROM order_terms_acceptances a JOIN service_orders o ON o.id=a.order_id JOIN service_requests r ON r.id=o.service_request_id WHERE r.customer_email='sandbox@example.invalid' AND r.request_key LIKE 'orders-acceptance-%' ORDER BY a.rowid DESC LIMIT 1")
+          assert len(rows)==1,'No previously verified synthetic consent evidence; stop without writes'
+          order_id=rows[0]['order_id']
+          assert isinstance(order_id,str) and len(order_id)==36 and all(c in '0123456789abcdef-' for c in order_id)
+          before=query("SELECT (SELECT count(*) FROM order_terms_acceptances WHERE order_id='"+order_id+"') AS consents,(SELECT count(*) FROM order_document_sources WHERE order_id='"+order_id+"') AS documents")
+          assert before==[{'consents':1,'documents':1}],before
+          # All statements are required to fail at SQLite BEFORE triggers.
+          # UPDATE assigns the existing value, so even a missing trigger cannot alter bytes.
+          probes=[
+            ("consent UPDATE","UPDATE order_terms_acceptances SET terms_digest=terms_digest WHERE order_id='"+order_id+"'"),
+            ("consent DELETE","DELETE FROM order_terms_acceptances WHERE order_id='"+order_id+"'"),
+            ("canonical UPDATE","UPDATE order_document_sources SET scope_text=scope_text WHERE order_id='"+order_id+"'"),
+            ("canonical DELETE","DELETE FROM order_document_sources WHERE order_id='"+order_id+"'")
+          ]
+          for label,sql in probes:
+            p=subprocess.run(base+['--command',sql,'--json'],capture_output=True,text=True,timeout=90)
+            if p.returncode==0:
+              try:
+                d=json.loads(p.stdout)
+                if all(x.get('success') is True for x in d):
+                  raise AssertionError(label+' unexpectedly succeeded')
+              except (ValueError,TypeError,KeyError):
+                raise AssertionError(label+' returned success without valid refusal evidence')
+            # Wrangler error output must explicitly identify the immutability trigger,
+            # not an unrelated auth/network failure.
+            combined=(p.stdout+' '+p.stderr).lower()
+            assert 'immutable' in combined,(label,'Refusal reason not established')
+            print('PASS: remote trigger blocked '+label)
+          after=query("SELECT (SELECT count(*) FROM order_terms_acceptances WHERE order_id='"+order_id+"') AS consents,(SELECT count(*) FROM order_document_sources WHERE order_id='"+order_id+"') AS documents")
+          assert after==before,'Evidence count changed; investigate'
+          print('PASS: four remote negative probes; original synthetic evidence still present')
+          PY

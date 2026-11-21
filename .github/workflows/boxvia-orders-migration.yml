@@ -1,0 +1,91 @@
+name: BoxVia Orders Sandbox - additive D1 migration
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-orders-migration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-sandbox-d1
+  cancel-in-progress: false
+
+jobs:
+  migrate-sandbox:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Offline SQL verification
+        run: |
+          python3 scripts/check-unified-orders-schema.py
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs
+      - name: Validate sandbox-only target
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert c['vars']['UNIFIED_ORDERS_ENABLED']=='false'
+          assert c['vars']['PAYPAL_CHECKOUT_ENABLED']=='false'
+          assert c['vars']['STRIPE_CHECKOUT_ENABLED']=='false'
+          print('Sandbox D1 target verified. No Production bindings.')
+          PY
+      - name: Verify parent schema and existing unified orders tables
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('service_requests','service_orders','service_quotes','payment_attempts','payment_events','fulfillment_outbox') ORDER BY name" --json > /tmp/orders-schema-before.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/orders-schema-before.json'))
+          if not isinstance(data,list) or not data or not data[0].get('success'):
+            raise SystemExit('D1 schema inspection failed; no migration applied')
+          rows=data[0].get('results',[])
+          tables={row['name']:row['sql'] for row in rows}
+          if 'service_requests' not in tables or 'id' not in tables['service_requests'].lower():
+            raise SystemExit('Missing required service_requests parent table; no migration applied')
+          required={'service_orders','service_quotes','payment_attempts','payment_events','fulfillment_outbox'}
+          present=required & tables.keys()
+          if present and present != required:
+            raise SystemExit('Partial unified schema exists; manual review required')
+          print('Parent service_requests found; unified tables present:',sorted(present))
+          PY
+      - name: Apply additive migration to sandbox only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/unified-orders-sandbox-v0.1.sql
+      - name: Verify five unified tables (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('service_orders','service_quotes','payment_attempts','payment_events','fulfillment_outbox') ORDER BY name" --json > /tmp/orders-schema-after.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/orders-schema-after.json'))
+          if not isinstance(data,list) or not data or not data[0].get('success'):
+            raise SystemExit('D1 verification failed')
+          actual={r['name'] for r in data[0].get('results',[])}
+          expected={'service_orders','service_quotes','payment_attempts','payment_events','fulfillment_outbox'}
+          assert actual==expected,(actual,expected)
+          print('PASS: all five unified orders tables exist in sandbox D1')
+          PY

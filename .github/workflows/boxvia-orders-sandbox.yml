@@ -1,0 +1,213 @@
+name: BoxVia Orders Sandbox - isolated deployment
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-orders-sandbox.yml
+      - cloudflare/orders-sandbox-worker.mjs
+      - cloudflare/order-consent-route.mjs
+      - tests/order-consent-route.test.mjs
+      - cloudflare/commercial-payment-gate.mjs
+      - cloudflare/checkout-eligibility-db.mjs
+      - tests/commercial-payment-gate.test.mjs
+      - cloudflare/paypal-unified-sandbox.mjs
+      - tests/paypal-unified-sandbox.test.mjs
+      - migrations/paypal-capture-evidence-sandbox-v0.1.sql
+      - cloudflare/paypal-unified-settlement.mjs
+      - tests/paypal-unified-settlement.test.mjs
+      - cloudflare/paypal-unified-api.mjs
+      - tests/paypal-unified-api.test.mjs
+      - migrations/paypal-one-attempt-per-order-sandbox-v0.1.sql
+      - cloudflare/paypal-unified-attempt.mjs
+      - tests/paypal-unified-attempt.test.mjs
+      - cloudflare/orders-persistence.mjs
+      - cloudflare/stripe-verification.mjs
+      - cloudflare/stripe-settlement.mjs
+      - cloudflare/stripe-checkout.mjs
+      - cloudflare/stripe-test-key.mjs
+      - tests/orders-sandbox-worker.test.mjs
+      - tests/orders-sandbox-terms-status.test.mjs
+      - tests/stripe-checkout.test.mjs
+      - tests/stripe-attempt-idempotency.test.mjs
+      - tests/cross-provider-exclusivity.test.mjs
+      - tests/stripe-verification.test.mjs
+      - tests/stripe-settlement.test.mjs
+      - wrangler.orders-sandbox.jsonc
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-orders-sandbox:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Offline test gates
+        run: |
+          node --test tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/orders-sandbox-terms-status.test.mjs tests/order-consent-route.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs tests/stripe-attempt-idempotency.test.mjs tests/cross-provider-exclusivity.test.mjs tests/paypal-unified-attempt.test.mjs
+          python3 scripts/check-unified-orders-schema.py
+      - name: Verify isolated deployment target
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert c['vars']=={'UNIFIED_ORDERS_ENABLED':'false','PAYPAL_CHECKOUT_ENABLED':'false','STRIPE_CHECKOUT_ENABLED':'false'}
+          assert 'assets' not in c and 'routes' not in c and 'route' not in c
+          print('Only isolated sandbox target; all checkout disabled.')
+          PY
+      - name: Inspect sandbox D1 schema (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name, type FROM sqlite_master WHERE type IN ('table','index') AND name NOT LIKE 'sqlite_%' ORDER BY type,name" --json > /tmp/boxvia-schema-inventory.json
+          python3 - <<'PY'
+          import json
+          rows=json.load(open('/tmp/boxvia-schema-inventory.json'))
+          print('Read-only sandbox schema inventory:',json.dumps(rows)[:6000])
+          PY
+      - name: Deploy isolated orders sandbox only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
+
+  verify-live-health:
+    needs: deploy-orders-sandbox
+    if: ${{ always() && needs.deploy-orders-sandbox.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 5
+    steps:
+      - name: Verify live sandbox health (strict acceptance gate)
+        shell: bash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,subprocess,tempfile
+          url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
+          cid=os.environ.get('CF_ACCESS_CLIENT_ID','')
+          secret=os.environ.get('CF_ACCESS_CLIENT_SECRET','')
+          if bool(cid)!=bool(secret):
+            raise SystemExit('Incomplete optional Access service token pair')
+          with tempfile.TemporaryDirectory() as d:
+            body=os.path.join(d,'body')
+            headers=os.path.join(d,'headers')
+            cmd=['curl','--silent','--show-error','--location','--max-time','30','--output',body,'--dump-header',headers,'--write-out','%{http_code}','--header','Accept: application/json','--header','User-Agent: BoxVia-Sandbox-CI-Health/1.0',url]
+            if cid:
+              cmd+=['--header','CF-Access-Client-Id: '+cid,'--header','CF-Access-Client-Secret: '+secret]
+            p=subprocess.run(cmd,capture_output=True,text=True,timeout=40)
+            code=p.stdout.strip()
+            if p.returncode!=0 or code!='200':
+              # Do not print request headers, response body or secrets.
+              ray='not-provided'
+              try:
+                for line in open(headers):
+                  if line.lower().startswith('cf-ray:'):
+                    ray=line.split(':',1)[1].strip()
+              except OSError:
+                pass
+              message=f'UNESTABLISHED: HTTP {code or "no response"}; curl exit={p.returncode}; CF-Ray={ray}; Access credentials configured={bool(cid)}.'
+              print('::error::'+message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+                summary.write('### Sandbox live HTTP: UNESTABLISHED\\n\\n'+message+'\\n')
+              raise SystemExit(1)
+            try:
+              with open(body) as stream:
+                data=json.load(stream)
+            except (OSError,ValueError):
+              raise SystemExit('FAIL: HTTP 200 without valid JSON health response')
+            assert data.get('service')=='boxvia-orders-sandbox'
+            assert data.get('status')=='schema_ready'
+            assert data.get('checkout')=='disabled'
+            assert data.get('unified_tables_present')==5
+            print('PASS: live sandbox HTTP 200, schema ready, checkout disabled, five unified tables')
+            with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+              summary.write('### Sandbox live HTTP: PASS\\n\\nHTTP 200 and exact health invariants verified.\\n')
+          PY
+
+  audit-sandbox-evidence:
+    needs: deploy-orders-sandbox
+    if: ${{ always() && needs.deploy-orders-sandbox.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Audit sandbox order evidence (read-only, no customer data)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,subprocess
+          tables=['service_orders','payment_attempts','payment_events','fulfillment_outbox','order_terms_acceptances','stripe_event_order_links','paypal_capture_evidence']
+          def query(sql):
+            args=['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote','--command',sql,'--json']
+            proc=subprocess.run(args,capture_output=True,text=True,timeout=90)
+            if proc.returncode:
+              raise SystemExit('UNESTABLISHED: remote D1 read-only query failed (exit code '+str(proc.returncode)+'). Inspect private runner logs; no data changed.')
+            try:
+              data=json.loads(proc.stdout)
+              assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
+              return data[0]['results']
+            except (ValueError,KeyError,AssertionError,TypeError):
+              raise SystemExit('UNESTABLISHED: unexpected remote D1 JSON response; no data changed.')
+          counts={}
+          for table in tables:
+            rows=query('SELECT COUNT(*) AS n FROM '+table)
+            assert len(rows)==1 and type(rows[0]['n'])==int
+            counts[table]=rows[0]['n']
+          rows=query('SELECT COUNT(*) AS n FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL')
+          orphan=rows[0]['n']
+          integrity_queries={
+            'orphan_consents':"SELECT COUNT(*) AS n FROM order_terms_acceptances a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL",
+            'consent_order_mismatches':"SELECT COUNT(*) AS n FROM order_terms_acceptances a JOIN service_orders o ON o.id=a.order_id WHERE a.service_code<>o.service_code OR a.amount_minor<>o.amount_minor OR a.currency<>o.currency",
+            'consents_without_canonical_source':"SELECT COUNT(*) AS n FROM order_terms_acceptances a WHERE NOT EXISTS (SELECT 1 FROM order_document_sources s WHERE s.order_id=a.order_id AND s.terms_digest=a.terms_digest AND TRIM(s.scope_text)<>'' AND TRIM(s.terms_version)<>'')"
+          }
+          integrity={}
+          for name,sql in integrity_queries.items():
+            rows=query(sql)
+            assert len(rows)==1 and type(rows[0]['n'])==int and rows[0]['n']>=0
+            integrity[name]=rows[0]['n']
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+            summary.write('### Remote sandbox D1 evidence inventory (read-only)\\n\\n')
+            summary.write('| Metric | Count |\\n|---|---:|\\n')
+            for name in sorted(counts):
+              summary.write(f'| {name} | {counts[name]} |\\n')
+            summary.write(f'| orphan_attempts | {orphan} |\\n')
+            for name in sorted(integrity):
+              summary.write(f'| {name} | {integrity[name]} |\\n')
+            summary.write('\\nCounts alone do not establish provider settlement, consent, or HTTP availability.\\n')
+          if orphan:
+            raise SystemExit(f'FAIL: {orphan} orphan payment attempts')
+          if any(integrity.values()):
+            raise SystemExit('FAIL: sandbox consent evidence referential integrity or canonical source invariant violated')
+          print('PASS: seven independent D1 counts, zero orphan attempts, and consent/source integrity; no writes')
+          PY

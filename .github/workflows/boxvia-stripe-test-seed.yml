@@ -1,0 +1,70 @@
+name: BoxVia Stripe Test Mode - seed synthetic request (sandbox only)
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-test-seed.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify exclusive sandbox D1 target
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Insert one disposable synthetic request (no order or payment)
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          key='stripe-test-seed-'+secrets.token_hex(16)
+          Path('/tmp/boxvia-seed-key').write_text(key)
+          Path('/tmp/boxvia-seed.sql').write_text(
+            "INSERT INTO service_requests (service_code,service_title,customer_email,request_json,status,request_key,request_digest) "
+            "VALUES ('one-question-review','One Question Review','sandbox@example.invalid','{}','new','"+key+"','"+'0'*64+"');"
+          )
+          PY
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file /tmp/boxvia-seed.sql > /tmp/boxvia-seed-import.log
+          python3 - <<'PY'
+          from pathlib import Path
+          key=Path('/tmp/boxvia-seed-key').read_text()
+          Path('/tmp/boxvia-query.sql').write_text("SELECT id,service_code FROM service_requests WHERE request_key='"+key+"';")
+          PY
+          query="$(cat /tmp/boxvia-query.sql)"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "$query" --json > /tmp/boxvia-seed-result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/boxvia-seed-result.json').read_text())
+          assert isinstance(data,list) and data[0]['success'],data
+          rows=data[0]['results']
+          assert len(rows)==1 and rows[0]['service_code']=='one-question-review',rows
+          print('PASS: sandbox synthetic service request created, id:',rows[0]['id'])
+          print('NO ORDER CREATED. NO PAYMENT ATTEMPTED. NO CUSTOMER DATA USED.')
+          PY

@@ -1,0 +1,56 @@
+name: BoxVia Stripe - reconciliation prerequisites (read-only)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-reconciliation-readiness.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated Worker and production HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Inspect isolated Worker Stripe secret names and GitHub secret presence
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_STRIPE_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 secret list --config wrangler.orders-sandbox.jsonc > /tmp/stripe-secret-names.json
+          python3 - <<'PY'
+          import json,os
+          data=json.load(open('/tmp/stripe-secret-names.json'))
+          assert isinstance(data,list)
+          names={x.get('name') for x in data if isinstance(x,dict)}
+          worker='PRESENT' if 'STRIPE_TEST_SECRET_KEY' in names else 'ABSENT'
+          github='PRESENT' if os.environ.get('GITHUB_STRIPE_KEY') else 'ABSENT'
+          print('STRIPE_TEST_SECRET_KEY isolated Worker:',worker)
+          print('STRIPE_TEST_SECRET_KEY GitHub preview environment:',github)
+          print('Provider-side read-only reconciliation: NOT_ATTEMPTED')
+          print('Production: HOLD. No Stripe calls, D1 writes, or secret values logged.')
+          PY

@@ -1,0 +1,86 @@
+name: BoxVia Orders Sandbox - offline HTTP acceptance
+
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - cloudflare/orders-sandbox-worker.mjs
+      - cloudflare/commercial-payment-gate.mjs
+      - cloudflare/checkout-eligibility-db.mjs
+      - tests/commercial-payment-gate.test.mjs
+      - cloudflare/paypal-unified-sandbox.mjs
+      - tests/paypal-unified-sandbox.test.mjs
+      - migrations/paypal-capture-evidence-sandbox-v0.1.sql
+      - cloudflare/paypal-unified-settlement.mjs
+      - tests/paypal-unified-settlement.test.mjs
+      - cloudflare/paypal-unified-api.mjs
+      - tests/paypal-unified-api.test.mjs
+      - migrations/paypal-one-attempt-per-order-sandbox-v0.1.sql
+      - cloudflare/paypal-unified-attempt.mjs
+      - tests/paypal-unified-attempt.test.mjs
+      - cloudflare/orders-persistence.mjs
+      - cloudflare/checkout-eligibility.mjs
+      - cloudflare/checkout-eligibility-db.mjs
+      - cloudflare/bcde-pdf.mjs
+      - cloudflare/bcde-archive.mjs
+      - cloudflare/bcde-owner-api.mjs
+      - cloudflare/bcde-access.mjs
+      - tests/bcde-access.test.mjs
+      - cloudflare/bcde-owner-console.mjs
+      - migrations/bcde-document-sources-sandbox-v0.1.sql
+      - tests/bcde-stage1.test.mjs
+      - cloudflare/order-terms-recording.mjs
+      - migrations/order-terms-acceptances-sandbox-v0.1.sql
+      - cloudflare/service-catalog.mjs
+      - tests/checkout-eligibility.test.mjs
+      - cloudflare/stripe-checkout.mjs
+      - cloudflare/stripe-settlement.mjs
+      - cloudflare/stripe-verification.mjs
+      - tests/orders-sandbox-http-contract.test.mjs
+      - tests/orders-sandbox-worker.test.mjs
+      - tests/orders-persistence.test.mjs
+      - tests/stripe-checkout.test.mjs
+      - tests/stripe-settlement.test.mjs
+      - tests/stripe-verification.test.mjs
+      - .github/workflows/boxvia-orders-offline-acceptance.yml
+      - scripts/check-stripe-settlement-sqlite.py
+      - migrations/unified-orders-sandbox-v0.1.sql
+      - migrations/stripe-event-order-links-sandbox-v0.1.sql
+      - scripts/check-stripe-event-linkage-sqlite.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify sandbox-only target and disabled production payments
+        run: |
+          python3 - <<'PY'
+          import json
+          config=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert config['name']=='boxvia-orders-sandbox'
+          assert config['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert config['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert all(config['vars'][name]=='false' for name in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in config and 'assets' not in config
+          PY
+      - name: Test full HTTP order contract and Stripe Test Mode locally
+        run: |
+          node --test tests/bcde-access.test.mjs tests/bcde-stage1.test.mjs tests/checkout-eligibility.test.mjs tests/service-catalog.test.mjs tests/unified-orders.test.mjs tests/orders-persistence.test.mjs tests/orders-sandbox-worker.test.mjs tests/commercial-payment-gate.test.mjs tests/paypal-unified-sandbox.test.mjs tests/paypal-unified-settlement.test.mjs tests/paypal-unified-api.test.mjs tests/paypal-unified-attempt.test.mjs tests/orders-sandbox-http-contract.test.mjs tests/stripe-verification.test.mjs tests/stripe-settlement.test.mjs tests/stripe-checkout.test.mjs
+      - name: Verify D1 migration schema offline
+        run: python3 scripts/check-unified-orders-schema.py
+      - name: Verify real SQLite Stripe settlement and replay invariants
+        run: |
+          python3 scripts/check-stripe-settlement-sqlite.py
+          python3 scripts/check-stripe-event-linkage-sqlite.py

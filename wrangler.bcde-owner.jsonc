@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boxvia-bcde-owner",
+  "main": "cloudflare/bcde-owner-worker.mjs",
+  "compatibility_date": "2026-11-02",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "boxvia-bxc-sandbox",
+      "database_id": "baf79e93-cbea-4786-8779-974f3b3afbcc"
+    }
+  ],
+  "vars": {
+    "BCDE_STAGE": "sandbox",
+    "BCDE_ACCESS_TEAM_DOMAIN": "broad-bonus-7bf4.cloudflareaccess.com",
+    "BCDE_ACCESS_AUD": "4165892befba7f468eeb834948be246b29bab88f8fcc2d313e360b9a6ee14445",
+    "BCDE_OWNER_EMAIL": "andek.oy@gmail.com"
+  },
+  "r2_buckets": [
+    {
+      "binding": "BCDE_ARCHIVE",
+      "bucket_name": "boxvia-bcde-archive-sandbox"
+    }
+  ]
+}
