@@ -6,6 +6,7 @@ import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 import { authorizeCommercialPayment } from "./commercial-payment-gate.mjs";
 import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
+import { handleOrderConsent } from "./order-consent-route.mjs";
 import { reserveUnifiedPayPalAttempt, persistUnifiedPayPalProviderOrder } from "./paypal-unified-attempt.mjs";
 import { createUnifiedPayPalSandboxOrder } from "./paypal-unified-api.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
@@ -291,6 +292,9 @@ export default {
         } }
       );
     }
+    if (url.pathname === "/api/orders/consent" && request.method === "POST") {
+      return handleOrderConsent(request, env);
+    }
     if (url.pathname === "/api/orders/terms-preview" && request.method === "POST") {
       // Render only the canonical document bound to a capability-authenticated order.
       // No consent can be recorded through this read-only route.
@@ -310,17 +314,21 @@ export default {
         const order = await getAuthorizedOrder(env.DB, input?.orderId, input?.capability);
         if (!order) return json({ error: "Not found" }, 404);
         const document = await env.DB.prepare(
-          "SELECT scope_text,terms_version,terms_digest FROM order_document_sources WHERE order_id = ?"
+          "SELECT scope_text,terms_version,terms_digest,offer_text,offer_version,confidentiality_text,confidentiality_version,deliverable,deadline FROM order_document_sources WHERE order_id = ?"
         ).bind(order.orderId).first();
         if (!document || typeof document.scope_text !== "string" || !document.scope_text.trim() ||
             typeof document.terms_version !== "string" || !document.terms_version.trim() ||
-            typeof document.terms_digest !== "string" || !/^[a-f0-9]{64}$/.test(document.terms_digest)) {
+            typeof document.terms_digest !== "string" || !/^[a-f0-9]{64}$/.test(document.terms_digest) ||
+            ![document.offer_text,document.offer_version,document.confidentiality_text,document.confidentiality_version,document.deliverable,document.deadline].every(x => typeof x === "string" && x.trim())) {
           return json({ available: false, reason: "canonical_document_missing" }, 409);
         }
         return json({ available: true, serviceCode: order.serviceCode,
           amountMinor: order.amountMinor, currency: order.currency,
           scopeText: document.scope_text, termsVersion: document.terms_version,
-          termsDigest: document.terms_digest });
+          termsDigest: document.terms_digest, offerText: document.offer_text,
+          offerVersion: document.offer_version, confidentialityText: document.confidentiality_text,
+          confidentialityVersion: document.confidentiality_version,
+          deliverable: document.deliverable, deadline: document.deadline });
       } catch {
         console.error("orders_sandbox_terms_preview_failed");
         return json({ error: "Unavailable" }, 503);
