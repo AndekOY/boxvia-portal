@@ -3,6 +3,13 @@ name: BoxVia Stripe - sandbox checkout E2E initiation
 on:
   workflow_dispatch:
     inputs:
+      service_code:
+        description: 'Fixed-price service under test'
+        required: true
+        type: choice
+        options:
+          - one-question-review
+          - ai-governance-review
       service_request_id:
         description: 'Existing synthetic sandbox D1 service request ID for one-question-review'
         required: true
@@ -53,6 +60,7 @@ jobs:
       - name: Create $50 order and Stripe Test Checkout via isolated Worker
         env:
           SERVICE_REQUEST_ID: ${{ inputs.service_request_id }}
+          SERVICE_CODE: ${{ inputs.service_code }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -61,6 +69,9 @@ jobs:
           base='https://boxvia-orders-sandbox.andeks.workers.dev'
           token=Path('/tmp/boxvia-stripe-admin').read_text()
           raw=os.environ.get('SERVICE_REQUEST_ID','')
+          service_code=os.environ.get('SERVICE_CODE','')
+          if service_code not in ('one-question-review','ai-governance-review'):
+            raise SystemExit('STOP: unsupported service code')
           if not raw.isdecimal() or int(raw)<=0:
             raise SystemExit('STOP: valid synthetic sandbox service_request_id required')
           def call(path,payload,admin=False):
@@ -77,7 +88,7 @@ jobs:
               except (OSError,ValueError): raise SystemExit('BLOCKED: non-JSON response')
               if status not in (200,201): raise SystemExit('STOP: endpoint '+path+' HTTP '+str(status)+'; no checkout acceptance')
               return status,data
-          code,order=call('/api/orders/create',{'serviceRequestId':int(raw),'serviceCode':'one-question-review'},True)
+          code,order=call('/api/orders/create',{'serviceRequestId':int(raw),'serviceCode':service_code},True)
           if code!=201 or order.get('created') is not True or order.get('amountMinor')!=5000 or order.get('currency')!='USD':
             raise SystemExit('STOP: order not freshly created; do not reuse lost capability')
           capability=order['capability']
