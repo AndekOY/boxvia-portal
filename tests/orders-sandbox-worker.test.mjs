@@ -313,3 +313,30 @@ test("PayPal sandbox checkout refuses missing unique attempt index",async()=>{
  assert.equal(response.status,503);
  assert.equal((await response.json()).error,"Sandbox configuration rejected");
 });
+
+test("PayPal sandbox recovery requires test-mode gate and never touches D1 when disabled",async()=>{
+ const req=post("/api/paypal/sandbox/recover",{orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability:"a".repeat(64)});
+ const response=await worker.fetch(req,{...flags,DB:{prepare(){throw Error("No D1 access permitted");}}});
+ assert.equal(response.status,503);
+});
+test("PayPal sandbox recovery rejects foreign origin and invalid payload before D1 access",async()=>{
+ const env={...flags,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",
+  DB:{prepare(){throw Error("Unexpected D1 access");}}};
+ const input={orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability:"a".repeat(64)};
+ const foreign=await worker.fetch(post("/api/paypal/sandbox/recover",input,{Origin:"https://evil.example"}),env);
+ assert.equal(foreign.status,403);
+ const malformed=await worker.fetch(new Request(base+"/api/paypal/sandbox/recover",{
+  method:"POST",headers:{Origin:base,"Content-Type":"application/json"},body:"{"}),env);
+ assert.equal(malformed.status,400);
+ const oversized=await worker.fetch(new Request(base+"/api/paypal/sandbox/recover",{
+  method:"POST",headers:{Origin:base,"Content-Type":"application/json"},body:"x".repeat(2050)}),env);
+ assert.equal(oversized.status,413);
+});
+test("PayPal sandbox recovery does not reveal attempts without valid order capability",async()=>{
+ const env={...flags,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",
+  DB:{prepare(sql){assert.match(sql,/FROM service_orders/);return {bind(){return {async first(){return null;}}}};}}};
+ const response=await worker.fetch(post("/api/paypal/sandbox/recover",{
+  orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability:"a".repeat(64)}),env);
+ assert.equal(response.status,404);
+ assert.deepEqual(await response.json(),{error:"Not found"});
+});
