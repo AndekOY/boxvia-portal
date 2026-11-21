@@ -1,11 +1,7 @@
 name: BoxVia Stripe - sandbox checkout E2E initiation
 
 on:
-  push:
-    branches:
-      - work/technical-pilots-first-20261118
-    paths:
-      - .github/workflows/boxvia-stripe-checkout-e2e.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -79,6 +75,6 @@ jobs:
           if code!=201 or not checkout.get('checkoutUrl','').startswith('https://checkout.stripe.com/'):
             raise SystemExit('STOP: Stripe Checkout Session not confirmed')
           print('PASS: Stripe Test Mode Checkout Session created')
-          print('STRIPE_TEST_CHECKOUT_URL:',checkout['checkoutUrl'])
+          print('Checkout URL validated but intentionally not logged.')
           print('NO CARD CHARGED. PAYMENT AND WEBHOOK NOT YET VERIFIED.')
           PY
