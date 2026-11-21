@@ -19,6 +19,8 @@ on:
       - .github/workflows/boxvia-orders-offline-acceptance.yml
       - scripts/check-stripe-settlement-sqlite.py
       - migrations/unified-orders-sandbox-v0.1.sql
+      - migrations/stripe-event-order-links-sandbox-v0.1.sql
+      - scripts/check-stripe-event-linkage-sqlite.py
   workflow_dispatch:
 
 permissions:
@@ -52,4 +54,6 @@ jobs:
       - name: Verify D1 migration schema offline
         run: python3 scripts/check-unified-orders-schema.py
       - name: Verify real SQLite Stripe settlement and replay invariants
-        run: python3 scripts/check-stripe-settlement-sqlite.py
+        run: |
+          python3 scripts/check-stripe-settlement-sqlite.py
+          python3 scripts/check-stripe-event-linkage-sqlite.py
