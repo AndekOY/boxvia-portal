@@ -11,16 +11,16 @@ The owner confirmed a successful real-money $20 Check a Claim purchase. The sour
 Service identifiers must match existing form codes:
 - one-question-review: USD 50.00, fixed, quote_required=false
 - ai-governance-review: USD 50.00, fixed, quote_required=false
-- pre-decision-review: USD 200.00, fixed, quote_required=false
+- pre-decision-review: from USD 200.00, quote_required=true
 - technical-pilot: from USD 250.00, quote_required=true
 - faar-stage-1: public name Project Definition Review, from USD 250.00, quote_required=true
 - ai-governance-gap-assessment: from USD 300.00, quote_required=true
 Check a Claim remains legacy-only; never present as a new catalog choice. No client-supplied amount, service title, or quote accepted as authoritative.
 
 ## 3. Lifecycle
-service_request (Turnstile, privacy consent, dedupe) -> intake_accepted -> [quote_required: scope_proposed -> quote_accepted] -> order_pending -> provider_checkout -> payment_pending -> payment_verified -> fulfillment_ready -> in_progress -> delivered.
+service_request (Turnstile, intake privacy notice, dedupe) -> terms_proposed (fixed $50 or individual quote) -> terms_confirmed (scope, deliverable, deadline, final price) -> explicit offer acceptance + explicit confidentiality-terms acceptance (versioned, auditable) -> checkout_eligible -> provider_checkout -> payment_pending -> payment_verified -> fulfillment_ready -> in_progress -> delivered.
 Exception states: cancelled, payment_failed, refunded, disputed, expired, manual_review.
-Only server-issued immutable order IDs and authorized customer capabilities may initiate checkout or inspect status. A redirect or client callback is not proof of payment.
+Payment buttons are hidden until all conditions are accepted and the server verifies the exact accepted terms. Both fixed-price and from-price services follow this identical gating algorithm; only the way the final price is determined differs. Acceptance must be affirmative, not prechecked, and recorded with document version/digest, timestamp and order/quote reference. Only server-issued immutable order IDs and authorized customer capabilities may initiate checkout or inspect status. A redirect or client callback is not proof of payment.
 
 ## 4. Proposed D1 schema (migration must be reviewed against existing schema before execution)
 service_orders: id (opaque UUID PK), service_request_id (FK), service_code, price_minor INTEGER, currency TEXT CHECK USD, quote_id nullable, status, customer_capability_hash, created_at, updated_at, paid_at.
@@ -31,13 +31,13 @@ fulfillment_outbox: id PK, order_id UNIQUE, status, attempts, last_error, timest
 No migration execution until schema review and backup/rollback plan.
 
 ## 5. Provider rules
-PayPal: server creates order using authoritative USD 50.00, sends provider idempotency key, checks provider-side completed capture, order identity, amount and currency before transactional state transition. Preserve existing legacy $20 callbacks and records until retirement.
-Stripe: server creates Checkout Session with fixed/approved amount and metadata order_id; signed webhook verifies raw request body and Stripe-Signature against environment-specific secret; confirm paid status, expected order, amount, currency and provider IDs; dedupe event IDs. Redirect is informational only. Do not store card data.
+PayPal: server creates order using the server-confirmed final price, sends provider idempotency key, checks provider-side completed capture, order identity, amount and currency before transactional state transition. Preserve existing legacy $20 callbacks and records until retirement.
+Stripe: server creates Checkout Session only after terms/offer/confidentiality acceptance, using the server-confirmed final amount and metadata order_id; signed webhook verifies raw request body and Stripe-Signature against environment-specific secret; confirm paid status, expected order, amount, currency and provider IDs; dedupe event IDs. Redirect is informational only. Do not store card data.
 Cross-provider: one order can be paid only once; second provider success after first must go to manual reconciliation/refund handling, not trigger duplicate fulfillment. Outbox delivery must be idempotent.
 
 ## 6. API design (proposed, not yet implemented)
 POST /api/orders/create: customer capability + service_request_id; server resolves service/quote, creates idempotent order; returns opaque order handle.
-POST /api/orders/checkout: capability + order handle + provider; server checks pending state, returns trusted provider URL.
+POST /api/orders/checkout: capability + order handle + provider; server checks terms confirmation, accepted offer version, accepted confidentiality terms version, server price, pending state, returns trusted provider URL.
 GET /api/orders/status: capability + order handle; no PII leak.
 POST /api/stripe/webhook: raw signed Stripe event; no browser authorization; dedupe, validate and reconcile.
 PayPal capture/status routes for generic orders should be distinct from /api/paypal/create-order and /api/paypal/capture-order legacy claim routes.
@@ -58,13 +58,16 @@ Gate PASS requires real sandbox provider evidence and D1 queries. Unit tests alo
 ## 9. Rollout / retirement
 1. Verify existing D1 migration inventory and deployed notification behavior.
 2. Build isolated sandbox worker + sandbox D1, credentials and Stripe test webhook; never reuse Production DB.
-3. Implement two $50 orders, tests and provider acceptance.
+3. Implement two $50 orders with the same explicit terms-confirmation and offer/confidentiality acceptance gate as all other services, tests and provider acceptance.
 4. Disable new Check a Claim sales only after accepted alternatives and explicit route/redirect decision. Preserve historical claim access and records.
 5. Extend order model to four remaining services; quote-first for 'from' pricing.
 6. Production release requires separate explicit owner approval.
 
 ## Open decisions
 - Stripe account activation, supported merchant geography and test credentials: UNESTABLISHED.
-- Exact quote acceptance and invoicing workflow for variable-price services: TO DESIGN.
+- Terms confirmation, quote acceptance, versioned offer/confidentiality consent and payment-unlock workflow: approved common algorithm; implementation and acceptance still required.
 - Historical /evidence-check/ redirect behavior: NOT APPROVED.
 - Database migration/rollback scripts and payment-test worker: NOT YET VERIFIED.
+
+## 10. Owner clarification 2026-11-21 — binding commercial rule
+Exactly two services are fixed USD 50. All four others display **from** pricing and require an individually accepted final amount. Regardless of price category, checkout controls must appear only after the customer confirms scope, deliverables, timing, final amount, the offer, and confidentiality conditions. Record each acceptance with immutable document versions and timestamp. Provider APIs must independently enforce these gates, not rely on hidden UI buttons. Existing sandbox test-only checkout bypasses these future customer-facing gates and is NOT a production-ready customer flow.
