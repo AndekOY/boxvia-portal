@@ -15,3 +15,18 @@ for(const [existing,call] of [["paypal",db=>reserveStripeAttempt(db,order)],["st
   assert.equal(writes,0);
  });
 }
+
+for(const [provider,call] of [["stripe",db=>reserveStripeAttempt(db,order)],["paypal",db=>reserveUnifiedPayPalAttempt(db,auth)]]){
+ for(const status of ["created","pending"]){
+  test("existing "+provider+" "+status+" attempt is reused without D1 mutation",async()=>{
+   let reads=0,writes=0;
+   const db={prepare(){return {bind(){return this;},async first(){reads++;return {id:"existing-attempt",provider,status,provider_order_id:status==="pending"?"sandbox-provider-session":null};},async run(){writes++;throw Error("Unexpected second attempt");}};}};
+   const result=await call(db);
+   assert.equal(result.created,false);
+   assert.equal(result.attemptId,"existing-attempt");
+   assert.equal(result.status,status);
+   assert.equal(reads,1);
+   assert.equal(writes,0);
+  });
+ }
+}
