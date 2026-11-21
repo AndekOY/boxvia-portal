@@ -11,6 +11,9 @@ on:
       - cloudflare/checkout-eligibility-db.mjs
       - cloudflare/bcde-pdf.mjs
       - cloudflare/bcde-archive.mjs
+      - cloudflare/bcde-owner-api.mjs
+      - cloudflare/bcde-owner-console.mjs
+      - migrations/bcde-document-sources-sandbox-v0.1.sql
       - tests/bcde-stage1.test.mjs
       - cloudflare/order-terms-recording.mjs
       - migrations/order-terms-acceptances-sandbox-v0.1.sql
