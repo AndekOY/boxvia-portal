@@ -50,6 +50,8 @@ jobs:
             except (urllib.error.URLError,ValueError,AssertionError,TimeoutError):
               status='BLOCKED_SANDBOX_OAUTH_UNVERIFIED'
           print('PayPal sandbox OAuth readiness:',status)
+          if status != 'PASS_SANDBOX_OAUTH':
+            print('::warning::PayPal Sandbox OAuth is not established. Checkout remains HOLD.')
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
             f.write('### PayPal sandbox OAuth readiness\\n\\n**'+status+'**\\n\\n')
             f.write('OAuth token endpoint only. No order ID, no checkout creation, no capture, no D1 access. No credentials or tokens printed.\\n')
