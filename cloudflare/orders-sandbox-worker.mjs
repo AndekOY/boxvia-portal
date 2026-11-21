@@ -1,5 +1,5 @@
 import { isStripeTestApiKey } from "./stripe-test-key.mjs";
-import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession } from "./stripe-checkout.mjs";
+import { reserveStripeAttempt, requestStripeTestSession, persistStripeSession, retrieveExistingStripeTestSession } from "./stripe-checkout.mjs";
 import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
@@ -59,8 +59,31 @@ export default {
         ).first();
         if (!index) return json({ error: "Checkout schema pending" }, 503);
         const order = await getAuthorizedOrder(env.DB, testOrderId, env.STRIPE_E2E_ORDER_CAPABILITY);
-        if (!order || order.status !== "pending" || order.serviceCode !== "one-question-review" ||
-            order.amountMinor !== 5000 || order.currency !== "USD") return json({ error: "Order not eligible" }, 409);
+        if (!order || !["pending","checkout"].includes(order.status) ||
+            order.serviceCode !== "one-question-review" ||
+            order.amountMinor !== 5000 || order.currency !== "USD") {
+          return json({ error: "Order not eligible" }, 409);
+        }
+        if (order.status === "checkout") {
+          // Reuse only the session already bound to this authenticated order.
+          const existing = await env.DB.prepare(
+            "SELECT provider_order_id,status FROM payment_attempts WHERE order_id = ? AND provider = 'stripe' ORDER BY created_at DESC LIMIT 1"
+          ).bind(order.orderId).first();
+          if (!existing || existing.status !== "pending" ||
+              !existing.provider_order_id) {
+            return json({ error: "Existing session requires reconciliation" }, 409);
+          }
+          const session = await retrieveExistingStripeTestSession(
+            order, existing.provider_order_id, env
+          );
+          if (session.status !== "open") {
+            return json({ error: "Stripe session is no longer open; verify webhook and order status" }, 409);
+          }
+          return new Response(null, { status: 303, headers: {
+            "Location": session.checkoutUrl, "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer"
+          } });
+        }
         const attempt = await reserveStripeAttempt(env.DB, order);
         if (!attempt.created) return json({ error: "Checkout already reserved" }, 409);
         const session = await requestStripeTestSession(order, env, url.origin, attempt.attemptId);
