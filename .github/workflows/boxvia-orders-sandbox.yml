@@ -85,18 +85,21 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
-      - name: Verify public health without exposing data
+      - name: Verify live sandbox health (strict acceptance gate)
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,urllib.request,urllib.error
+          import json,os,urllib.request,urllib.error
           url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
           try:
             response=urllib.request.urlopen(url,timeout=30)
           except urllib.error.HTTPError as exc:
             if exc.code==403:
-              print('GitHub runner blocked by Cloudflare HTTP 403; browser verification required')
-              raise SystemExit(0)
+              message='UNESTABLISHED: Cloudflare HTTP 403 blocks independent sandbox health verification. Deployment may have succeeded, but live acceptance did not pass.'
+              print('::error::'+message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+                summary.write('### Sandbox live health: UNESTABLISHED\\n\\n'+message+'\\n')
+              raise SystemExit(1)
             raise
           with response:
             assert response.status==200
@@ -106,4 +109,6 @@ jobs:
           assert data['checkout']=='disabled'
           assert data['unified_tables_present']==5
           print('PASS: live sandbox health, five tables, checkout disabled')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+            summary.write('### Sandbox live health: PASS\\n\\nVerified live HTTP 200, schema_ready, checkout disabled and five required tables.\\n')
           PY
