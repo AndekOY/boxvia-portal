@@ -76,37 +76,6 @@ jobs:
           rows=json.load(open('/tmp/boxvia-schema-inventory.json'))
           print('Read-only sandbox schema inventory:',json.dumps(rows)[:6000])
           PY
-      - name: Audit sandbox order evidence (read-only, no customer data)
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT 'service_orders' AS metric,COUNT(*) AS n FROM service_orders UNION ALL SELECT 'payment_attempts',COUNT(*) FROM payment_attempts UNION ALL SELECT 'payment_events',COUNT(*) FROM payment_events UNION ALL SELECT 'fulfillment_outbox',COUNT(*) FROM fulfillment_outbox UNION ALL SELECT 'order_terms_acceptances',COUNT(*) FROM order_terms_acceptances UNION ALL SELECT 'stripe_event_order_links',COUNT(*) FROM stripe_event_order_links UNION ALL SELECT 'paypal_capture_evidence',COUNT(*) FROM paypal_capture_evidence" --json > /tmp/boxvia-evidence-counts.json
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT COUNT(*) AS orphan_attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL" --json > /tmp/boxvia-evidence-orphans.json
-          python3 - <<'PY'
-          import json,os
-          def extract(path):
-            data=json.load(open(path))
-            assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
-            return data[0]['results']
-          rows=extract('/tmp/boxvia-evidence-counts.json')
-          counts={r['metric']:r['n'] for r in rows}
-          required={'service_orders','payment_attempts','payment_events','fulfillment_outbox','order_terms_acceptances','stripe_event_order_links','paypal_capture_evidence'}
-          assert set(counts)==required and all(type(n)==int and n>=0 for n in counts.values())
-          orphan=extract('/tmp/boxvia-evidence-orphans.json')[0]['orphan_attempts']
-          assert type(orphan)==int and orphan>=0
-          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-            summary.write('### Remote sandbox D1 read-only evidence inventory\\n\\n')
-            summary.write('| Metric | Count |\\n|---|---:|\\n')
-            for name in sorted(counts):
-              summary.write(f'| {name} | {counts[name]} |\\n')
-            summary.write(f'| orphan_attempts | {orphan} |\\n')
-            summary.write('\\nCounts do not establish provider settlement, customer consent, or HTTP reachability. No D1 writes performed.\\n')
-          if orphan:
-            raise SystemExit(f'FAIL: {orphan} payment attempts lack an order')
-          print('PASS: read-only evidence inventory and payment-attempt referential integrity')
-          PY
       - name: Deploy isolated orders sandbox only
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -162,4 +131,47 @@ jobs:
           print('PASS: authenticated or public live sandbox health; five tables; checkout disabled')
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
             summary.write('### Sandbox live health: PASS\\n\\nVerified HTTP 200, schema_ready, checkout disabled, five required tables.\\n')
+          PY
+
+  audit-sandbox-evidence:
+    needs: deploy-orders-sandbox
+    if: ${{ always() && needs.deploy-orders-sandbox.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Audit sandbox order evidence (read-only, no customer data)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT 'service_orders' AS metric,COUNT(*) AS n FROM service_orders UNION ALL SELECT 'payment_attempts',COUNT(*) FROM payment_attempts UNION ALL SELECT 'payment_events',COUNT(*) FROM payment_events UNION ALL SELECT 'fulfillment_outbox',COUNT(*) FROM fulfillment_outbox UNION ALL SELECT 'order_terms_acceptances',COUNT(*) FROM order_terms_acceptances UNION ALL SELECT 'stripe_event_order_links',COUNT(*) FROM stripe_event_order_links UNION ALL SELECT 'paypal_capture_evidence',COUNT(*) FROM paypal_capture_evidence" --json > /tmp/boxvia-evidence-counts.json
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT COUNT(*) AS orphan_attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL" --json > /tmp/boxvia-evidence-orphans.json
+          python3 - <<'PY'
+          import json,os
+          def extract(path):
+            data=json.load(open(path))
+            assert isinstance(data,list) and len(data)==1 and data[0].get('success') is True
+            return data[0]['results']
+          rows=extract('/tmp/boxvia-evidence-counts.json')
+          counts={r['metric']:r['n'] for r in rows}
+          required={'service_orders','payment_attempts','payment_events','fulfillment_outbox','order_terms_acceptances','stripe_event_order_links','paypal_capture_evidence'}
+          assert set(counts)==required and all(type(n)==int and n>=0 for n in counts.values())
+          orphan=extract('/tmp/boxvia-evidence-orphans.json')[0]['orphan_attempts']
+          assert type(orphan)==int and orphan>=0
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+            summary.write('### Remote sandbox D1 read-only evidence inventory\\n\\n')
+            summary.write('| Metric | Count |\\n|---|---:|\\n')
+            for name in sorted(counts):
+              summary.write(f'| {name} | {counts[name]} |\\n')
+            summary.write(f'| orphan_attempts | {orphan} |\\n')
+            summary.write('\\nCounts do not establish provider settlement, customer consent, or HTTP reachability. No D1 writes performed.\\n')
+          if orphan:
+            raise SystemExit(f'FAIL: {orphan} payment attempts lack an order')
+          print('PASS: read-only evidence inventory and payment-attempt referential integrity')
           PY
