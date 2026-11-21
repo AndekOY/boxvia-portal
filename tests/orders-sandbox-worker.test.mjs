@@ -295,3 +295,20 @@ test("PayPal return is informational only and cannot mark an order paid", async 
   assert.doesNotMatch(body,/FORGED|Payment successful|Payment confirmed/);
  }
 });
+
+test("PayPal unified sandbox checkout stays disabled with production-safe flags",async()=>{
+ const response=await worker.fetch(post("/api/paypal/sandbox/checkout",{orderId:"forged",capability:"forged"}),flags);
+ assert.equal(response.status,503);
+ assert.deepEqual(await response.json(),{error:"Unavailable"});
+});
+test("PayPal sandbox checkout rejects origin mismatch before D1 access",async()=>{
+ const env={...flags,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",PAYPAL_CHECKOUT_ENABLED:"true",UNIFIED_ORDERS_ENABLED:"true",DB:{prepare(){throw Error("No DB access allowed");}}};
+ const response=await worker.fetch(post("/api/paypal/sandbox/checkout",{orderId:"forged",capability:"forged"},{Origin:"https://evil.example"}),env);
+ assert.equal(response.status,403);
+});
+test("PayPal sandbox checkout refuses missing unique attempt index",async()=>{
+ const env={...flags,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",PAYPAL_CHECKOUT_ENABLED:"true",UNIFIED_ORDERS_ENABLED:"true",DB:{prepare(){return {async first(){return null;}};}}};
+ const response=await worker.fetch(post("/api/paypal/sandbox/checkout",{orderId:"forged",capability:"forged"}),env);
+ assert.equal(response.status,503);
+ assert.equal((await response.json()).error,"Checkout schema pending");
+});
