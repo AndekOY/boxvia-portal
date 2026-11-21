@@ -8,6 +8,8 @@ on:
       - .github/workflows/boxvia-stripe-checkout-e2e.yml
       - cloudflare/commercial-payment-gate.mjs
       - tests/commercial-payment-gate.test.mjs
+      - tests/order-terms-recording.test.mjs
+      - cloudflare/order-terms-recording.mjs
   workflow_dispatch:
     inputs:
       service_code:
@@ -18,7 +20,7 @@ on:
           - one-question-review
           - ai-governance-review
       service_request_id:
-        description: 'Existing synthetic sandbox D1 service request ID for one-question-review'
+        description: 'Existing synthetic sandbox D1 service request ID (readiness metadata only)'
         required: true
         type: string
 
@@ -56,7 +58,7 @@ jobs:
       - name: Fail-closed readiness assessment (no D1 writes or provider calls)
         run: |
           set -euo pipefail
-          node --test tests/service-catalog.test.mjs tests/commercial-payment-gate.test.mjs tests/stripe-checkout.test.mjs tests/stripe-settlement.test.mjs
+          node --test tests/service-catalog.test.mjs tests/commercial-payment-gate.test.mjs tests/order-terms-recording.test.mjs tests/checkout-canonical-terms.test.mjs tests/stripe-checkout.test.mjs tests/stripe-settlement.test.mjs
           python3 - <<'PY'
           import json,os
           c=json.load(open('wrangler.orders-sandbox.jsonc'))
