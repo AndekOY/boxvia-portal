@@ -1,0 +1,67 @@
+name: BoxVia Stripe - postpayment D1 evidence audit
+
+on:
+  push:
+    branches: [work/technical-pilots-first-20261118]
+    paths: [.github/workflows/boxvia-stripe-postpayment-audit.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Enforce sandbox-only read-only audit
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Query Stripe order settlement evidence (SELECT only)
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          SQL="SELECT o.id,o.service_code,o.amount_minor,o.currency,o.status,(o.paid_at IS NOT NULL) AS has_paid_at,(SELECT COUNT(*) FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='stripe') AS attempt_count,(SELECT COUNT(*) FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='stripe' AND a.status='verified' AND a.verified_at IS NOT NULL AND a.provider_payment_id IS NOT NULL) AS verified_attempt_count,(SELECT COUNT(*) FROM fulfillment_outbox f WHERE f.order_id=o.id) AS fulfillment_count,(SELECT COUNT(*) FROM payment_events e WHERE e.provider='stripe' AND e.event_type='checkout.session.completed') AS stripe_completed_events_total,(SELECT COUNT(*) FROM payment_events e WHERE e.provider='stripe' AND e.event_type='checkout.session.completed' AND e.processed_at IS NOT NULL) AS stripe_processed_events_total FROM service_orders o WHERE o.id='fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34'"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "$SQL" --json > /tmp/boxvia-postpayment-audit.json
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open('/tmp/boxvia-postpayment-audit.json'))
+          assert isinstance(d,list) and len(d)==1 and d[0]['success'],'D1 query failed'
+          rows=d[0]['results']
+          assert len(rows)==1,'Expected one pre-existing sandbox order'
+          r=rows[0]
+          assert r['service_code']=='one-question-review' and r['amount_minor']==5000 and r['currency']=='USD','Unexpected order identity'
+          fields=['id','service_code','amount_minor','currency','status','has_paid_at','attempt_count','verified_attempt_count','fulfillment_count','stripe_completed_events_total','stripe_processed_events_total']
+          lines=['# Stripe Test Mode — read-only D1 postpayment audit','', 'Scope: isolated sandbox only; no writes or Stripe API calls.','']
+          for k in fields:
+              lines.append(f'- {k}: {r[k]}')
+          lines.extend(['','## Evidence interpretation'])
+          paid=r['status']=='paid' and r['has_paid_at']==1
+          verified=r['verified_attempt_count']==1
+          outbox=r['fulfillment_count']==1
+          lines.append('- Order paid in D1: '+('PASS' if paid else 'NOT CONFIRMED'))
+          lines.append('- One verified Stripe payment attempt: '+('PASS' if verified else 'NOT CONFIRMED'))
+          lines.append('- Exactly one fulfillment outbox row: '+('PASS' if outbox else 'NOT CONFIRMED'))
+          lines.append('- Webhook event association to this order: NOT DIRECTLY PROVABLE from payment_events schema (no order_id)')
+          lines.append('- Overall result: '+('D1 SETTLEMENT CONFIRMED' if paid and verified and outbox else 'INCOMPLETE — INVESTIGATE'))
+          summary=os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary:
+              with open(summary,'a') as f:f.write('\n'.join(lines)+'\n')
+          print('\n'.join(lines))
+          PY
