@@ -29,5 +29,8 @@ export async function downloadOwnerDocument(bucket,{orderId,termsDigest,version=
       !/^v[1-9][0-9]*$/.test(version) ||
       !["01_ORDER_TERMS.pdf","02_ACCEPTANCE_RECORD.pdf","manifest.json"].includes(fileName))return null;
   // Caller MUST authenticate owner separately. No public route is registered.
-  return bucket.get(`bcde/${orderId}/${version}-${termsDigest}/${fileName}`);
+  const prefix=`bcde/${orderId}/${version}-${termsDigest}/`;
+  // Manifest is written last: a partially written pack is not downloadable.
+  if(fileName!=="manifest.json" && !await bucket.head(prefix+"manifest.json"))return null;
+  return bucket.get(prefix+fileName);
 }
