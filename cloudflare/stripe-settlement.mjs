@@ -61,8 +61,11 @@ export async function settleVerifiedStripeEvent(db, event) {
       "INSERT OR IGNORE INTO fulfillment_outbox (id,order_id,status) SELECT ?,id,'pending' FROM service_orders WHERE id = ? AND status = 'paid' AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND provider = 'stripe' AND provider_payment_id = ? AND status = 'verified')"
     ).bind(crypto.randomUUID(), order.id, attempt.id, verified.providerPaymentId),
     db.prepare(
-      "UPDATE payment_events SET processed_at = CURRENT_TIMESTAMP WHERE provider = 'stripe' AND event_id = ?"
-    ).bind(event.id)
+      "INSERT OR IGNORE INTO stripe_event_order_links (provider,event_id,order_id,payment_attempt_id,stripe_session_id,payload_digest) SELECT 'stripe',?,?,?,?,? WHERE EXISTS (SELECT 1 FROM service_orders WHERE id = ? AND status = 'paid') AND EXISTS (SELECT 1 FROM payment_attempts WHERE id = ? AND order_id = ? AND provider = 'stripe' AND provider_order_id = ? AND provider_payment_id = ? AND status = 'verified') AND EXISTS (SELECT 1 FROM payment_events WHERE provider = 'stripe' AND event_id = ? AND payload_digest = ? AND processed_at IS NULL) AND NOT EXISTS (SELECT 1 FROM stripe_event_order_links WHERE provider = 'stripe' AND event_id = ?)"
+    ).bind(event.id, order.id, attempt.id, verified.providerOrderId, digest, order.id, attempt.id, order.id, verified.providerOrderId, verified.providerPaymentId, event.id, digest, event.id),
+    db.prepare(
+      "UPDATE payment_events SET processed_at = CURRENT_TIMESTAMP WHERE provider = 'stripe' AND event_id = ? AND EXISTS (SELECT 1 FROM stripe_event_order_links WHERE provider = 'stripe' AND event_id = ? AND order_id = ? AND payment_attempt_id = ? AND payload_digest = ?)"
+    ).bind(event.id, event.id, order.id, attempt.id, digest)
   ];
   const results = await db.batch(statements);
   if (!Array.isArray(results) || results.length !== statements.length ||
@@ -72,5 +75,7 @@ export async function settleVerifiedStripeEvent(db, event) {
   // A second successful provider charge for an already-paid order requires
   // separate reconciliation. Never infer success merely from event deduplication.
   const changed = results[1]?.meta?.changes === 1;
+  const linked = results[4]?.meta?.changes === 1;
+  if (changed && !linked) throw new Error("Stripe event linkage not confirmed");
   return { outcome: changed ? "paid" : "already_processed_or_manual_review", orderId: order.id };
 }
