@@ -610,7 +610,7 @@ test("global HOLD blocks both payment creation routes before any D1 or provider 
   ]){
    const response=await worker.fetch(post(path,{orderId,capability}),{...flags,DB,...extra});
    assert.equal(response.status,503,path);
-   assert.deepEqual(await response.json(),{error:"Unavailable"});
+   assert.deepEqual(await response.json(),{error:path==="/api/stripe/checkout"?"Checkout unavailable; reconciliation required":"Unavailable"});
   }
   assert.equal(dbCalls,0);
   assert.equal(providerCalls,0);
