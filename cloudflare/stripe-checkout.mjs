@@ -73,12 +73,13 @@ export async function reserveStripeAttempt(db, order) {
     throw new Error("Invalid pending order");
   }
   const existing = await db.prepare(
-    "SELECT id,status,provider_order_id FROM payment_attempts WHERE order_id = ? AND provider = 'stripe' ORDER BY created_at DESC LIMIT 1"
+    "SELECT id,provider,status,provider_order_id FROM payment_attempts WHERE order_id = ? ORDER BY created_at DESC LIMIT 1"
   ).bind(order.orderId).first();
+  if (existing && existing.provider !== 'stripe') throw new Error('Other payment provider already reserved; manual reconciliation');
   if (existing) return { created: false, attemptId: existing.id, status: existing.status };
   const id = crypto.randomUUID();
   const result = await db.prepare(
-    "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'stripe','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = 5000 AND currency = 'USD' AND NOT EXISTS (SELECT 1 FROM payment_attempts WHERE order_id = ? AND provider = 'stripe')"
+    "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'stripe','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = 5000 AND currency = 'USD' AND NOT EXISTS (SELECT 1 FROM payment_attempts WHERE order_id = ?)"
   ).bind(id, order.orderId, order.orderId).run();
   if (!result?.success || result.meta?.changes !== 1) throw new Error("Stripe attempt already reserved or unavailable");
   return { created: true, attemptId: id, status: "created" };
