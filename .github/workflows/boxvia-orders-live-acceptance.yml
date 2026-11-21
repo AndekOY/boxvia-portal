@@ -61,6 +61,19 @@ jobs:
           Path('/tmp/boxvia-orders-admin-token').write_text(secrets.token_hex(32))
           PY
           npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-orders-admin-token
+      - name: Verify immutable consent triggers are active before test writes
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'trg_order_%_no_%'" --json > /tmp/boxvia-live-triggers.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/boxvia-live-triggers.json'))
+          assert len(d)==1 and d[0]['success']
+          found={r['name'] for r in d[0]['results']}
+          expected={'trg_order_terms_acceptances_no_update','trg_order_terms_acceptances_no_delete','trg_order_document_sources_no_update','trg_order_document_sources_no_delete'}
+          assert found==expected,(found,expected)
+          print('PASS: all four sandbox evidence immutability triggers active')
+          PY
       - name: Seed one synthetic service request in sandbox D1
         env:
           SERVICE_CODE: ${{ inputs.service_code || 'one-question-review' }}
