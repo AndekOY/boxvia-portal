@@ -1,6 +1,6 @@
 // Sandbox-only order persistence. Call only after trusted intake authentication.
 // Existing public service request IDs are NOT customer authorization.
-import { getServiceDefinition } from "./service-catalog.mjs";
+import { getServiceDefinition, resolveOrderPrice } from "./service-catalog.mjs";
 
 const hex = bytes => [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
 const sha256 = async value => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
@@ -11,9 +11,11 @@ export async function createFixedPriceOrder(db, { serviceRequestId, serviceCode 
     throw new Error("Invalid request");
   }
   const service = getServiceDefinition(serviceCode);
-  if (!service || service.quoteRequired || service.fixedPriceMinor !== 5000) {
-    throw new Error("Only the two $50 services are enabled for sandbox orders");
+  if (!service || service.quoteRequired) {
+    throw new Error("Only fixed-price services are enabled for sandbox orders");
   }
+  // The server catalog, never client input, determines the charge amount.
+  const price = resolveOrderPrice(serviceCode);
   const request = await db.prepare(
     "SELECT id, service_code FROM service_requests WHERE id = ?"
   ).bind(serviceRequestId).first();
@@ -26,14 +28,14 @@ export async function createFixedPriceOrder(db, { serviceRequestId, serviceCode 
   const id = crypto.randomUUID();
   const result = await db.prepare(
     "INSERT OR IGNORE INTO service_orders (id,service_request_id,service_code,amount_minor,currency,capability_hash,status) VALUES (?,?,?,?,?,?,'pending')"
-  ).bind(id, serviceRequestId, serviceCode, service.fixedPriceMinor, service.currency, capabilityHash).run();
+  ).bind(id, serviceRequestId, serviceCode, price.amountMinor, price.currency, capabilityHash).run();
   if (!result?.success) throw new Error("Order persistence failed");
   const created = result.meta?.changes === 1;
   const order = await db.prepare(
     "SELECT id, service_code, amount_minor, currency, status FROM service_orders WHERE service_request_id = ?"
   ).bind(serviceRequestId).first();
-  if (!order || order.service_code !== serviceCode || order.amount_minor !== 5000 ||
-      order.currency !== "USD") throw new Error("Order integrity mismatch");
+  if (!order || order.service_code !== serviceCode || order.amount_minor !== price.amountMinor ||
+      order.currency !== price.currency) throw new Error("Order integrity mismatch");
   return Object.freeze({
     created,
     orderId: order.id,
