@@ -29,3 +29,16 @@ Scope: isolated boxvia-orders-sandbox and boxvia-bxc-sandbox only. Production/ma
 5. Request owner approval only for production activation or irreversible commercial/legal decisions.
 
 Do not put secrets, access tokens, customer data or payment credentials in CI output.
+
+## Follow-up evidence — run 44900683727, commit f645268a
+- deploy-orders-sandbox: SUCCESS.
+- audit-sandbox-evidence: SUCCESS. Seven independent remote D1 read-only count queries returned successfully; zero orphan payment attempts; no D1 writes.
+- verify-live-health: FAILURE. HTTP 403, CF-Ray a5df74da7de9292b-IAD; optional BOXVIA_SANDBOX_ACCESS_CLIENT_ID / BOXVIA_SANDBOX_ACCESS_CLIENT_SECRET not configured in the GitHub environment (configured=False).
+- These facts do not prove that Cloudflare Access caused the 403; Access, workers.dev exposure, edge rules and other Cloudflare controls must be distinguished.
+- Access setup for BCDE owner routes remains NOT APPLIED per BCDE_ACCESS_SANDBOX_ROLLOUT_2026-11-21.md. Do not create a whole-host Access policy that unintentionally blocks payment webhooks.
+- No provider E2E acceptance and no production activation occurred.
+
+## Current boundary and owner checkpoint
+No Cloudflare account management connector is available in this work session. GitHub workflows can deploy to the isolated Worker and inspect sandbox D1, but cannot establish the required Cloudflare dashboard policy or provision Access service-token credentials from GitHub alone.
+
+The next authorized infrastructure change is a narrow, reviewed sandbox-only access route for CI health probes, preferably a scoped service token and a policy limited to /api/health; the BCDE owner-only policy must remain separately protected. The owner must approve or perform Cloudflare dashboard changes when those controls are reached. Do not weaken access controls, disable edge protection, or mark HTTP acceptance PASS merely to clear a CI failure.
