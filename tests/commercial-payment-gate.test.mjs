@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 import {authorizeCommercialPayment} from "../cloudflare/commercial-payment-gate.mjs";
 const id="fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34";
 const order={orderId:id,serviceCode:"one-question-review",amountMinor:5000,currency:"USD",status:"pending"};
-const digest="a".repeat(64);
-const accepted={service_code:order.serviceCode,amount_minor:5000,currency:"USD",scope_digest:digest,terms_digest:digest,deliverable:"Report",deadline:"24 hours",quote_id:null,offer_version:"v1",offer_digest:digest,offer_accepted_at:"2026-11-21T10:00:00Z",confidentiality_version:"v1",confidentiality_digest:digest,confidentiality_accepted_at:"2026-11-21T10:00:00Z"};
-function db(consent=accepted,source={scope_text:"Confirmed synthetic scope",terms_version:"v1"}){
+const scope="Confirmed synthetic scope";
+const offer="Synthetic commercial offer";
+const confidentiality="Synthetic confidentiality notice";
+const sha256=async value=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+const digest=await sha256(scope);
+const accepted={service_code:order.serviceCode,amount_minor:5000,currency:"USD",scope_digest:digest,terms_digest:digest,deliverable:"Report",deadline:"24 hours",quote_id:null,offer_version:"v1",offer_digest:await sha256(offer),offer_accepted_at:"2026-11-21T10:00:00Z",confidentiality_version:"v1",confidentiality_digest:await sha256(confidentiality),confidentiality_accepted_at:"2026-11-21T10:00:00Z"};
+function db(consent=accepted,source={scope_text:scope,terms_version:"v1",offer_text:offer,offer_version:"v1",confidentiality_text:confidentiality,confidentiality_version:"v1",deliverable:"Report",deadline:"24 hours"}){
  return {prepare(sql){return {bind(){return {async first(){
   if(sql.includes("FROM order_terms_acceptances"))return consent;
   if(sql.includes("FROM order_document_sources"))return source;
@@ -51,6 +55,20 @@ test("both fixed-price services require independent canonical consent for Stripe
     const result=await authorizeCommercialPayment(db(consent,source),candidate,provider);
     assert.equal(result.authorized,false,serviceCode+" "+provider+" "+label);
    }
+  }
+ }
+});
+
+test("both providers reject canonical document edits after consent",async()=>{
+ const source={scope_text:scope,terms_version:"v1",offer_text:offer,offer_version:"v1",
+  confidentiality_text:confidentiality,confidentiality_version:"v1",deliverable:"Report",deadline:"24 hours"};
+ for(const provider of ["stripe","paypal"]){
+  for(const change of [{offer_text:"Changed offer"},{confidentiality_text:"Changed confidentiality"},
+   {scope_text:"Changed scope"},{offer_version:"v2"},{confidentiality_version:"v2"},
+   {deliverable:"Changed deliverable"},{deadline:"48 hours"}]){
+   const result=await authorizeCommercialPayment(db(accepted,{...source,...change}),order,provider);
+   assert.equal(result.authorized,false,provider+" "+Object.keys(change)[0]);
+   assert.equal(result.reason,"canonical_document_changed");
   }
  }
 });
