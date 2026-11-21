@@ -1,0 +1,42 @@
+name: BoxVia BCDE Owner - isolated sandbox deploy
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated owner target
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.bcde-owner.jsonc'))
+          assert c['name']=='boxvia-bcde-owner'
+          assert c['main']=='cloudflare/bcde-owner-worker.mjs'
+          assert c['d1_databases'][0]['database_name']=='boxvia-bxc-sandbox'
+          assert c['d1_databases'][0]['database_id']=='baf79e93-cbea-4786-8779-974f3b3afbcc'
+          assert 'routes' not in c and 'assets' not in c
+          assert 'PAYPAL' not in str(c) and 'STRIPE' not in str(c)
+          PY
+          node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
+      - name: Deploy only isolated owner Worker (without secrets or R2)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 deploy --config wrangler.bcde-owner.jsonc --keep-vars
