@@ -1,0 +1,56 @@
+name: BoxVia Stripe - owner-only reconciliation access readiness
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-stripe-owner-access-readiness.yml
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated Worker and HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Inspect owner Access configuration secret names only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 secret list --config wrangler.orders-sandbox.jsonc > /tmp/owner-access-names.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/owner-access-names.json'))
+          assert isinstance(data,list)
+          names={x.get('name') for x in data if isinstance(x,dict)}
+          required=('BCDE_ACCESS_TEAM_DOMAIN','BCDE_ACCESS_AUD','BCDE_OWNER_EMAIL','STRIPE_TEST_SECRET_KEY')
+          for k in required:
+              print(k+': '+('PRESENT' if k in names else 'ABSENT'))
+          missing=[k for k in required if k not in names]
+          print('OWNER_ACCESS_SECRET_NAMES:', 'ALL_PRESENT' if not missing else 'BLOCKED_MISSING_CONFIGURATION')
+          print('Actual JWT verification and Cloudflare Access policy: NOT_TESTED')
+          print('No provider calls, secret values, D1 access, or payment actions.')
+          PY
