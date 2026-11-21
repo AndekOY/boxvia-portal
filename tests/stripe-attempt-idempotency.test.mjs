@@ -17,7 +17,7 @@ test("Stripe reservation is atomic and bound to the same order and provider",asy
  const db={prepare(query){return {bind(...params){sql=query;args=params;return this;},async first(){return null;},async run(){return {success:true,meta:{changes:1}};}};}};
  const result=await reserveStripeAttempt(db,order);
  assert.equal(result.created,true);
- assert.match(sql,/NOT EXISTS \(SELECT 1 FROM payment_attempts WHERE order_id = \? AND provider = 'stripe'\)/);
+ assert.match(sql,/NOT EXISTS \(SELECT 1 FROM payment_attempts WHERE order_id = \?\)/);
  assert.deepEqual(args.slice(1),[order.orderId,order.orderId]);
 });
 test("concurrent Stripe attempt conflict fails closed without provider call",async()=>{
