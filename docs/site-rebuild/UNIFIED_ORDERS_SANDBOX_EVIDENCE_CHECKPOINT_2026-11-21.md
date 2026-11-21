@@ -42,3 +42,11 @@ Do not put secrets, access tokens, customer data or payment credentials in CI ou
 No Cloudflare account management connector is available in this work session. GitHub workflows can deploy to the isolated Worker and inspect sandbox D1, but cannot establish the required Cloudflare dashboard policy or provision Access service-token credentials from GitHub alone.
 
 The next authorized infrastructure change is a narrow, reviewed sandbox-only access route for CI health probes, preferably a scoped service token and a policy limited to /api/health; the BCDE owner-only policy must remain separately protected. The owner must approve or perform Cloudflare dashboard changes when those controls are reached. Do not weaken access controls, disable edge protection, or mark HTTP acceptance PASS merely to clear a CI failure.
+
+## Live HTTP recovery — run 44901537876, commit ae5242a6
+- User independently opened https://boxvia-orders-sandbox.andeks.workers.dev/api/health in a browser and observed service=boxvia-orders-sandbox, status=schema_ready, checkout=disabled, unified_tables_present=5.
+- The Cloudflare dashboard showed the sandbox workers.dev production URL enabled, publicly visitable, and no Access protection on that URL.
+- Replacing the Python urllib CI health probe with curl produced verify-live-health SUCCESS in GitHub Actions run 44901537876; deploy-orders-sandbox also SUCCESS.
+- The earlier HTTP 403 was client/path dependent. The exact root cause has not been proven. No Access service token or policy changes were required.
+- At the time of this checkpoint, audit-sandbox-evidence in run 44901537876 was still in progress; do not claim whole-workflow PASS until it finishes.
+- Both provider payment E2E acceptances remain NOT VERIFIED. The live order and Stripe initiation workflows still use Python urllib and should not be assumed compatible with the recovered health path.
