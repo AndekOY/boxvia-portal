@@ -43,8 +43,10 @@ export async function probeBcdeSyntheticPdfPack(bucket,buildOrderTermsPdf,buildA
    const actual=new Uint8Array(await obj.arrayBuffer());
    if(actual.byteLength!==bytes.byteLength || await sha256Bytes(actual)!==await sha256Bytes(bytes))throw new Error("R2 synthetic PDF integrity mismatch");
   }
-  return {ok:true,synthetic:true,pdfCount:2,manifestVerified:true,sha256Verified:true,cleanupAttempted:true};
  }finally{
-  await Promise.allSettled(written.map(key=>bucket.delete(key)));
+  const results=await Promise.allSettled(written.map(key=>bucket.delete(key)));
+  if(results.some(r=>r.status!=="fulfilled"))throw new Error("R2 synthetic PDF cleanup failed");
+  for(const key of written)if(await bucket.get(key))throw new Error("R2 synthetic PDF cleanup not verified");
  }
+ return {ok:true,synthetic:true,pdfCount:2,manifestVerified:true,sha256Verified:true,cleanupVerified:true};
 }
