@@ -16,5 +16,11 @@
     "BCDE_ACCESS_TEAM_DOMAIN": "broad-bonus-7bf4.cloudflareaccess.com",
     "BCDE_ACCESS_AUD": "4165892befba7f468eeb834948be246b29bab88f8fcc2d313e360b9a6ee14445",
     "BCDE_OWNER_EMAIL": "andek.oy@gmail.com"
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "BCDE_ARCHIVE",
+      "bucket_name": "boxvia-bcde-archive-sandbox"
+    }
+  ]
 }
