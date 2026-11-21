@@ -4,6 +4,7 @@ import { verifyStripeSignature } from "./stripe-verification.mjs";
 import { settleVerifiedStripeEvent } from "./stripe-settlement.mjs";
 import { createFixedPriceOrder, getAuthorizedOrder } from "./orders-persistence.mjs";
 import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
+import { handleBcdeOwner } from "./bcde-owner-api.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
 // No production routes, payment endpoints, customer data, or static asset exposure.
 const json = (data, status = 200) => Response.json(data, {
@@ -21,6 +22,7 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname.startsWith("/api/bcde/")) return handleBcdeOwner(request,env);
     if (url.pathname === "/stripe-test/open" && request.method === "GET") {
       // One-time sandbox diagnostic: read-only recovery of the existing
       // synthetic test order. No order creation, attempt reservation or D1 writes.
