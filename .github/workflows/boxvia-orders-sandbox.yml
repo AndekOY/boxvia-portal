@@ -75,7 +75,7 @@ jobs:
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT name, type FROM sqlite_master WHERE type IN ('table','index') AND name NOT LIKE 'sqlite_%' ORDER BY type,name" --json > /tmp/boxvia-schema-inventory.json
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name, type FROM sqlite_master WHERE type IN ('table','index') AND name NOT LIKE 'sqlite_%' ORDER BY type,name" --json > /tmp/boxvia-schema-inventory.json
           python3 - <<'PY'
           import json
           rows=json.load(open('/tmp/boxvia-schema-inventory.json'))
