@@ -2,6 +2,7 @@
 // Fail closed on missing migration, absent accepted terms, or mismatched quote.
 import { evaluateCheckoutEligibility } from "./checkout-eligibility.mjs";
 import { getServiceDefinition } from "./service-catalog.mjs";
+const sha256 = async value => [...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))].map(x=>x.toString(16).padStart(2,"0")).join("");
 export async function getCheckoutEligibility(db, order) {
   if (!db || !order || !getServiceDefinition(order.serviceCode)) return { eligible:false, reason:"invalid_order" };
   const evidence = await db.prepare(
@@ -13,11 +14,25 @@ export async function getCheckoutEligibility(db, order) {
   // A digest alone is not a renderable, agreed commercial offer.
   // Require the canonical text source bound to exactly the accepted terms digest.
   const source=await db.prepare(
-    "SELECT scope_text,terms_version FROM order_document_sources WHERE order_id = ? AND terms_digest = ?"
+    "SELECT scope_text,terms_version,offer_text,offer_version,confidentiality_text,confidentiality_version,deliverable,deadline FROM order_document_sources WHERE order_id = ? AND terms_digest = ?"
   ).bind(order.orderId,evidence.terms_digest).first();
   if (!source || typeof source.scope_text!=="string" || !source.scope_text.trim() ||
       typeof source.terms_version!=="string" || !source.terms_version.trim()) {
     return { eligible:false, reason:"canonical_terms_missing" };
+  }
+  // Revalidate the actual canonical bytes, not merely the previously stored digests.
+  // An owner-side change after consent must invalidate payment authorization.
+  if (![source.offer_text,source.offer_version,source.confidentiality_text,
+        source.confidentiality_version,source.deliverable,source.deadline]
+       .every(x=>typeof x==="string"&&x.trim()) ||
+      source.offer_version!==evidence.offer_version ||
+      source.confidentiality_version!==evidence.confidentiality_version ||
+      source.deliverable!==evidence.deliverable ||
+      source.deadline!==evidence.deadline ||
+      await sha256(source.scope_text)!==evidence.terms_digest ||
+      await sha256(source.offer_text)!==evidence.offer_digest ||
+      await sha256(source.confidentiality_text)!==evidence.confidentiality_digest) {
+    return {eligible:false,reason:"canonical_document_changed"};
   }
   const service=getServiceDefinition(order.serviceCode);
   let quote=null;
