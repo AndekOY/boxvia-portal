@@ -2,6 +2,11 @@ name: BoxVia Stripe - sandbox checkout E2E initiation
 
 on:
   workflow_dispatch:
+    inputs:
+      service_request_id:
+        description: 'Existing synthetic sandbox D1 service request ID for one-question-review'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -46,27 +51,33 @@ jobs:
           PY
           npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-stripe-admin
       - name: Create $50 order and Stripe Test Checkout via isolated Worker
+        env:
+          SERVICE_REQUEST_ID: ${{ inputs.service_request_id }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,urllib.request,urllib.error
+          import json,subprocess,tempfile,os
           from pathlib import Path
           base='https://boxvia-orders-sandbox.andeks.workers.dev'
           token=Path('/tmp/boxvia-stripe-admin').read_text()
+          raw=os.environ.get('SERVICE_REQUEST_ID','')
+          if not raw.isdecimal() or int(raw)<=0:
+            raise SystemExit('STOP: valid synthetic sandbox service_request_id required')
           def call(path,payload,admin=False):
-            headers={'Origin':base,'Content-Type':'application/json'}
-            if admin: headers['Authorization']='Bearer '+token
-            req=urllib.request.Request(base+path,data=json.dumps(payload).encode(),headers=headers,method='POST')
-            try:
-              with urllib.request.urlopen(req,timeout=30) as r:
-                return r.status,json.load(r)
-            except urllib.error.HTTPError as e:
-              if e.code==403:
-                raise SystemExit('BLOCKED: HTTP 403; cannot complete sandbox checkout from GitHub runner. No success claimed.')
-              try: response=json.load(e)
-              except Exception: response={'error':'Non-JSON response'}
-              raise SystemExit('STOP: sandbox endpoint '+path+' returned HTTP '+str(e.code)+': '+str(response.get('error','unknown')))
-          code,order=call('/api/orders/create',{'serviceRequestId':720026674,'serviceCode':'one-question-review'},True)
+            with tempfile.TemporaryDirectory() as directory:
+              output=Path(directory)/'response'
+              cmd=['curl','--silent','--show-error','--max-time','30','--output',str(output),'--write-out','%{http_code}','--request','POST','--header','Content-Type: application/json','--header','Origin: '+base,'--header','User-Agent: BoxVia-Sandbox-CI-Stripe/1.0','--data-binary',json.dumps(payload),base+path]
+              if admin: cmd+=['--header','Authorization: Bearer '+token]
+              result=subprocess.run(cmd,capture_output=True,text=True,timeout=40)
+              if result.returncode: raise SystemExit('BLOCKED: sandbox HTTP transport failed; no checkout acceptance')
+              try: status=int(result.stdout.strip())
+              except ValueError: raise SystemExit('BLOCKED: no HTTP status')
+              if status==403: raise SystemExit('BLOCKED: HTTP 403; no checkout acceptance')
+              try: data=json.loads(output.read_text())
+              except (OSError,ValueError): raise SystemExit('BLOCKED: non-JSON response')
+              if status not in (200,201): raise SystemExit('STOP: endpoint '+path+' HTTP '+str(status)+'; no checkout acceptance')
+              return status,data
+          code,order=call('/api/orders/create',{'serviceRequestId':int(raw),'serviceCode':'one-question-review'},True)
           if code!=201 or order.get('created') is not True or order.get('amountMinor')!=5000 or order.get('currency')!='USD':
             raise SystemExit('STOP: order not freshly created; do not reuse lost capability')
           capability=order['capability']
