@@ -20,6 +20,43 @@ export default {
       env.PAYPAL_CHECKOUT_ENABLED === "false" &&
       env.STRIPE_CHECKOUT_ENABLED === "false";
     if (!checkoutDisabled) return json({ error: "Sandbox configuration rejected" }, 503);
+    if (url.pathname === "/stripe-test/open" && request.method === "GET") {
+      // One-time sandbox diagnostic: read-only recovery of the existing
+      // synthetic test order. No order creation, attempt reservation or D1 writes.
+      if (!env.DB || env.STRIPE_MODE !== "test" ||
+          env.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
+          !isStripeTestApiKey(env.STRIPE_TEST_SECRET_KEY) ||
+          typeof env.STRIPE_E2E_ORDER_CAPABILITY !== "string") {
+        return json({ error: "Test checkout unavailable" }, 503);
+      }
+      const order = await getAuthorizedOrder(
+        env.DB, "fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34",
+        env.STRIPE_E2E_ORDER_CAPABILITY
+      );
+      if (!order || order.status !== "checkout" ||
+          order.serviceCode !== "one-question-review" ||
+          order.amountMinor !== 5000 || order.currency !== "USD") {
+        return json({ error: "Existing order not eligible" }, 409);
+      }
+      const attempt = await env.DB.prepare(
+        "SELECT provider_order_id,status FROM payment_attempts WHERE order_id = ? AND provider = 'stripe' ORDER BY created_at DESC LIMIT 1"
+      ).bind(order.orderId).first();
+      if (!attempt || attempt.status !== "pending" || !attempt.provider_order_id) {
+        return json({ error: "Existing session requires reconciliation" }, 409);
+      }
+      try {
+        const session = await retrieveExistingStripeTestSession(order, attempt.provider_order_id, env);
+        if (session.status !== "open") {
+          return json({ error: "Existing Stripe session is no longer open" }, 409);
+        }
+        return new Response(null, { status: 303, headers: {
+          "Location": session.checkoutUrl, "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer"
+        } });
+      } catch {
+        return json({ error: "Existing session reconciliation unavailable" }, 503);
+      }
+    }
     if (url.pathname === "/stripe-test" && (request.method === "GET" || request.method === "POST")) {
       // One-off owner-assisted browser acceptance, isolated to one synthetic
       // order. GET is read-only. POST reserves at most one Stripe attempt.
@@ -31,7 +68,7 @@ export default {
         return json({ error: "Test checkout unavailable" }, 503);
       }
       if (request.method === "GET") {
-        const page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoxVia Stripe Test</title><main style="font:16px system-ui;max-width:38rem;margin:10vh auto;padding:1rem"><h1>Stripe Test Mode</h1><p>One Question Review — USD 50.00 (test payment only).</p><p>No real money will be charged.</p><form method="post" action="/stripe-test"><button type="submit">Open Stripe Test Checkout</button></form></main></html>';
+        const page = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoxVia Stripe Test</title><main style="font:16px system-ui;max-width:38rem;margin:10vh auto;padding:1rem"><h1>Stripe Test Mode</h1><p>One Question Review — USD 50.00 (test payment only).</p><p>No real money will be charged.</p><p><a href="/stripe-test/open" rel="noreferrer">Open existing Stripe Test Checkout</a></p></main></html>';
         return new Response(page, { status: 200, headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
