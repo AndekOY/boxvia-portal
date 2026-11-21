@@ -53,11 +53,18 @@ jobs:
             return success,rows,p.stdout+' '+p.stderr
           ok,idx,_=run("SELECT name, \"unique\" AS is_unique FROM pragma_index_list('payment_attempts') WHERE name='idx_payment_attempt_one_per_order_provider'")
           assert ok and idx==[{'name':'idx_payment_attempt_one_per_order_provider','is_unique':1}],idx
-          ok,rows,_=run("SELECT a.id,a.order_id,a.provider,a.amount_minor,a.currency FROM payment_attempts a JOIN service_orders o ON o.id=a.order_id JOIN service_requests r ON r.id=o.service_request_id WHERE r.customer_email='sandbox@example.invalid' AND r.request_key LIKE 'orders-acceptance-%' ORDER BY a.rowid DESC LIMIT 1")
-          assert ok and rows, 'No synthetic payment attempt exists; negative remote probe UNESTABLISHED'
-          assert ok and len(rows)==1
-          a=rows[0]
-          assert all(isinstance(a[k],str) and len(a[k])>0 for k in ('id','order_id','provider','currency'))
+          # Create one disposable attempt for an existing synthetic pending order,
+          # only if that order has no payment attempts. Never touch customer orders.
+          ok,rows,_=run("SELECT o.id AS order_id,o.amount_minor,o.currency FROM service_orders o JOIN service_requests r ON r.id=o.service_request_id WHERE r.customer_email='sandbox@example.invalid' AND r.request_key LIKE 'orders-acceptance-%' AND o.status='pending' AND NOT EXISTS (SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id) ORDER BY o.created_at DESC LIMIT 1")
+          assert ok and len(rows)==1, 'No isolated synthetic pending order; remote negative probe UNESTABLISHED'
+          import uuid
+          target=rows[0]
+          assert target['currency']=='USD' and target['amount_minor']==5000
+          fixture_id=str(uuid.uuid4())
+          sql="INSERT INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) VALUES ('"+fixture_id+"','"+target['order_id']+"','stripe','created',5000,'USD')"
+          ok,_,msg=run(sql)
+          assert ok,'Synthetic attempt fixture insertion failed'
+          a={'id':fixture_id,'order_id':target['order_id'],'provider':'stripe','amount_minor':5000,'currency':'USD'}
           assert a['provider'] in ('stripe','paypal') and a['currency']=='USD'
           # Use a NEW primary key so the tested conflict can only be order/provider uniqueness.
           # INSERT OR IGNORE must make no change when the unique index is active.
