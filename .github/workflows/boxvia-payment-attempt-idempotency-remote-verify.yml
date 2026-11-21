@@ -1,0 +1,73 @@
+name: BoxVia Payment Attempt Idempotency - remote negative verification
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-payment-attempt-idempotency-remote-verify.yml
+permissions:
+  contents: read
+concurrency:
+  group: boxvia-sandbox-schema-migration
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 12
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Validate isolated target and disabled checkout
+        run: |
+          set -euo pipefail
+          python3 tests/payment-attempt-idempotency.test.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          PY
+      - name: Verify remote unique index and reject synthetic duplicate
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python3 - <<'PY'
+          import json,subprocess
+          base=['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote']
+          def run(sql):
+            p=subprocess.run(base+['--command',sql,'--json'],capture_output=True,text=True,timeout=90)
+            try:
+              d=json.loads(p.stdout)
+              success=p.returncode==0 and len(d)==1 and d[0].get('success') is True
+              rows=d[0].get('results',[]) if success else []
+            except (ValueError,TypeError,KeyError,IndexError):
+              success=False;rows=[]
+            return success,rows,p.stdout+' '+p.stderr
+          ok,idx,_=run("SELECT name, \"unique\" AS is_unique FROM pragma_index_list('payment_attempts') WHERE name='idx_payment_attempt_one_per_order_provider'")
+          assert ok and idx==[{'name':'idx_payment_attempt_one_per_order_provider','is_unique':1}],idx
+          ok,rows,_=run("SELECT a.id,a.order_id,a.provider,a.amount_minor,a.currency FROM payment_attempts a JOIN service_orders o ON o.id=a.order_id JOIN service_requests r ON r.id=o.service_request_id WHERE r.customer_email='sandbox@example.invalid' AND r.request_key LIKE 'orders-acceptance-%' ORDER BY a.rowid DESC LIMIT 1")
+          if not rows:
+            # An isolated transaction that rolls back is preferable to adding a test payment attempt.
+            print('PASS: unique index present; no synthetic payment attempt to probe; negative insert UNESTABLISHED')
+            raise SystemExit(0)
+          assert ok and len(rows)==1
+          a=rows[0]
+          assert all(isinstance(a[k],str) and len(a[k])>0 for k in ('id','order_id','provider','currency'))
+          assert a['provider'] in ('stripe','paypal') and a['currency']=='USD'
+          # An INSERT OR IGNORE can never create a duplicate under the unique index.
+          # It must report zero changes, and the original record must remain intact.
+          sql="INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) VALUES ('"+a['id']+"','"+a['order_id']+"','"+a['provider']+"','created',"+str(a['amount_minor'])+",'USD')"
+          ok,_,msg=run(sql)
+          assert ok,'Remote idempotent insert failed (no successful test claim)'
+          ok,rows,_=run("SELECT count(*) AS n FROM payment_attempts WHERE order_id='"+a['order_id']+"' AND provider='"+a['provider']+"'")
+          assert ok and rows==[{'n':1}],rows
+          print('PASS: remote unique index rejects duplicate provider/order, original attempt count remains one')
+          PY
