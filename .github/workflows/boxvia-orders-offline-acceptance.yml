@@ -8,6 +8,9 @@ on:
       - cloudflare/orders-sandbox-worker.mjs
       - cloudflare/orders-persistence.mjs
       - cloudflare/checkout-eligibility.mjs
+      - cloudflare/checkout-eligibility-db.mjs
+      - cloudflare/order-terms-recording.mjs
+      - migrations/order-terms-acceptances-sandbox-v0.1.sql
       - cloudflare/service-catalog.mjs
       - tests/checkout-eligibility.test.mjs
       - cloudflare/stripe-checkout.mjs
