@@ -1,6 +1,11 @@
 name: BoxVia Orders Sandbox - live order acceptance
 
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-orders-live-acceptance.yml
   workflow_dispatch:
     inputs:
       service_code:
@@ -58,7 +63,7 @@ jobs:
           npx --yes wrangler@4 secret put ORDERS_SANDBOX_ADMIN_TOKEN --config wrangler.orders-sandbox.jsonc < /tmp/boxvia-orders-admin-token
       - name: Seed one synthetic service request in sandbox D1
         env:
-          SERVICE_CODE: ${{ inputs.service_code }}
+          SERVICE_CODE: ${{ inputs.service_code || 'one-question-review' }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -131,6 +136,8 @@ jobs:
           assert status==201 and created['created'] is True and created['amountMinor']==5000 and created['currency']=='USD'
           capability=created['capability']
           order_id=created['orderId']
+          Path('/tmp/boxvia-orders-order-id').write_text(order_id)
+          Path('/tmp/boxvia-orders-capability').write_text(capability)
           status,repeated=post('/api/orders/create',payload,True)
           assert status==200 and repeated['created'] is False and repeated['orderId']==order_id and 'capability' not in repeated
           status,order=post('/api/orders/status',{'orderId':order_id,'capability':capability})
@@ -139,4 +146,42 @@ jobs:
           assert status==404
           print('PASS: LIVE sandbox create $50, repeat dedupe, authorized status, invalid capability')
           print('No capability, token or customer data emitted.')
+          PY
+      - name: Seed synthetic canonical dual documents and test live HTTP consent
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,subprocess,tempfile,os
+          from pathlib import Path
+          base='https://boxvia-orders-sandbox.andeks.workers.dev'
+          order_id=Path('/tmp/boxvia-orders-order-id').read_text()
+          capability=Path('/tmp/boxvia-orders-capability').read_text()
+          scope='SYNTHETIC TEST ONLY - fixed price $50; independent report; no actual customer'
+          digest=hashlib.sha256(scope.encode()).hexdigest()
+          sql="INSERT INTO order_document_sources (order_id,terms_digest,terms_version,scope_text,offer_text,offer_version,confidentiality_text,confidentiality_version,deliverable,deadline) VALUES ("+",".join("'"+v.replace("'","''")+"'" for v in (order_id,digest,'synthetic-v1',scope,'Synthetic offer only, no legal effect','synthetic-offer-v1','Synthetic confidentiality notice, no personal data','synthetic-conf-v1','Synthetic independent report','24 hours'))+");"
+          Path('/tmp/boxvia-synthetic-terms.sql').write_text(sql)
+          subprocess.run(['npx','--yes','wrangler@4','d1','execute','boxvia-bxc-sandbox','--config','wrangler.orders-sandbox.jsonc','--remote','--file','/tmp/boxvia-synthetic-terms.sql'],check=True,stdout=subprocess.DEVNULL)
+          def post(path,payload):
+            with tempfile.TemporaryDirectory() as d:
+              file=os.path.join(d,'body')
+              args=['curl','--silent','--show-error','--max-time','30','--output',file,'--write-out','%{http_code}','--request','POST','--header','Content-Type: application/json','--header','Origin: '+base,'--data-binary',json.dumps(payload),base+path]
+              result=subprocess.run(args,capture_output=True,text=True,timeout=40,check=True)
+              return int(result.stdout.strip()),json.loads(Path(file).read_text())
+          auth={'orderId':order_id,'capability':capability}
+          status,preview=post('/api/orders/terms-preview',auth)
+          assert status==200 and preview['available'] and preview['termsDigest']==digest and preview['offerText']=='Synthetic offer only, no legal effect',(status,preview)
+          status,missing=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':False})
+          assert status==400,(status,missing)
+          status,wrong=post('/api/orders/consent',{**auth,'termsDigest':'f'*64,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==409,(status,wrong)
+          status,unauth=post('/api/orders/consent',{**auth,'capability':'f'*64,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==404,(status,unauth)
+          status,consent=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status==201 and consent=={'recorded':True,'eligible':True},(status,consent)
+          status,ready=post('/api/orders/terms-status',auth)
+          assert status==200 and ready['eligible'] is True,(status,ready)
+          status,duplicate=post('/api/orders/consent',{**auth,'termsDigest':digest,'offerAccepted':True,'confidentialityAccepted':True})
+          assert status!=201,(status,duplicate)
+          print('PASS: remote synthetic canonical preview, two explicit consents, D1 eligibility, tampering rejection and duplicate rejection')
+          print('No tokens, capability, synthetic document content or personal information logged')
           PY
