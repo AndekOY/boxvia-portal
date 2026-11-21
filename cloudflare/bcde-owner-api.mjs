@@ -1,3 +1,4 @@
+import {verifyBcdeAccess} from "./bcde-access.mjs";
 // BCDE owner-only sandbox API. Never mount without owner authentication.
 // All document data is loaded from D1; browser inputs are identifiers only.
 import {getAuthorizedOrder} from "./orders-persistence.mjs";
@@ -7,22 +8,12 @@ import {buildOrderTermsPdf,buildAcceptancePdf,sha256Bytes} from "./bcde-pdf.mjs"
 import {archiveCommercialPack,downloadOwnerDocument} from "./bcde-archive.mjs";
 const validId=/^[a-f0-9-]{36}$/i;
 const json=(data,status=200)=>Response.json(data,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
-async function ownerAuthorized(request,env){
-  const expected=env?.BCDE_OWNER_TOKEN;
-  if(typeof expected!=="string"||expected.length<32)return false;
-  const supplied=request.headers.get("Authorization")||"";
-  if(!supplied.startsWith("Bearer ")||supplied.length!==expected.length+7)return false;
-  const [a,b]=await Promise.all([supplied.slice(7),expected].map(s=>crypto.subtle.digest("SHA-256",new TextEncoder().encode(s))));
-  const x=new Uint8Array(a),y=new Uint8Array(b);let diff=0;
-  for(let i=0;i<x.length;i++)diff|=x[i]^y[i];
-  return diff===0;
-}
 export async function handleBcdeOwner(request,env){
   const url=new URL(request.url);
   if(!url.pathname.startsWith("/api/bcde/"))return null;
   if(!env?.DB||!env?.BCDE_ARCHIVE)return json({error:"BCDE not configured"},503);
   if(request.headers.get("Origin")!==url.origin)return json({error:"Origin rejected"},403);
-  if(!await ownerAuthorized(request,env))return json({error:"Unauthorized"},401);
+  if(!await verifyBcdeAccess(request,env))return json({error:"Unauthorized"},401);
   if(!["POST","GET"].includes(request.method))return json({error:"Method not allowed"},405);
   const orderId=url.searchParams.get("orderId");
   if(!validId.test(orderId||""))return json({error:"Invalid order"},400);
