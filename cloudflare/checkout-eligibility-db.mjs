@@ -10,6 +10,15 @@ export async function getCheckoutEligibility(db, order) {
   if (!evidence) return { eligible:false, reason:"consent_missing" };
   if (evidence.service_code !== order.serviceCode || evidence.amount_minor !== order.amountMinor ||
       evidence.currency !== order.currency) return { eligible:false, reason:"order_terms_mismatch" };
+  // A digest alone is not a renderable, agreed commercial offer.
+  // Require the canonical text source bound to exactly the accepted terms digest.
+  const source=await db.prepare(
+    "SELECT scope_text,terms_version FROM order_document_sources WHERE order_id = ? AND terms_digest = ?"
+  ).bind(order.orderId,evidence.terms_digest).first();
+  if (!source || typeof source.scope_text!=="string" || !source.scope_text.trim() ||
+      typeof source.terms_version!=="string" || !source.terms_version.trim()) {
+    return { eligible:false, reason:"canonical_terms_missing" };
+  }
   const service=getServiceDefinition(order.serviceCode);
   let quote=null;
   if (service.quoteRequired) {
