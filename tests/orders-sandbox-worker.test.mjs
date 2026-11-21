@@ -108,7 +108,7 @@ test("Stripe test form CSP permits provider redirect without permitting arbitrar
   assert.match(csp,/default-src 'none'/);
   assert.match(csp,/base-uri 'none'/);
   assert.doesNotMatch(csp,/form-action[^;]*\*/);
-  assert.match(await response.text(),/<form method="post" action="\/stripe-test">/);
+  assert.match(await response.text(),/<a href="\\/stripe-test\\/open"/);
 });
 
 test("Stripe browser return is safe, non-authoritative and does not leak session", async () => {
@@ -236,4 +236,14 @@ test("one-click Stripe Test page is read-only, secret-gated and rejects cross-or
   },body:""}),enabled);
   assert.equal(noIndex.status,503);
   assert.equal((await noIndex.json()).error,"Checkout schema pending");
+});
+
+test("read-only Stripe recovery link never reserves a new checkout attempt", async () => {
+  const env={...flags,DB:db,STRIPE_MODE:"test",STRIPE_CHECKOUT_TEST_ENABLED:"true",
+    STRIPE_TEST_SECRET_KEY:"rk_test_restricted_dummy",STRIPE_E2E_ORDER_CAPABILITY:"dummy"};
+  const r=await worker.fetch(new Request(base+"/stripe-test/open"),env);
+  assert.equal(r.status,409);
+  assert.equal((await r.json()).error,"Existing order not eligible");
+  const missing=await worker.fetch(new Request(base+"/stripe-test/open"),flags);
+  assert.equal(missing.status,503);
 });
