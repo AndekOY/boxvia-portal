@@ -124,7 +124,7 @@ test("Stripe browser return is safe, non-authoritative and does not leak session
   const cancelled=await worker.fetch(new Request(base+"/api/orders/return?provider=stripe&cancelled=1"),flags);
   assert.equal(cancelled.status,200);
   assert.match(await cancelled.text(),/Checkout cancelled/);
-  const wrongProvider=await worker.fetch(new Request(base+"/api/orders/return?provider=paypal"),flags);
+  const wrongProvider=await worker.fetch(new Request(base+"/api/orders/return?provider=unknown"),flags);
   assert.equal(wrongProvider.status,404);
 });
 
