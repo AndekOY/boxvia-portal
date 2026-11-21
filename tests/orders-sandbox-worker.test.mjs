@@ -394,3 +394,44 @@ test("PayPal recovery authenticates evidence and retrieves existing checkout wit
   assert.ok(queries.some(x=>x.includes("FROM payment_attempts")));
  }finally{globalThis.fetch=originalFetch;}
 });
+
+test("PayPal recovery refuses pending order before consent, index or provider access",async()=>{
+ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability="a".repeat(64);
+ const hash=[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(capability)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const queries=[];
+ const DB={prepare(sql){queries.push(sql);if(!sql.includes("FROM service_orders"))throw Error("Unexpected D1 access");return {
+  bind(){return {async first(){return {id:orderId,service_code:"one-question-review",amount_minor:5000,
+   currency:"USD",status:"pending",capability_hash:hash};}}};
+ };}};
+ const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
+  ...flags,DB,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true"});
+ assert.equal(response.status,409);
+ assert.equal((await response.json()).error,"Order not eligible");
+ assert.equal(queries.length,1);
+});
+test("PayPal recovery rejects wrong-provider attempt before contacting PayPal",async()=>{
+ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654",capability="a".repeat(64);
+ const hash=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const scope="Scope",offer="Offer",conf="Confidentiality";
+ const evidence={service_code:"one-question-review",amount_minor:5000,currency:"USD",
+  scope_digest:await hash(scope),terms_digest:await hash(scope),deliverable:"Report",deadline:"24h",
+  quote_id:null,offer_version:"v1",offer_digest:await hash(offer),
+  offer_accepted_at:"2026-11-21T12:00:00Z",confidentiality_version:"v1",
+  confidentiality_digest:await hash(conf),confidentiality_accepted_at:"2026-11-21T12:00:00Z"};
+ const DB={prepare(sql){return {bind(){return this;},async first(){
+  if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",
+   amount_minor:5000,currency:"USD",status:"checkout",capability_hash:await hash(capability)};
+  if(sql.includes("FROM order_terms_acceptances"))return evidence;
+  if(sql.includes("FROM order_document_sources"))return {scope_text:scope,terms_version:"v1",
+   offer_text:offer,offer_version:"v1",confidentiality_text:conf,confidentiality_version:"v1",
+   deliverable:"Report",deadline:"24h"};
+  if(sql.includes("FROM sqlite_master"))return {name:"idx_payment_attempt_one_total_per_order"};
+  if(sql.includes("FROM payment_attempts"))return {id:"89c35f1e-8a3d-47aa-a2c8-0ac837ed24e1",
+   provider:"stripe",provider_order_id:"cs_test_123456789",status:"pending",amount_minor:5000,currency:"USD"};
+  throw Error("Unexpected read");
+ },async run(){throw Error("No writes permitted");}};}};
+ const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
+  ...flags,DB,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true"});
+ assert.equal(response.status,409);
+ assert.equal((await response.json()).error,"Existing PayPal attempt requires reconciliation");
+});
