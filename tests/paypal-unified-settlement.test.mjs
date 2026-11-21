@@ -14,6 +14,8 @@ class DB {
  prepare(sql){const db=this;return {sql,args:[],bind(...args){this.args=args;return this;},async first(){
   if(sql.includes("FROM service_orders"))return db.order;
   if(sql.includes("FROM payment_attempts"))return db.attempt;
+  if(sql.includes("FROM paypal_capture_evidence"))return db.evidence.has(this.args[0])?{capture_id:this.args[0]}:null;
+  if(sql.includes("FROM fulfillment_outbox"))return db.outbox.has(this.args[0])?{id:"outbox"}:null;
   throw Error("Unexpected SELECT "+sql);
  }};}
  async batch(statements){this.batches++;const results=[];
@@ -59,4 +61,11 @@ test("second distinct capture on paid order requires manual review",async()=>{
  const other=capture();other.purchase_units[0].payments.captures[0].id="CAPTURE99999";
  assert.equal((await settleVerifiedUnifiedPayPalCapture(db,other,expected)).outcome,"manual_review");
  assert.equal(db.outbox.size,1);
+});
+
+test("replay with missing evidence is manual review, not an ACK",async()=>{
+ const db=new DB();await settleVerifiedUnifiedPayPalCapture(db,capture(),expected);
+ db.evidence.clear();
+ assert.equal((await settleVerifiedUnifiedPayPalCapture(db,capture(),expected)).outcome,"manual_review");
+ assert.equal(db.batches,1);
 });
