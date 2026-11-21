@@ -439,3 +439,160 @@ test("PayPal recovery rejects wrong-provider attempt before contacting PayPal",a
  assert.equal(response.status,409);
  assert.equal((await response.json()).error,"Existing PayPal attempt requires reconciliation");
 });
+
+test("PayPal recovery rejects changed canonical offer before any provider API request",async()=>{
+ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654";
+ const attemptId="89c35f1e-8a3d-47aa-a2c8-0ac837ed24e1";
+ const providerOrderId="PAYPALTEST123";
+ const capability="a".repeat(64);
+ const hash=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const scope="Fixed scope",offer="Fixed offer",confidentiality="Confidentiality";
+ const termsDigest=await hash(scope);
+ const evidence={service_code:"one-question-review",amount_minor:5000,currency:"USD",
+  scope_digest:termsDigest,terms_digest:termsDigest,deliverable:"Report",deadline:"24h",
+  quote_id:null,offer_version:"v1",offer_digest:await hash(offer),
+  offer_accepted_at:"2026-11-21T12:00:00Z",confidentiality_version:"v1",
+  confidentiality_digest:await hash(confidentiality),confidentiality_accepted_at:"2026-11-21T12:00:00Z"};
+ const source={scope_text:scope,terms_version:"v1",offer_text:offer+" TAMPERED",offer_version:"v1",
+  confidentiality_text:confidentiality,confidentiality_version:"v1",deliverable:"Report",deadline:"24h"};
+ const queries=[];
+ const recoveryDb={prepare(sql){return {bind(){return this;},async first(){
+  queries.push(sql);
+  if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",
+   amount_minor:5000,currency:"USD",status:"checkout",capability_hash:await hash(capability)};
+  if(sql.includes("FROM order_terms_acceptances"))return evidence;
+  if(sql.includes("FROM order_document_sources"))return source;
+  if(sql.includes("FROM sqlite_master"))return {name:"idx_payment_attempt_one_total_per_order"};
+  if(sql.includes("FROM payment_attempts"))return {id:attemptId,provider:"paypal",status:"pending",
+   provider_order_id:providerOrderId,amount_minor:5000,currency:"USD"};
+  throw Error("Unexpected read: "+sql);
+ },async run(){throw Error("Recovery must never write D1");}};}};
+ const originalFetch=globalThis.fetch;
+ const calls=[];
+ globalThis.fetch=async(url,options)=>{
+  calls.push({url,options});
+  if(url.endsWith("/v1/oauth2/token"))return Response.json({access_token:"sandbox-access-token-123",token_type:"Bearer"});
+  if(url.endsWith("/v2/checkout/orders/"+providerOrderId))return Response.json({
+   id:providerOrderId,status:"CREATED",intent:"CAPTURE",
+   purchase_units:[{reference_id:attemptId,custom_id:orderId,amount:{currency_code:"USD",value:"50.00"}}],
+   links:[{rel:"payer-action",href:"https://www.sandbox.paypal.com/checkoutnow?token="+providerOrderId}]
+  });
+  throw Error("Unexpected provider request");
+ };
+ try{
+  const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
+   ...flags,DB:recoveryDb,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",
+   PAYPAL_SANDBOX_CLIENT_ID:"sandbox-client-123",PAYPAL_SANDBOX_CLIENT_SECRET:"sandbox-secret-123"});
+  assert.equal(response.status,409);
+  assert.equal((await response.json()).reason,"canonical_document_changed");
+  assert.equal(calls.length,0);
+  assert.ok(queries.some(x=>x.includes("FROM order_terms_acceptances")));
+  assert.equal(queries.some(x=>x.includes("FROM payment_attempts")),false);
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("PayPal recovery fails closed on provider order identity mismatch",async()=>{
+ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654";
+ const attemptId="89c35f1e-8a3d-47aa-a2c8-0ac837ed24e1";
+ const providerOrderId="PAYPALTEST123";
+ const capability="a".repeat(64);
+ const hash=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const scope="Fixed scope",offer="Fixed offer",confidentiality="Confidentiality";
+ const termsDigest=await hash(scope);
+ const evidence={service_code:"one-question-review",amount_minor:5000,currency:"USD",
+  scope_digest:termsDigest,terms_digest:termsDigest,deliverable:"Report",deadline:"24h",
+  quote_id:null,offer_version:"v1",offer_digest:await hash(offer),
+  offer_accepted_at:"2026-11-21T12:00:00Z",confidentiality_version:"v1",
+  confidentiality_digest:await hash(confidentiality),confidentiality_accepted_at:"2026-11-21T12:00:00Z"};
+ const source={scope_text:scope,terms_version:"v1",offer_text:offer,offer_version:"v1",
+  confidentiality_text:confidentiality,confidentiality_version:"v1",deliverable:"Report",deadline:"24h"};
+ const queries=[];
+ const recoveryDb={prepare(sql){return {bind(){return this;},async first(){
+  queries.push(sql);
+  if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",
+   amount_minor:5000,currency:"USD",status:"checkout",capability_hash:await hash(capability)};
+  if(sql.includes("FROM order_terms_acceptances"))return evidence;
+  if(sql.includes("FROM order_document_sources"))return source;
+  if(sql.includes("FROM sqlite_master"))return {name:"idx_payment_attempt_one_total_per_order"};
+  if(sql.includes("FROM payment_attempts"))return {id:attemptId,provider:"paypal",status:"pending",
+   provider_order_id:providerOrderId,amount_minor:5000,currency:"USD"};
+  throw Error("Unexpected read: "+sql);
+ },async run(){throw Error("Recovery must never write D1");}};}};
+ const originalFetch=globalThis.fetch;
+ const calls=[];
+ globalThis.fetch=async(url,options)=>{
+  calls.push({url,options});
+  if(url.endsWith("/v1/oauth2/token"))return Response.json({access_token:"sandbox-access-token-123",token_type:"Bearer"});
+  if(url.endsWith("/v2/checkout/orders/"+providerOrderId))return Response.json({
+   id:"WRONGPAYPAL123",status:"CREATED",intent:"CAPTURE",
+   purchase_units:[{reference_id:attemptId,custom_id:orderId,amount:{currency_code:"USD",value:"50.00"}}],
+   links:[{rel:"payer-action",href:"https://www.sandbox.paypal.com/checkoutnow?token="+providerOrderId}]
+  });
+  throw Error("Unexpected provider request");
+ };
+ try{
+  const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
+   ...flags,DB:recoveryDb,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",
+   PAYPAL_SANDBOX_CLIENT_ID:"sandbox-client-123",PAYPAL_SANDBOX_CLIENT_SECRET:"sandbox-secret-123"});
+  assert.equal(response.status,503);
+  assert.equal((await response.json()).error,"Recovery unavailable; reconciliation required");
+  assert.equal(calls.length,2);
+  assert.equal(calls[1].options.method,"GET");
+  assert.ok(queries.some(x=>x.includes("FROM order_terms_acceptances")));
+  assert.ok(queries.some(x=>x.includes("FROM payment_attempts")));
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("PayPal recovery never reopens completed provider orders",async()=>{
+ const orderId="6a7bb765-5fb8-4a65-95be-8458e1bc7654";
+ const attemptId="89c35f1e-8a3d-47aa-a2c8-0ac837ed24e1";
+ const providerOrderId="PAYPALTEST123";
+ const capability="a".repeat(64);
+ const hash=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+ const scope="Fixed scope",offer="Fixed offer",confidentiality="Confidentiality";
+ const termsDigest=await hash(scope);
+ const evidence={service_code:"one-question-review",amount_minor:5000,currency:"USD",
+  scope_digest:termsDigest,terms_digest:termsDigest,deliverable:"Report",deadline:"24h",
+  quote_id:null,offer_version:"v1",offer_digest:await hash(offer),
+  offer_accepted_at:"2026-11-21T12:00:00Z",confidentiality_version:"v1",
+  confidentiality_digest:await hash(confidentiality),confidentiality_accepted_at:"2026-11-21T12:00:00Z"};
+ const source={scope_text:scope,terms_version:"v1",offer_text:offer,offer_version:"v1",
+  confidentiality_text:confidentiality,confidentiality_version:"v1",deliverable:"Report",deadline:"24h"};
+ const queries=[];
+ const recoveryDb={prepare(sql){return {bind(){return this;},async first(){
+  queries.push(sql);
+  if(sql.includes("FROM service_orders"))return {id:orderId,service_code:"one-question-review",
+   amount_minor:5000,currency:"USD",status:"checkout",capability_hash:await hash(capability)};
+  if(sql.includes("FROM order_terms_acceptances"))return evidence;
+  if(sql.includes("FROM order_document_sources"))return source;
+  if(sql.includes("FROM sqlite_master"))return {name:"idx_payment_attempt_one_total_per_order"};
+  if(sql.includes("FROM payment_attempts"))return {id:attemptId,provider:"paypal",status:"pending",
+   provider_order_id:providerOrderId,amount_minor:5000,currency:"USD"};
+  throw Error("Unexpected read: "+sql);
+ },async run(){throw Error("Recovery must never write D1");}};}};
+ const originalFetch=globalThis.fetch;
+ const calls=[];
+ globalThis.fetch=async(url,options)=>{
+  calls.push({url,options});
+  if(url.endsWith("/v1/oauth2/token"))return Response.json({access_token:"sandbox-access-token-123",token_type:"Bearer"});
+  if(url.endsWith("/v2/checkout/orders/"+providerOrderId))return Response.json({
+   id:providerOrderId,status:"COMPLETED",intent:"CAPTURE",
+   purchase_units:[{reference_id:attemptId,custom_id:orderId,amount:{currency_code:"USD",value:"50.00"}}],
+   links:[{rel:"payer-action",href:"https://www.sandbox.paypal.com/checkoutnow?token="+providerOrderId}]
+  });
+  throw Error("Unexpected provider request");
+ };
+ try{
+  const response=await worker.fetch(post("/api/paypal/sandbox/recover",{orderId,capability}),{
+   ...flags,DB:recoveryDb,PAYPAL_MODE:"sandbox",PAYPAL_UNIFIED_TEST_ENABLED:"true",
+   PAYPAL_SANDBOX_CLIENT_ID:"sandbox-client-123",PAYPAL_SANDBOX_CLIENT_SECRET:"sandbox-secret-123"});
+  assert.equal(response.status,200);
+  const result=await response.json();
+  assert.equal(result.status,"COMPLETED");
+  assert.equal(result.checkoutUrl,null);
+  assert.equal(calls.length,2);
+  assert.equal(calls[1].options.method,"GET");
+  assert.ok(queries.some(x=>x.includes("FROM order_terms_acceptances")));
+  assert.ok(queries.some(x=>x.includes("FROM payment_attempts")));
+ }finally{globalThis.fetch=originalFetch;}
+});
