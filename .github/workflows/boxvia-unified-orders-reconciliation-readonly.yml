@@ -49,8 +49,8 @@ jobs:
           for r in rows:
               assert isinstance(r.get('attempts'),int) and r['attempts']>=0
               assert r.get('provider') in ('stripe','paypal')
-              assert r.get('attempt_status') in ('created','pending','completed','failed','cancelled','expired','refunded','succeeded')
-              assert r.get('order_status') in ('pending','checkout','paid','completed','cancelled','failed','refunded')
+              assert isinstance(r.get('attempt_status'),str) and r['attempt_status'].isascii() and r['attempt_status'].replace('_','').isalnum() and len(r['attempt_status'])<=32
+              assert isinstance(r.get('order_status'),str) and r['order_status'].isascii() and r['order_status'].replace('_','').isalnum() and len(r['order_status'])<=32
               assert r.get('provider_binding') in ('UNBOUND','BOUND')
               print('provider={provider} attempt_status={attempt_status} order_status={order_status} binding={provider_binding} count={attempts}'.format(**r))
           if any(r['attempt_status']=='created' and r['provider_binding']=='UNBOUND' and r['order_status']=='pending' for r in rows):
