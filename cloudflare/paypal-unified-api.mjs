@@ -61,3 +61,33 @@ export async function reconcileUnifiedPayPalSandboxOrder(env,expected,request=fe
  const providerOrder=await api(env,"/v2/checkout/orders/"+encodeURIComponent(expected.providerOrderId),{request});
  return Object.freeze({providerOrder,verified:inspectUnifiedPayPalCapture(providerOrder,expected)});
 }
+
+/**
+ * Read-only recovery of an already reserved PayPal Sandbox checkout.
+ * The caller must authenticate the order capability, consent evidence and
+ * the persisted attempt/provider-order binding. Never creates or captures.
+ */
+export async function retrieveExistingUnifiedPayPalSandboxCheckout(env,expected,request=fetch){
+ if(!idPattern.test(expected?.providerOrderId||"")||
+    !/^[a-f0-9-]{36}$/i.test(expected?.orderId||"")||
+    !/^[a-f0-9-]{36}$/i.test(expected?.attemptId||"")||
+    expected?.amountMinor!==5000||expected?.currency!=="USD")
+   throw Error("Invalid PayPal checkout recovery binding");
+ const order=await api(env,"/v2/checkout/orders/"+encodeURIComponent(expected.providerOrderId),{request});
+ const unit=Array.isArray(order?.purchase_units)&&order.purchase_units.length===1?order.purchase_units[0]:null;
+ if(order?.id!==expected.providerOrderId||order?.intent!=="CAPTURE"||
+    !["CREATED","PAYER_ACTION_REQUIRED","APPROVED","COMPLETED","VOIDED"].includes(order.status)||
+    unit?.reference_id!==expected.attemptId||unit?.custom_id!==expected.orderId||
+    unit?.amount?.currency_code!=="USD"||unit?.amount?.value!=="50.00")
+   throw Error("PayPal checkout recovery identity mismatch");
+ if(!["CREATED","PAYER_ACTION_REQUIRED"].includes(order.status))
+   return Object.freeze({status:order.status,checkoutUrl:null});
+ const approval=(order.links||[]).find(x=>x.rel==="payer-action"||x.rel==="approve");
+ if(typeof approval?.href!=="string")throw Error("PayPal checkout recovery URL unavailable");
+ const url=new URL(approval.href);
+ if(url.protocol!=="https:"||url.hostname!=="www.sandbox.paypal.com"||
+    !url.pathname.startsWith("/checkoutnow")||
+    url.searchParams.get("token")!==expected.providerOrderId)
+   throw Error("Untrusted PayPal checkout recovery URL");
+ return Object.freeze({status:order.status,checkoutUrl:url.toString()});
+}
