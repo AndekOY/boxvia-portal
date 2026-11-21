@@ -1,11 +1,6 @@
 name: BoxVia Orders Sandbox - live order acceptance
 
 on:
-  push:
-    branches:
-      - work/technical-pilots-first-20261118
-    paths:
-      - .github/workflows/boxvia-orders-live-acceptance.yml
   workflow_dispatch:
 
 permissions:
@@ -90,22 +85,31 @@ jobs:
       - name: Exercise live order create, deduplication and capability access
         run: |
           python3 - <<'PY'
-          import json,urllib.request,urllib.error
+          import json,subprocess,tempfile,os
           from pathlib import Path
           base='https://boxvia-orders-sandbox.andeks.workers.dev'
           token=Path('/tmp/boxvia-orders-admin-token').read_text()
           request_id=int(Path('/tmp/boxvia-orders-request-id').read_text())
           def post(path,payload,authorized=False):
-            headers={'Content-Type':'application/json','Origin':base}
-            if authorized: headers['Authorization']='Bearer '+token
-            req=urllib.request.Request(base+path,data=json.dumps(payload).encode(),headers=headers,method='POST')
-            try:
-              with urllib.request.urlopen(req,timeout=30) as r:
-                return r.status,json.load(r)
-            except urllib.error.HTTPError as e:
-              if e.code==403 and e.headers.get('server','').lower().find('cloudflare')>=0:
-                raise SystemExit('BLOCKED: GitHub runner received Cloudflare 403; live acceptance NOT confirmed')
-              return e.code,json.load(e)
+            with tempfile.TemporaryDirectory() as directory:
+              body=os.path.join(directory,'body')
+              args=['curl','--silent','--show-error','--max-time','30','--output',body,'--write-out','%{http_code}','--request','POST','--header','Content-Type: application/json','--header','Origin: '+base,'--header','User-Agent: BoxVia-Sandbox-CI-Orders/1.0','--data-binary',json.dumps(payload),base+path]
+              if authorized:
+                args+=['--header','Authorization: Bearer '+token]
+              result=subprocess.run(args,capture_output=True,text=True,timeout=40)
+              if result.returncode:
+                raise SystemExit('BLOCKED: sandbox POST transport failed; no acceptance claimed')
+              try:
+                status=int(result.stdout.strip())
+              except ValueError:
+                raise SystemExit('BLOCKED: sandbox POST returned no HTTP status')
+              if status==403:
+                raise SystemExit('BLOCKED: HTTP 403 on '+path+'; no acceptance claimed')
+              try:
+                response=json.loads(Path(body).read_text())
+              except (OSError,ValueError):
+                raise SystemExit('BLOCKED: non-JSON response on '+path+'; no acceptance claimed')
+              return status,response
           payload={'serviceRequestId':request_id,'serviceCode':'one-question-review'}
           status,denied=post('/api/orders/create',payload)
           assert status==401,(status,denied)
