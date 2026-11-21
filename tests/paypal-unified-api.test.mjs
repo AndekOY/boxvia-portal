@@ -103,3 +103,16 @@ test("PayPal creation refuses provider checkout token substitution",async()=>{
  await assert.rejects(()=>createUnifiedPayPalSandboxOrder(env,authorization,attemptId,
   "https://boxvia-orders-sandbox.andeks.workers.dev",request),/Untrusted/);
 });
+
+test("PayPal checkout creation and recovery reject extra query parameters and URL fragments",async()=>{
+ for(const suffix of ["&next=https%3A%2F%2Fevil.example","#redirect"]){
+  const request=async url=>url.endsWith("/token")?json(token):json({
+   id:expected.providerOrderId,status:"CREATED",intent:"CAPTURE",
+   purchase_units:[{reference_id:attemptId,custom_id:orderId,amount:{currency_code:"USD",value:"50.00"}}],
+   links:[{rel:"payer-action",href:"https://www.sandbox.paypal.com/checkoutnow?token=PAYPALTEST123"+suffix}]
+  });
+  await assert.rejects(()=>createUnifiedPayPalSandboxOrder(env,authorization,attemptId,
+   "https://boxvia-orders-sandbox.andeks.workers.dev",request),/Untrusted/);
+  await assert.rejects(()=>retrieveExistingUnifiedPayPalSandboxCheckout(env,expected,request),/Untrusted/);
+ }
+});
