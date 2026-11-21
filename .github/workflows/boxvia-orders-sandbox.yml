@@ -150,8 +150,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT 'service_orders' AS metric,COUNT(*) AS n FROM service_orders UNION ALL SELECT 'payment_attempts',COUNT(*) FROM payment_attempts UNION ALL SELECT 'payment_events',COUNT(*) FROM payment_events UNION ALL SELECT 'fulfillment_outbox',COUNT(*) FROM fulfillment_outbox UNION ALL SELECT 'order_terms_acceptances',COUNT(*) FROM order_terms_acceptances UNION ALL SELECT 'stripe_event_order_links',COUNT(*) FROM stripe_event_order_links UNION ALL SELECT 'paypal_capture_evidence',COUNT(*) FROM paypal_capture_evidence" --json > /tmp/boxvia-evidence-counts.json
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT COUNT(*) AS orphan_attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL" --json > /tmp/boxvia-evidence-orphans.json
+          if ! npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT 'service_orders' AS metric,COUNT(*) AS n FROM service_orders UNION ALL SELECT 'payment_attempts',COUNT(*) FROM payment_attempts UNION ALL SELECT 'payment_events',COUNT(*) FROM payment_events UNION ALL SELECT 'fulfillment_outbox',COUNT(*) FROM fulfillment_outbox UNION ALL SELECT 'order_terms_acceptances',COUNT(*) FROM order_terms_acceptances UNION ALL SELECT 'stripe_event_order_links',COUNT(*) FROM stripe_event_order_links UNION ALL SELECT 'paypal_capture_evidence',COUNT(*) FROM paypal_capture_evidence" --json > /tmp/boxvia-evidence-counts.json 2>/tmp/boxvia-counts-stderr; then
+            echo "::error::Sandbox D1 count query failed; remote database unchanged"
+            exit 1
+          fi
+          if ! npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --remote --command "SELECT COUNT(*) AS orphan_attempts FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL" --json > /tmp/boxvia-evidence-orphans.json 2>/tmp/boxvia-orphans-stderr; then
+            echo "::error::Sandbox D1 orphan query failed; remote database unchanged"
+            exit 1
+          fi
           python3 - <<'PY'
           import json,os
           def extract(path):
