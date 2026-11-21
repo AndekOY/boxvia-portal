@@ -30,3 +30,19 @@ test("terms-status does not expose data for invalid JSON",async()=>{
  });
  assert.equal(response.status,400);
 });
+
+test("terms-preview rejects foreign origin before database access",async()=>{
+ const response=await worker.fetch(request("/api/orders/terms-preview",{},{"Origin":"https://other.invalid"}),{
+  DB:{prepare(){throw Error("DB must not be accessed")}},
+  UNIFIED_ORDERS_ENABLED:"false",PAYPAL_CHECKOUT_ENABLED:"false",STRIPE_CHECKOUT_ENABLED:"false"
+ });
+ assert.equal(response.status,403);
+});
+test("terms-preview rejects unauthenticated order without document disclosure",async()=>{
+ const db={prepare(sql){assert.match(sql,/^SELECT /);return {bind(){return {async first(){return null;}}}};}};
+ const response=await worker.fetch(request("/api/orders/terms-preview",{orderId:"00000000-0000-4000-8000-000000000000",capability:"a".repeat(64)}),{
+  DB:db,UNIFIED_ORDERS_ENABLED:"false",PAYPAL_CHECKOUT_ENABLED:"false",STRIPE_CHECKOUT_ENABLED:"false"
+ });
+ assert.equal(response.status,404);
+ assert.deepEqual(await response.json(),{error:"Not found"});
+});
