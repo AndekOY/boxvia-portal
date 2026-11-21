@@ -6,7 +6,7 @@ globalThis.crypto??=webcrypto;
 const order={orderId:"6a7bb765-5fb8-4a65-95be-8458e1bc7654",serviceCode:"one-question-review",amountMinor:5000,currency:"USD",status:"pending"};
 test("existing Stripe attempt is reused without another write",async()=>{
  let writes=0;
- const db={prepare(){return {bind(){return this;},async first(){return {id:"existing",status:"created",provider_order_id:null};},async run(){writes++;throw Error("unexpected write");}};}};
+ const db={prepare(){return {bind(){return this;},async first(){return {id:"existing",provider:"stripe",status:"created",provider_order_id:null};},async run(){writes++;throw Error("unexpected write");}};}};
  const result=await reserveStripeAttempt(db,order);
  assert.equal(result.created,false);
  assert.equal(result.attemptId,"existing");
