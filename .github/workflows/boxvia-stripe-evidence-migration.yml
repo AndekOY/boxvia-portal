@@ -1,0 +1,42 @@
+name: BoxVia Stripe - additive evidence D1 migration
+on:
+  push:
+    branches: [work/technical-pilots-first-20261118]
+    paths:
+      - .github/workflows/boxvia-stripe-evidence-migration.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolation and offline schema
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
+          assert 'routes' not in c
+          sql=open('migrations/stripe-event-order-links-sandbox-v0.1.sql').read().lower()
+          assert 'create table if not exists stripe_event_order_links' in sql
+          assert not any(s in sql for s in ('drop table','alter table','delete from','update payment_events'))
+          PY
+          python3 scripts/check-stripe-event-linkage-sqlite.py
+      - name: Apply additive migration to isolated D1 only
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/stripe-event-order-links-sandbox-v0.1.sql
+      - name: Verify new table (read-only)
+        run: |
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name='stripe_event_order_links'"
