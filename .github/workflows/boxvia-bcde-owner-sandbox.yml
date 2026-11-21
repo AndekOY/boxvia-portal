@@ -47,24 +47,7 @@ jobs:
           node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
       # R2 bucket is provisioned separately. This deploy token may have Workers write
       # access without R2 bucket list/create permissions; never gate deploy on them.
-      - name: Apply additive BCDE prerequisites to isolated sandbox D1
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json
-          c=json.load(open('wrangler.bcde-owner.jsonc'))
-          assert c['name']=='boxvia-bcde-owner'
-          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
-          for path in ('migrations/order-terms-acceptances-sandbox-v0.1.sql','migrations/bcde-document-sources-sandbox-v0.1.sql'):
-              sql=open(path).read()
-              assert sql.count('CREATE TABLE IF NOT EXISTS')==1
-              assert 'DROP ' not in sql.upper() and 'ALTER ' not in sql.upper() and 'DELETE ' not in sql.upper()
-          PY
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.bcde-owner.jsonc --remote --file migrations/order-terms-acceptances-sandbox-v0.1.sql
-          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.bcde-owner.jsonc --remote --file migrations/bcde-document-sources-sandbox-v0.1.sql
+      # Schema was provisioned in run #16; deployment is now strictly read-only for D1.
       - name: Audit BCDE sandbox D1 prerequisites (read-only)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
