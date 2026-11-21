@@ -181,14 +181,28 @@ jobs:
             counts[table]=rows[0]['n']
           rows=query('SELECT COUNT(*) AS n FROM payment_attempts a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL')
           orphan=rows[0]['n']
+          integrity_queries={
+            'orphan_consents':"SELECT COUNT(*) AS n FROM order_terms_acceptances a LEFT JOIN service_orders o ON o.id=a.order_id WHERE o.id IS NULL",
+            'consent_order_mismatches':"SELECT COUNT(*) AS n FROM order_terms_acceptances a JOIN service_orders o ON o.id=a.order_id WHERE a.service_code<>o.service_code OR a.amount_minor<>o.amount_minor OR a.currency<>o.currency",
+            'consents_without_canonical_source':"SELECT COUNT(*) AS n FROM order_terms_acceptances a WHERE NOT EXISTS (SELECT 1 FROM order_document_sources s WHERE s.order_id=a.order_id AND s.terms_digest=a.terms_digest AND TRIM(s.scope_text)<>'' AND TRIM(s.terms_version)<>'')"
+          }
+          integrity={}
+          for name,sql in integrity_queries.items():
+            rows=query(sql)
+            assert len(rows)==1 and type(rows[0]['n'])==int and rows[0]['n']>=0
+            integrity[name]=rows[0]['n']
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
             summary.write('### Remote sandbox D1 evidence inventory (read-only)\\n\\n')
             summary.write('| Metric | Count |\\n|---|---:|\\n')
             for name in sorted(counts):
               summary.write(f'| {name} | {counts[name]} |\\n')
             summary.write(f'| orphan_attempts | {orphan} |\\n')
+            for name in sorted(integrity):
+              summary.write(f'| {name} | {integrity[name]} |\\n')
             summary.write('\\nCounts alone do not establish provider settlement, consent, or HTTP availability.\\n')
           if orphan:
             raise SystemExit(f'FAIL: {orphan} orphan payment attempts')
-          print('PASS: seven independent D1 counts and zero orphan attempts; no writes')
+          if any(integrity.values()):
+            raise SystemExit('FAIL: sandbox consent evidence referential integrity or canonical source invariant violated')
+          print('PASS: seven independent D1 counts, zero orphan attempts, and consent/source integrity; no writes')
           PY
