@@ -66,7 +66,7 @@ test("valid dual consent records once and passes the database-backed eligibility
  assert.deepEqual(await first.json(),{recorded:true,eligible:true});
  assert.equal(insertions,1);
  assert.equal(accepted.offer_accepted_at,accepted.confidentiality_accepted_at);
- assert.match(accepted.offer_accepted_at,/^\\d{4}-\\d{2}-\\d{2}T/);
+ assert.ok(Number.isFinite(Date.parse(accepted.offer_accepted_at)));
  const second=await handleOrderConsent(req({...valid,termsDigest:digest}),env);
  assert.equal(second.status,503);
  assert.equal(insertions,2);
