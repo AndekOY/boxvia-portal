@@ -108,7 +108,7 @@ test("Stripe test form CSP permits provider redirect without permitting arbitrar
   assert.match(csp,/default-src 'none'/);
   assert.match(csp,/base-uri 'none'/);
   assert.doesNotMatch(csp,/form-action[^;]*\*/);
-  assert.match(await response.text(),/<a href="\\/stripe-test\\/open"/);
+  assert.ok((await response.text()).includes('href="/stripe-test/open"'));
 });
 
 test("Stripe browser return is safe, non-authoritative and does not leak session", async () => {
@@ -199,7 +199,7 @@ test("one-click Stripe Test page is read-only, secret-gated and rejects cross-or
   assert.equal(page.headers.get("Cache-Control"),"no-store");
   const html=await page.text();
   assert.match(html,/USD 50\.00/);
-  assert.match(html,/<a href="\\/stripe-test\\/open"/);
+  assert.ok(html.includes('href="/stripe-test/open"'));
   assert.doesNotMatch(html,/a{64}|fe2c77c4-1abd-4ab9-ae1e-c57f0b583a34/);
   const foreign=await worker.fetch(new Request(path,{method:"POST",headers:{
     Origin:"https://evil.example","Content-Type":"application/x-www-form-urlencoded"
