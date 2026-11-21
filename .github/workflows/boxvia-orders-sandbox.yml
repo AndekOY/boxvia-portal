@@ -99,38 +99,48 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.BOXVIA_SANDBOX_ACCESS_CLIENT_SECRET }}
         run: |
+          set -euo pipefail
           python3 - <<'PY'
-          import json,os,urllib.request,urllib.error
+          import json,os,subprocess,tempfile
           url='https://boxvia-orders-sandbox.andeks.workers.dev/api/health'
-          client_id=os.environ.get('CF_ACCESS_CLIENT_ID','')
-          client_secret=os.environ.get('CF_ACCESS_CLIENT_SECRET','')
-          if bool(client_id)!=bool(client_secret):
-            raise SystemExit('Incomplete optional sandbox Access service token configuration')
-          headers={'Accept':'application/json'}
-          if client_id:
-            headers['CF-Access-Client-Id']=client_id
-            headers['CF-Access-Client-Secret']=client_secret
-          request=urllib.request.Request(url,headers=headers)
-          try:
-            response=urllib.request.urlopen(request,timeout=30)
-          except urllib.error.HTTPError as exc:
-            ray=exc.headers.get('CF-Ray','not-provided')
-            message=f'UNESTABLISHED: sandbox health HTTP {exc.code}; CF-Ray={ray}; Access credentials configured={bool(client_id)}. No acceptance proof.'
-            print('::error::'+message)
+          cid=os.environ.get('CF_ACCESS_CLIENT_ID','')
+          secret=os.environ.get('CF_ACCESS_CLIENT_SECRET','')
+          if bool(cid)!=bool(secret):
+            raise SystemExit('Incomplete optional Access service token pair')
+          with tempfile.TemporaryDirectory() as d:
+            body=os.path.join(d,'body')
+            headers=os.path.join(d,'headers')
+            cmd=['curl','--silent','--show-error','--location','--max-time','30','--output',body,'--dump-header',headers,'--write-out','%{http_code}','--header','Accept: application/json','--header','User-Agent: BoxVia-Sandbox-CI-Health/1.0',url]
+            if cid:
+              cmd+=['--header','CF-Access-Client-Id: '+cid,'--header','CF-Access-Client-Secret: '+secret]
+            p=subprocess.run(cmd,capture_output=True,text=True,timeout=40)
+            code=p.stdout.strip()
+            if p.returncode!=0 or code!='200':
+              # Do not print request headers, response body or secrets.
+              ray='not-provided'
+              try:
+                for line in open(headers):
+                  if line.lower().startswith('cf-ray:'):
+                    ray=line.split(':',1)[1].strip()
+              except OSError:
+                pass
+              message=f'UNESTABLISHED: HTTP {code or "no response"}; curl exit={p.returncode}; CF-Ray={ray}; Access credentials configured={bool(cid)}.'
+              print('::error::'+message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
+                summary.write('### Sandbox live HTTP: UNESTABLISHED\\n\\n'+message+'\\n')
+              raise SystemExit(1)
+            try:
+              with open(body) as stream:
+                data=json.load(stream)
+            except (OSError,ValueError):
+              raise SystemExit('FAIL: HTTP 200 without valid JSON health response')
+            assert data.get('service')=='boxvia-orders-sandbox'
+            assert data.get('status')=='schema_ready'
+            assert data.get('checkout')=='disabled'
+            assert data.get('unified_tables_present')==5
+            print('PASS: live sandbox HTTP 200, schema ready, checkout disabled, five unified tables')
             with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-              summary.write('### Sandbox live health: UNESTABLISHED\\n\\n'+message+'\\n')
-            raise SystemExit(1)
-          with response:
-            if response.status!=200:
-              raise SystemExit(f'Unexpected sandbox health HTTP {response.status}')
-            data=json.load(response)
-          assert data['service']=='boxvia-orders-sandbox'
-          assert data['status']=='schema_ready'
-          assert data['checkout']=='disabled'
-          assert data['unified_tables_present']==5
-          print('PASS: authenticated or public live sandbox health; five tables; checkout disabled')
-          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
-            summary.write('### Sandbox live health: PASS\\n\\nVerified HTTP 200, schema_ready, checkout disabled, five required tables.\\n')
+              summary.write('### Sandbox live HTTP: PASS\\n\\nHTTP 200 and exact health invariants verified.\\n')
           PY
 
   audit-sandbox-evidence:
