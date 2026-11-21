@@ -1,5 +1,18 @@
 name: BoxVia BCDE Owner - isolated sandbox deploy
 on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-bcde-owner-sandbox.yml
+      - wrangler.bcde-owner.jsonc
+      - cloudflare/bcde-owner-worker.mjs
+      - cloudflare/bcde-access.mjs
+      - cloudflare/bcde-owner-api.mjs
+      - cloudflare/bcde-owner-console.mjs
+      - tests/bcde-owner-worker.test.mjs
+      - tests/bcde-access.test.mjs
+      - tests/bcde-stage1.test.mjs
   workflow_dispatch:
 
 permissions:
