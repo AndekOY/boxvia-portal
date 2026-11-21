@@ -33,5 +33,11 @@ export async function verifyBcdeAccess(request,env,{fetchKeys=fetch,now=Math.flo
   const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   stage="signature_verify";
   return await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,b64url(parts[2]),enc.encode(parts[0]+"."+parts[1])) || fail("signature");
- }catch{return fail("exception_"+stage);}
+ }catch(error){
+  if(stage==="certs_fetch"){
+   const kind=error instanceof TypeError?"type_error":error?.name==="AbortError"?"abort":error?.name==="NetworkError"?"network_error":"other";
+   return fail("exception_certs_fetch_"+kind);
+  }
+  return fail("exception_"+stage);
+ }
 }
