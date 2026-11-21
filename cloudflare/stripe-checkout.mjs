@@ -101,3 +101,44 @@ export async function persistStripeSession(db, attemptId, sessionId, orderId) {
     throw new Error("Stripe session persistence not confirmed");
   }
 }
+
+/**
+ * Recover an existing Stripe Test Checkout session. Read-only: never creates
+ * a new session, attempt, payment, or D1 record. The caller must authenticate
+ * the order capability and verify the stored attempt-to-session binding.
+ */
+export async function retrieveExistingStripeTestSession(order, sessionId, env) {
+  if (!order || order.status !== "checkout" ||
+      !orderIdPattern.test(order.orderId || "") ||
+      !allowedServices.has(order.serviceCode) ||
+      order.amountMinor !== 5000 || order.currency !== "USD" ||
+      !stripeSessionId.test(sessionId || "") ||
+      env?.STRIPE_MODE !== "test" ||
+      env?.STRIPE_CHECKOUT_TEST_ENABLED !== "true" ||
+      !isStripeTestApiKey(env.STRIPE_TEST_SECRET_KEY)) {
+    throw new Error("Existing Stripe Test session unavailable");
+  }
+  const response = await fetch(
+    "https://api.stripe.com/v1/checkout/sessions/" + encodeURIComponent(sessionId),
+    { method: "GET", headers: { Authorization: "Bearer " + env.STRIPE_TEST_SECRET_KEY } }
+  );
+  if (!response.ok) throw new Error("Stripe session retrieval unavailable");
+  const session = await response.json();
+  if (session?.livemode !== false || session.id !== sessionId ||
+      session.mode !== "payment" ||
+      session.client_reference_id !== order.orderId ||
+      session.metadata?.order_id !== order.orderId ||
+      session.amount_total !== 5000 || session.currency !== "usd" ||
+      !["open", "complete", "expired"].includes(session.status)) {
+    throw new Error("Stripe session reconciliation mismatch");
+  }
+  if (session.status !== "open" || typeof session.url !== "string") {
+    return Object.freeze({ status: session.status, checkoutUrl: null });
+  }
+  const redirect = new URL(session.url);
+  if (redirect.protocol !== "https:" ||
+      !["checkout.stripe.com", "checkout.stripe.dev"].includes(redirect.hostname)) {
+    throw new Error("Untrusted Stripe checkout URL");
+  }
+  return Object.freeze({ status: "open", checkoutUrl: redirect.toString() });
+}
