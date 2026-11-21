@@ -1,0 +1,101 @@
+name: BoxVia Consent Documents - sandbox D1 migration (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boxvia-orders-sandbox-d1
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Verify exact sandbox target and migration file
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,pathlib
+          c=json.loads(pathlib.Path('wrangler.orders-sandbox.jsonc').read_text())
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert c['vars']=={'UNIFIED_ORDERS_ENABLED':'false','PAYPAL_CHECKOUT_ENABLED':'false','STRIPE_CHECKOUT_ENABLED':'false'}
+          assert not any(x in c for x in ('routes','route','assets'))
+          sql=pathlib.Path('migrations/order-consent-documents-sandbox-v0.2.sql').read_text()
+          columns=['offer_text','offer_version','confidentiality_text','confidentiality_version','deliverable','deadline']
+          statements=[x.strip() for x in sql.split(';') if x.strip() and not x.strip().startswith('--')]
+          # Comments are removed independently so every actual SQL statement is validated.
+          statements=[x.strip() for x in re.sub(r'(?m)^\s*--[^\n]*','',sql).split(';') if x.strip()]
+          assert len(statements)==len(columns)
+          for statement,column in zip(statements,columns):
+            assert statement=='ALTER TABLE order_document_sources ADD COLUMN '+column+' TEXT'
+          print('PASS: exact additive sandbox migration and disabled checkout')
+          PY
+      - name: Check remote schema before migration (fail closed)
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "PRAGMA table_info(order_document_sources)" --json > /tmp/consent-before.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/consent-before.json'))
+          assert len(x)==1 and x[0]['success'] is True
+          rows=x[0]['results']
+          names={r['name'] for r in rows}
+          required={'order_id','terms_digest','terms_version','scope_text','created_at'}
+          new={'offer_text','offer_version','confidentiality_text','confidentiality_version','deliverable','deadline'}
+          assert required<=names,'Missing base schema: STOP'
+          assert not names & new,'Migration already or partially applied: STOP (manual review)'
+          print('PASS: base schema present, all six additions absent')
+          PY
+      - name: Export complete sandbox D1 backup before mutation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/boxvia-consent-backup
+          npx --yes wrangler@4 d1 export boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --output /tmp/boxvia-consent-backup/before-consent-v02.sql
+          test -s /tmp/boxvia-consent-backup/before-consent-v02.sql
+          (cd /tmp/boxvia-consent-backup && sha256sum before-consent-v02.sql > SHA256SUMS)
+          echo 'PASS: full sandbox export prepared, content withheld from logs'
+      - name: Preserve restricted backup before applying migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-consent-pre-migration-${{ github.run_id }}
+          path: /tmp/boxvia-consent-backup/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Apply additive migration to sandbox D1 only
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --file migrations/order-consent-documents-sandbox-v0.2.sql
+      - name: Verify all six columns and no payment activation
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "PRAGMA table_info(order_document_sources)" --json > /tmp/consent-after.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/consent-after.json'))
+          assert len(x)==1 and x[0]['success'] is True
+          rows=x[0]['results']
+          names={r['name'] for r in rows}
+          expected={'order_id','terms_digest','terms_version','scope_text','created_at','offer_text','offer_version','confidentiality_text','confidentiality_version','deliverable','deadline'}
+          assert expected<=names,'Incomplete sandbox consent migration'
+          for r in rows:
+            if r['name'] in {'offer_text','offer_version','confidentiality_text','confidentiality_version','deliverable','deadline'}:
+              assert r['type'].upper()=='TEXT'
+          print('PASS: all six sandbox-only document columns verified')
+          PY
+          echo 'Migration does not enable payments; no customer consent was created.'
