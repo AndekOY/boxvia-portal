@@ -54,17 +54,16 @@ jobs:
           ok,idx,_=run("SELECT name, \"unique\" AS is_unique FROM pragma_index_list('payment_attempts') WHERE name='idx_payment_attempt_one_per_order_provider'")
           assert ok and idx==[{'name':'idx_payment_attempt_one_per_order_provider','is_unique':1}],idx
           ok,rows,_=run("SELECT a.id,a.order_id,a.provider,a.amount_minor,a.currency FROM payment_attempts a JOIN service_orders o ON o.id=a.order_id JOIN service_requests r ON r.id=o.service_request_id WHERE r.customer_email='sandbox@example.invalid' AND r.request_key LIKE 'orders-acceptance-%' ORDER BY a.rowid DESC LIMIT 1")
-          if not rows:
-            # An isolated transaction that rolls back is preferable to adding a test payment attempt.
-            print('PASS: unique index present; no synthetic payment attempt to probe; negative insert UNESTABLISHED')
-            raise SystemExit(0)
+          assert ok and rows, 'No synthetic payment attempt exists; negative remote probe UNESTABLISHED'
           assert ok and len(rows)==1
           a=rows[0]
           assert all(isinstance(a[k],str) and len(a[k])>0 for k in ('id','order_id','provider','currency'))
           assert a['provider'] in ('stripe','paypal') and a['currency']=='USD'
-          # An INSERT OR IGNORE can never create a duplicate under the unique index.
-          # It must report zero changes, and the original record must remain intact.
-          sql="INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) VALUES ('"+a['id']+"','"+a['order_id']+"','"+a['provider']+"','created',"+str(a['amount_minor'])+",'USD')"
+          # Use a NEW primary key so the tested conflict can only be order/provider uniqueness.
+          # INSERT OR IGNORE must make no change when the unique index is active.
+          import uuid
+          probe_id=str(uuid.uuid4())
+          sql="INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) VALUES ('"+probe_id+"','"+a['order_id']+"','"+a['provider']+"','created',"+str(a['amount_minor'])+",'USD')"
           ok,_,msg=run(sql)
           assert ok,'Remote idempotent insert failed (no successful test claim)'
           ok,rows,_=run("SELECT count(*) AS n FROM payment_attempts WHERE order_id='"+a['order_id']+"' AND provider='"+a['provider']+"'")
