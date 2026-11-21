@@ -8,7 +8,7 @@ import { authorizeCommercialPayment } from "./commercial-payment-gate.mjs";
 import { getCheckoutEligibility } from "./checkout-eligibility-db.mjs";
 import { handleOrderConsent } from "./order-consent-route.mjs";
 import { reserveUnifiedPayPalAttempt, persistUnifiedPayPalProviderOrder } from "./paypal-unified-attempt.mjs";
-import { createUnifiedPayPalSandboxOrder } from "./paypal-unified-api.mjs";
+import { createUnifiedPayPalSandboxOrder, retrieveExistingUnifiedPayPalSandboxCheckout } from "./paypal-unified-api.mjs";
 import { handleBcdeOwner } from "./bcde-owner-api.mjs";
 import { ownerConsoleHtml } from "./bcde-owner-console.mjs";
 // Isolated BoxVia unified-orders sandbox Worker.
@@ -150,6 +150,51 @@ export default {
       } catch {
         console.error("stripe_browser_test_checkout_failed_or_reconciliation_required");
         return json({ error: "Checkout unavailable; reconciliation required" }, 503);
+      }
+    }
+    if (url.pathname === "/api/paypal/sandbox/recover" && request.method === "POST") {
+      // Read-only sandbox recovery: capability, immutable consent evidence and
+      // the persisted PayPal attempt must all match. No payment creation/capture.
+      if (!env.DB || env.PAYPAL_MODE !== "sandbox" ||
+          env.PAYPAL_UNIFIED_TEST_ENABLED !== "true") return json({error:"Unavailable"},503);
+      if (request.headers.get("Origin") !== url.origin ||
+          request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json")
+        return json({error:"Rejected"},403);
+      let body;
+      try {
+        if(Number(request.headers.get("Content-Length")||0)>2048)return json({error:"Too large"},413);
+        const raw=await request.text();
+        if(raw.length>2048)return json({error:"Too large"},413);
+        body=JSON.parse(raw);
+      }catch{return json({error:"Invalid request"},400);}
+      try{
+        const order=await getAuthorizedOrder(env.DB,body?.orderId,body?.capability);
+        if(!order)return json({error:"Not found"},404);
+        if(order.status!=="checkout"||order.amountMinor!==5000||order.currency!=="USD"||
+           !["one-question-review","ai-governance-review"].includes(order.serviceCode))
+          return json({error:"Order not eligible"},409);
+        const auth=await authorizeCommercialPayment(env.DB,order,"paypal",{recovery:true});
+        if(!auth.authorized)return json({error:"Accepted terms required",reason:auth.reason},409);
+        const index=await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_payment_attempt_one_total_per_order'"
+        ).first();
+        if(!index)return json({error:"Checkout schema pending"},503);
+        const attempt=await env.DB.prepare(
+          "SELECT id,provider,provider_order_id,status,amount_minor,currency FROM payment_attempts WHERE order_id = ?"
+        ).bind(order.orderId).first();
+        if(!attempt||attempt.provider!=="paypal"||attempt.status!=="pending"||
+           attempt.amount_minor!==5000||attempt.currency!=="USD"||!attempt.provider_order_id)
+          return json({error:"Existing PayPal attempt requires reconciliation"},409);
+        const recovered=await retrieveExistingUnifiedPayPalSandboxCheckout(env,{
+          orderId:order.orderId,attemptId:attempt.id,providerOrderId:attempt.provider_order_id,
+          amountMinor:order.amountMinor,currency:order.currency
+        });
+        return json(recovered.status==="CREATED"||recovered.status==="PAYER_ACTION_REQUIRED"
+          ?{status:recovered.status,checkoutUrl:recovered.checkoutUrl}
+          :{status:recovered.status,checkoutUrl:null});
+      }catch{
+        console.error("paypal_sandbox_checkout_recovery_failed");
+        return json({error:"Recovery unavailable; reconciliation required"},503);
       }
     }
     if (url.pathname === "/api/paypal/sandbox/checkout" && request.method === "POST") {
