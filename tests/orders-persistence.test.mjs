@@ -46,7 +46,7 @@ test("two fixed $50 services create once, with capability only on first response
 test("reject mismatch and retired services", async () => {
   const db=new DB();
   await assert.rejects(createFixedPriceOrder(db,{serviceRequestId:7,serviceCode:"ai-governance-review"}),/mismatch/);
-  await assert.rejects(createFixedPriceOrder(db,{serviceRequestId:7,serviceCode:"check-a-claim"}),/Only the two/);
+  await assert.rejects(createFixedPriceOrder(db,{serviceRequestId:7,serviceCode:"check-a-claim"}),/Only fixed-price/);
   await assert.rejects(createFixedPriceOrder(db,{serviceRequestId:99,serviceCode:"one-question-review"}),/mismatch/);
 });
 
