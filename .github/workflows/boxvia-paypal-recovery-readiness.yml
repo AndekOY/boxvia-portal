@@ -1,0 +1,53 @@
+name: BoxVia PayPal Sandbox - read-only recovery readiness
+on:
+  push:
+    branches:
+      - work/technical-pilots-first-20261118
+    paths:
+      - .github/workflows/boxvia-paypal-recovery-readiness.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/technical-pilots-first-20261118
+          persist-credentials: false
+      - name: Assert isolated target and all production payment flags HOLD
+        run: |
+          python3 - <<'PY'
+          import json
+          c=json.load(open('wrangler.orders-sandbox.jsonc'))
+          assert c['name']=='boxvia-orders-sandbox'
+          assert c['main']=='cloudflare/orders-sandbox-worker.mjs'
+          assert c['d1_databases']==[{'binding':'DB','database_name':'boxvia-bxc-sandbox','database_id':'baf79e93-cbea-4786-8779-974f3b3afbcc'}]
+          assert c['vars']=={'UNIFIED_ORDERS_ENABLED':'false','PAYPAL_CHECKOUT_ENABLED':'false','STRIPE_CHECKOUT_ENABLED':'false'}
+          assert 'routes' not in c and 'assets' not in c
+          PY
+      - name: Inspect PayPal recovery fixture in remote sandbox D1 (SELECT only)
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.orders-sandbox.jsonc --remote --command "SELECT COUNT(*) AS n FROM service_orders o JOIN payment_attempts a ON a.order_id=o.id JOIN order_terms_acceptances t ON t.order_id=o.id JOIN order_document_sources d ON d.order_id=o.id AND d.terms_digest=t.terms_digest WHERE o.status='checkout' AND o.amount_minor=5000 AND o.currency='USD' AND a.provider='paypal' AND a.status='pending' AND a.provider_order_id IS NOT NULL AND a.amount_minor=5000 AND a.currency='USD' AND o.service_code IN ('one-question-review','ai-governance-review')" --json > /tmp/paypal-readiness.json
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open('/tmp/paypal-readiness.json'))
+          assert len(d)==1 and d[0]['success'] is True
+          n=d[0]['results'][0]['n']
+          assert type(n)==int and n>=0
+          status='CANDIDATE_EXISTS' if n else 'NO_EXISTING_ELIGIBLE_FIXTURE'
+          print('PayPal recovery readiness:',status)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('### PayPal sandbox read-only recovery readiness\\n\\n')
+            f.write('Status: **'+status+'**.\\n\\n')
+            f.write('This is a D1 candidate inventory, not provider verification. No PayPal API call, no D1 writes, no checkout creation, no capture.\\n')
+          PY
