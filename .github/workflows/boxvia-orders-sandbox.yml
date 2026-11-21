@@ -85,6 +85,14 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
+
+  verify-live-health:
+    needs: deploy-orders-sandbox
+    if: ${{ always() && needs.deploy-orders-sandbox.result == 'success' }}
+    runs-on: ubuntu-latest
+    environment: boxvia-preview
+    timeout-minutes: 5
+    steps:
       - name: Verify live sandbox health (strict acceptance gate)
         shell: bash
         env:
