@@ -50,6 +50,14 @@ jobs:
           assert all(c['vars'][k]=='false' for k in ('UNIFIED_ORDERS_ENABLED','PAYPAL_CHECKOUT_ENABLED','STRIPE_CHECKOUT_ENABLED'))
           assert 'assets' not in c
           PY
+      - name: Deploy current isolated Worker version before editing secret
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          # Cloudflare refuses secret put if its latest Worker version is not deployed.
+          # Deploy ONLY the validated sandbox target, preserving all existing secrets.
+          npx --yes wrangler@4 deploy --config wrangler.orders-sandbox.jsonc --keep-vars
       - name: Create ephemeral admin token in Cloudflare secret store
         run: |
           set -euo pipefail
