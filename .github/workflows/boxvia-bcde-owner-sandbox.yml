@@ -47,6 +47,26 @@ jobs:
           node --test tests/bcde-access.test.mjs tests/bcde-owner-worker.test.mjs tests/bcde-stage1.test.mjs
       # R2 bucket is provisioned separately. This deploy token may have Workers write
       # access without R2 bucket list/create permissions; never gate deploy on them.
+      - name: Audit BCDE sandbox D1 prerequisites (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 d1 execute boxvia-bxc-sandbox --config wrangler.bcde-owner.jsonc --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('service_orders','order_terms_acceptances','order_document_sources') ORDER BY name" --json > /tmp/bcde-schema-audit.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/bcde-schema-audit.json'))
+          if not isinstance(data,list) or not data or not data[0].get('success'):
+              raise SystemExit('BCDE sandbox D1 inspection unavailable')
+          actual={row['name'] for row in data[0].get('results',[])}
+          required={'service_orders','order_terms_acceptances','order_document_sources'}
+          print('BCDE sandbox D1 tables present:',sorted(actual))
+          missing=required-actual
+          if missing:
+              raise SystemExit('Missing BCDE sandbox D1 prerequisites: '+', '.join(sorted(missing)))
+          print('BCDE sandbox D1 schema prerequisites confirmed')
+          PY
       - name: Deploy only isolated owner Worker (requires pre-provisioned private R2 bucket)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
