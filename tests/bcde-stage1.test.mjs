@@ -45,3 +45,16 @@ test("manifest SHA-256 and byte lengths match archived PDF bytes",async()=>{
  assert.equal(stored.size,3);
  await assert.rejects(archiveCommercialPack(bucket,{orderId:id,termsPdf:orderPdf,acceptancePdf,termsDigest:digest}),/Archive already exists/);
 });
+
+test("partially written BCDE archive is not downloadable before final manifest",async()=>{
+ const data=new Uint8Array([37,80,68,70]),stored=new Map();
+ const bucket={
+  async head(k){return stored.has(k)?{etag:"existing"}:null;},
+  async put(k,v){if(k.endsWith("manifest.json"))throw new Error("simulated R2 interruption");stored.set(k,new Uint8Array(v));return {etag:"ok"};},
+  async get(k){return stored.get(k)??null;}
+ };
+ await assert.rejects(archiveCommercialPack(bucket,{orderId:id,termsPdf:data,termsDigest:digest}),/simulated R2 interruption/);
+ assert.equal(stored.size,1);
+ assert.equal(await downloadOwnerDocument(bucket,{orderId:id,termsDigest:digest,fileName:"01_ORDER_TERMS.pdf"}),null);
+ assert.equal(await downloadOwnerDocument(bucket,{orderId:id,termsDigest:digest,fileName:"manifest.json"}),null);
+});
