@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../cloudflare/bcde-owner-worker.mjs";
 import {handleBcdeOwner} from "../cloudflare/bcde-owner-api.mjs";
-import {probeBcdeR2} from "../cloudflare/bcde-r2-probe.mjs";
+import {probeBcdeR2,probeBcdeSyntheticPdfPack} from "../cloudflare/bcde-r2-probe.mjs";
+import {buildOrderTermsPdf,buildAcceptancePdf,sha256Bytes} from "../cloudflare/bcde-pdf.mjs";
 import {webcrypto} from "node:crypto";
 globalThis.crypto??=webcrypto;
 const origin="https://boxvia-bcde-owner.andeks.workers.dev";
@@ -51,4 +52,20 @@ test("synthetic R2 diagnostic cleans up on corrupted read",async()=>{
  };
  await assert.rejects(probeBcdeR2(bucket),/R2 digest mismatch/);
  assert.equal(objects.size,0);
+});
+
+test("synthetic PDF R2 pack writes verifies and removes all diagnostic objects",async()=>{
+ const stored=new Map();
+ const bucket={
+  async put(k,v){assert.match(k,/^diagnostics\/pdf-/);stored.set(k,new Uint8Array(v));return {etag:"ok"};},
+  async get(k){const v=stored.get(k);return v?{arrayBuffer:async()=>v.buffer.slice(v.byteOffset,v.byteOffset+v.byteLength)}:null;},
+  async delete(k){stored.delete(k);}
+ };
+ const result=await probeBcdeSyntheticPdfPack(bucket,buildOrderTermsPdf,buildAcceptancePdf,sha256Bytes);
+ assert.equal(result.ok,true);
+ assert.equal(result.synthetic,true);
+ assert.equal(result.pdfCount,2);
+ assert.equal(result.manifestVerified,true);
+ assert.equal(result.sha256Verified,true);
+ assert.equal(stored.size,0);
 });
