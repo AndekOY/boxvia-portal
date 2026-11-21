@@ -15,7 +15,7 @@ const event={
   }}
 };
 class DB {
-  constructor() {this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:"attempt-1",order_id:orderId,provider_order_id:sessionId,amount_minor:5000,currency:"USD",status:"pending"};this.events=new Map();this.outbox=new Set();}
+  constructor() {this.order={id:orderId,amount_minor:5000,currency:"USD",status:"checkout"};this.attempt={id:"attempt-1",order_id:orderId,provider_order_id:sessionId,amount_minor:5000,currency:"USD",status:"pending"};this.events=new Map();this.outbox=new Set();this.links=new Map();}
   prepare(sql) {
     const db=this;
     return {
@@ -42,7 +42,13 @@ class DB {
         if(this.order.status==="paid"){this.attempt.status="verified";changes=1;}
       } else if(s.sql.startsWith("INSERT OR IGNORE INTO fulfillment_outbox")){
         if(this.order.status==="paid"&&this.attempt.status==="verified"&&!this.outbox.has(orderId)){this.outbox.add(orderId);changes=1;}
-      } else if(s.sql.startsWith("UPDATE payment_events")){const stored=this.events.get(s.args[0]);if(stored){stored.processed=true;changes=1;}}
+      } else if(s.sql.startsWith("INSERT OR IGNORE INTO stripe_event_order_links")){
+        const [eventId, linkedOrderId, attemptId, session, digest]=s.args;
+        const stored=this.events.get(eventId);
+        if(this.order.status==="paid"&&this.attempt.status==="verified"&&this.attempt.id===attemptId&&this.attempt.provider_order_id===session&&stored?.digest===digest&&!stored.processed&&!this.links.has(eventId)){
+          this.links.set(eventId,{orderId:linkedOrderId,attemptId,session,digest});changes=1;
+        }
+      } else if(s.sql.startsWith("UPDATE payment_events")){const stored=this.events.get(s.args[0]);if(stored&&this.links.get(s.args[0])?.orderId===s.args[2]){stored.processed=true;changes=1;}}
       else throw new Error("unexpected SQL");
       result.push({success:true,meta:{changes}});
     }
@@ -56,10 +62,13 @@ test("verified matching Stripe session marks order paid once and queues one fulf
   assert.equal(db.order.status,"paid");
   assert.equal(db.attempt.status,"verified");
   assert.equal(db.outbox.size,1);
+  assert.equal(db.links.get(event.id)?.orderId,orderId);
+  assert.equal(db.links.get(event.id)?.attemptId,"attempt-1");
   const second=await settleVerifiedStripeEvent(db,event);
   assert.equal(second.outcome,"already_processed_or_manual_review");
   assert.equal(db.outbox.size,1);
   assert.equal(db.events.size,1);
+  assert.equal(db.links.size,1);
 });
 test("reject amount manipulation and absent checkout attempt",async()=>{
   const db=new DB();
@@ -81,4 +90,5 @@ test("event ID collision with different payload cannot settle another payment",a
   assert.equal(result.outcome,"event_id_collision");
   assert.equal(db.order.status,"checkout");
   assert.equal(db.outbox.size,0);
+  assert.equal(db.links.size,0);
 });
