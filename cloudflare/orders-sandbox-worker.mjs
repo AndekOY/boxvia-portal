@@ -107,7 +107,7 @@ export default {
       }
       try {
         const index = await env.DB.prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_stripe_one_attempt_per_order'"
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_payment_attempt_one_total_per_order'"
         ).first();
         if (!index) return json({ error: "Checkout schema pending" }, 503);
         const order = await getAuthorizedOrder(env.DB, testOrderId, env.STRIPE_E2E_ORDER_CAPABILITY);
@@ -215,7 +215,7 @@ export default {
       } catch {return json({error:"Invalid request"},400);}
       try {
         const index=await env.DB.prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_paypal_one_attempt_per_order'"
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_payment_attempt_one_total_per_order'"
         ).first();
         if(!index)return json({error:"Checkout schema pending"},503);
         const order=await getAuthorizedOrder(env.DB,body?.orderId,body?.capability);
@@ -253,7 +253,7 @@ export default {
       try {
         // Refuse checkout until the sandbox-only unique index is actually installed.
         const index = await env.DB.prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_stripe_one_attempt_per_order'"
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_payment_attempt_one_total_per_order'"
         ).first();
         if (!index) return json({ error: "Checkout schema pending" }, 503);
         const order = await getAuthorizedOrder(env.DB, body?.orderId, body?.capability);
