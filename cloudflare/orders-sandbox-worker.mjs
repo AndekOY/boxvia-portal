@@ -322,6 +322,12 @@ export default {
             ![document.offer_text,document.offer_version,document.confidentiality_text,document.confidentiality_version,document.deliverable,document.deadline].every(x => typeof x === "string" && x.trim())) {
           return json({ available: false, reason: "canonical_document_missing" }, 409);
         }
+        const digest = [...new Uint8Array(await crypto.subtle.digest(
+          "SHA-256", new TextEncoder().encode(document.scope_text)
+        ))].map(byte => byte.toString(16).padStart(2, "0")).join("");
+        if (digest !== document.terms_digest) {
+          return json({ available: false, reason: "canonical_document_integrity_mismatch" }, 409);
+        }
         return json({ available: true, serviceCode: order.serviceCode,
           amountMinor: order.amountMinor, currency: order.currency,
           scopeText: document.scope_text, termsVersion: document.terms_version,
