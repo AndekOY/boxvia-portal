@@ -8,12 +8,13 @@ export async function reserveUnifiedPayPalAttempt(db,authorization){
     !Number.isSafeInteger(authorization.amountMinor)||authorization.amountMinor<=0||
     authorization.currency!=="USD")throw Error("PayPal attempt not authorized");
  const existing=await db.prepare(
-  "SELECT id,status,provider_order_id FROM payment_attempts WHERE order_id = ? AND provider = 'paypal' ORDER BY created_at DESC LIMIT 1"
+  "SELECT id,provider,status,provider_order_id FROM payment_attempts WHERE order_id = ? ORDER BY created_at DESC LIMIT 1"
  ).bind(authorization.orderId).first();
+ if(existing && existing.provider!=='paypal')throw Error('Other payment provider already reserved; manual reconciliation');
  if(existing)return Object.freeze({created:false,attemptId:existing.id,status:existing.status,providerOrderId:existing.provider_order_id});
  const attemptId=crypto.randomUUID();
  const result=await db.prepare(
-  "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'paypal','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = ? AND currency = 'USD' AND NOT EXISTS (SELECT 1 FROM payment_attempts WHERE order_id = ? AND provider = 'paypal')"
+  "INSERT OR IGNORE INTO payment_attempts (id,order_id,provider,status,amount_minor,currency) SELECT ?,id,'paypal','created',amount_minor,currency FROM service_orders WHERE id = ? AND status = 'pending' AND amount_minor = ? AND currency = 'USD' AND NOT EXISTS (SELECT 1 FROM payment_attempts WHERE order_id = ?)"
  ).bind(attemptId,authorization.orderId,authorization.amountMinor,authorization.orderId).run();
  if(!result?.success||result.meta?.changes!==1)throw Error("PayPal attempt conflict: manual reconciliation");
  return Object.freeze({created:true,attemptId,status:"created",providerOrderId:null});
